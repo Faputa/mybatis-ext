@@ -105,6 +105,9 @@ public class MjConfiguration extends Configuration {
         Class<?> returnType = null;
         List<Parameter[]> parametersList = new ArrayList<>();
         for (Method method : mapperInterface.getDeclaredMethods()) {
+            if (method.isBridge() || method.isDefault()) {
+                continue;
+            }
             if (method.getName().equals(methodName)) {
                 if (returnType == null) {
                     returnType = method.getReturnType();
