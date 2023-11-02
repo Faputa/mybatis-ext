@@ -1,16 +1,31 @@
 package com.example;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.DeleteProvider;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.InsertProvider;
+import org.apache.ibatis.annotations.Lang;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.SelectProvider;
+import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.UpdateProvider;
 import org.apache.ibatis.binding.BindingException;
+import org.apache.ibatis.builder.xml.XMLMapperEntityResolver;
+import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.mapping.Environment;
@@ -20,6 +35,8 @@ import org.apache.ibatis.mapping.ResultMap;
 import org.apache.ibatis.mapping.ResultSetType;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
+import org.apache.ibatis.parsing.XNode;
+import org.apache.ibatis.parsing.XPathParser;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
@@ -28,6 +45,7 @@ public class MjConfiguration extends Configuration {
     private static final Log logger = LogFactory.getLog(MjConfiguration.class);
 
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
+    private final Set<String> loadedStatementId = new HashSet<>();
 
     public MjConfiguration(Environment environment) {
         super(environment);
@@ -35,15 +53,23 @@ public class MjConfiguration extends Configuration {
 
     public void validateAllMapperMethod(boolean panicIfStatementNotFound) {
         for (Class<?> mapperInterface : mapperRegistry.getMappers()) {
-            for (Method method : mapperInterface.getDeclaredMethods()) {
-                String statementId = mapperInterface.getName() + "." + method.getName();
-                if (resolveMappedStatement(statementId) == null) {
-                    String INVALID_STATEMENT_MESSAGE = "Invalid bound statement (not found): " + statementId;
-                    if (panicIfStatementNotFound) {
-                        throw new BindingException(INVALID_STATEMENT_MESSAGE);
-                    }
-                    logger.warn(INVALID_STATEMENT_MESSAGE);
+            validateMapperMethod(mapperInterface, panicIfStatementNotFound);
+        }
+    }
+
+    public void validateMapperMethod(Class<?> mapperInterface, boolean panicIfStatementNotFound) {
+        for (Method method : mapperInterface.getDeclaredMethods()) {
+            if (isBridgeOrDefault(method)) {
+                continue;
+            }
+            String statementId = mapperInterface.getName() + "." + method.getName();
+            MappedStatement ms = resolveMappedStatement(statementId);
+            if (ms == null) {
+                String message = "Invalid bound statement (not found): " + statementId;
+                if (panicIfStatementNotFound) {
+                    throw new BindingException(message);
                 }
+                logger.warn(message);
             }
         }
     }
@@ -93,7 +119,66 @@ public class MjConfiguration extends Configuration {
         if (ms != null) {
             return ms;
         }
-        return buildMappedStatement(id, methodName, mapperInterface);
+        if (!loadedStatementId.contains(id)) {
+            if (!hasDefinedStatement(methodName, mapperInterface)) {
+                return buildMappedStatement(id, methodName, mapperInterface);
+            }
+            loadedStatementId.add(id);
+        }
+        return null;
+    }
+
+    private boolean hasDefinedStatement(String methodName, Class<?> mapperInterface) {
+        if (hasXmlDefinedStatement(methodName, mapperInterface)) {
+            return true;
+        }
+        for (Method method : mapperInterface.getDeclaredMethods()) {
+            if (isBridgeOrDefault(method)) {
+                continue;
+            }
+            if (method.getName().equals(methodName) && hasStatementAnnotation(method)) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
+    private boolean hasStatementAnnotation(Method method) {
+        return method.isAnnotationPresent(Lang.class) ||
+                method.isAnnotationPresent(Select.class) ||
+                method.isAnnotationPresent(Update.class) ||
+                method.isAnnotationPresent(Delete.class) ||
+                method.isAnnotationPresent(Insert.class) ||
+                method.isAnnotationPresent(SelectProvider.class) ||
+                method.isAnnotationPresent(UpdateProvider.class) ||
+                method.isAnnotationPresent(DeleteProvider.class) ||
+                method.isAnnotationPresent(InsertProvider.class);
+    }
+
+    protected boolean hasXmlDefinedStatement(String methodName, Class<?> mapperInterface) {
+        String xmlResource = mapperInterface.getName().replace('.', '/') + ".xml";
+        InputStream inputStream = mapperInterface.getResourceAsStream("/" + xmlResource);
+        if (inputStream == null) {
+            try {
+                inputStream = Resources.getResourceAsStream(mapperInterface.getClassLoader(), xmlResource);
+            } catch (IOException e2) {
+            }
+        }
+        if (inputStream == null) {
+            return false;
+        }
+        return hasXmlDefinedStatement(methodName, mapperInterface, inputStream);
+    }
+
+    protected boolean hasXmlDefinedStatement(String methodName, Class<?> mapperInterface, InputStream inputStream) {
+        XPathParser parser = new XPathParser(inputStream, false, null, new XMLMapperEntityResolver());
+        XNode mapper = parser.evalNode("/mapper[@namespace='" + mapperInterface.getName() + "']");
+        if (mapper == null) {
+            return false;
+        }
+        XNode statement = mapper.evalNode("(select|insert|update|delete)[@id='" + methodName + "']");
+        return statement != null;
     }
 
     private MappedStatement buildMappedStatement(String id, String methodName, Class<?> mapperInterface) {
@@ -105,7 +190,7 @@ public class MjConfiguration extends Configuration {
         Class<?> returnType = null;
         List<Parameter[]> parametersList = new ArrayList<>();
         for (Method method : mapperInterface.getDeclaredMethods()) {
-            if (method.isBridge() || method.isDefault()) {
+            if (isBridgeOrDefault(method)) {
                 continue;
             }
             if (method.getName().equals(methodName)) {
@@ -123,6 +208,10 @@ public class MjConfiguration extends Configuration {
             addMappedStatement(ms);
         }
         return ms;
+    }
+
+    private boolean isBridgeOrDefault(Method method) {
+        return method.isBridge() || method.isDefault();
     }
 
     private MappedStatement buildMappedStatement(String id, String methodName, List<Parameter[]> parametersList,
