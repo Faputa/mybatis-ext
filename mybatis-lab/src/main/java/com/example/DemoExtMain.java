@@ -22,6 +22,7 @@ public class DemoExtMain {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         MjConfiguration configuration = new MjConfiguration(environment);
         // 先注册子类，此时无法确定DemoExtMapper中所有的方法
+        // mapper.xml的路径默认和mapper.class一样
         configuration.addMapper(DemoExtMapper.class);
         // 再注册父类
         configuration.addMapper(DemoMapper.class);
