@@ -1,7 +1,6 @@
 package com.example;
 
 import org.apache.ibatis.mapping.Environment;
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
@@ -21,15 +20,17 @@ public class DemoExtMain {
 
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
-        Configuration configuration = new Configuration(environment);
+        MjConfiguration configuration = new MjConfiguration(environment);
         configuration.addLoadedResource("classpath:com/example/DemoMapper.xml");
         // 先注册子类，此时无法确定DemoExtMapper中所有的方法
         configuration.addMapper(DemoExtMapper.class);
         // 再注册父类
         configuration.addMapper(DemoMapper.class);
+        configuration.validateAllMapperMethod(false);
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
         SqlSession session = sqlSessionFactory.openSession();
         DemoExtMapper demoMapper = session.getMapper(DemoExtMapper.class);
         System.out.println(demoMapper.countDidaTask());
+        System.out.println(demoMapper.countDidaTask2());
     }
 }
