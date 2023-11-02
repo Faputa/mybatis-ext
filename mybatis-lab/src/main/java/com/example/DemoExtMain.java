@@ -21,7 +21,6 @@ public class DemoExtMain {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         MjConfiguration configuration = new MjConfiguration(environment);
-        configuration.addLoadedResource("classpath:com/example/DemoMapper.xml");
         // 先注册子类，此时无法确定DemoExtMapper中所有的方法
         configuration.addMapper(DemoExtMapper.class);
         // 再注册父类
