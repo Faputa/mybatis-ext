@@ -21,7 +21,6 @@ public class DemoMain {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         Configuration configuration = new Configuration(environment);
         // configuration.addMapper(DemoMapper.class);
-        configuration.addLoadedResource("classpath:com/example/DemoMapper.xml");
         configuration.addMapper(DemoMapper.class);
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
         SqlSession session = sqlSessionFactory.openSession();
