@@ -5,21 +5,25 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>mybatis-ext-lab</artifactId>
+    <artifactId>mybatis-ext-spring</artifactId>
     <version>0.0.1</version>
-    <modules>
-        <module>mybatis-ext</module>
-        <module>mybatis-ext-spring</module>
-        <module>mybatis-ext-spring-test</module>
-        <module>mybatis-ext-test</module>
-        <module>mybatis-plus-test</module>
-        <module>mybatis-spring-test</module>
-    </modules>
-    <packaging>pom</packaging>
-    
+
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>mybatis-ext</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+		<dependency>
+			<groupId>org.mybatis.spring.boot</groupId>
+			<artifactId>mybatis-spring-boot-starter</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+    </dependencies>
 
 </project>

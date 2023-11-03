@@ -27,3 +27,4 @@ call MapperRegistry.getMappers()
 
 https://www.cnblogs.com/roytian/p/12762218.html
 https://mybatis.org/mybatis-3/zh/configuration.html#plugins
+https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/zh/index.html
