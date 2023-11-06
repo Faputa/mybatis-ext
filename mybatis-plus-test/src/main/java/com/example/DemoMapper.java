@@ -2,10 +2,8 @@ package com.example;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-
 @Mapper
-public interface DemoMapper extends BaseMapper<Demo> {
+public interface DemoMapper extends DemoMapper0 {
 
     int countDidaTask();
 
