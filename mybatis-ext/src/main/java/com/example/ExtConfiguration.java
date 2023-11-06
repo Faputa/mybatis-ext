@@ -2,6 +2,7 @@ package com.example;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
@@ -63,6 +64,16 @@ public class ExtConfiguration extends Configuration {
 
     public ExtConfiguration(Environment environment) {
         super(environment);
+    }
+
+    public ExtConfiguration(Configuration configuration) {
+        for (Field f : Configuration.class.getDeclaredFields()) {
+            try {
+                f.setAccessible(true);
+                f.set(this, f.get(configuration));
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     public void validateAllMapperMethod(boolean panicIfStatementNotFound) {
