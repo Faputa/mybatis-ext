@@ -13,6 +13,7 @@ public class DemoApplication {
 		System.out.println("########" + demoMapper.countDidaTask());
 		// 预期10000
 		System.out.println("########" + demoMapper.selectCount(null));
+		System.out.println("########" + demoMapper.countDidaTask2());
 	}
 
 }
