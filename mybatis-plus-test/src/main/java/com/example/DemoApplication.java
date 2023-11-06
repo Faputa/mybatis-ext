@@ -11,6 +11,7 @@ public class DemoApplication {
 		ConfigurableApplicationContext context = SpringApplication.run(DemoApplication.class, args);
 		DemoMapper demoMapper = context.getBean(DemoMapper.class);
 		System.out.println("########" + demoMapper.countDidaTask());
+		// 预期10000
 		System.out.println("########" + demoMapper.selectCount(null));
 	}
 
