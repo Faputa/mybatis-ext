@@ -28,3 +28,6 @@ call MapperRegistry.getMappers()
 https://www.cnblogs.com/roytian/p/12762218.html
 https://mybatis.org/mybatis-3/zh/configuration.html#plugins
 https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/zh/index.html
+
+吐槽mybatisplus，侵入性强+乱用分层模型+弱鸡JPA+代码实现脏
+https://www.zhihu.com/question/279766037
