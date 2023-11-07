@@ -60,6 +60,12 @@ public class ExtEnhancer {
     }
 
     public void validateMapperMethod(Class<?> mapperInterface, boolean panicIfStatementNotFound) {
+        if (!mapperInterface.isInterface()) {
+            return;
+        }
+        if (mapperInterface.getAnnotation(ExtMapper.class) == null) {
+            return;
+        }
         for (Method method : mapperInterface.getDeclaredMethods()) {
             if (isBridgeOrDefault(method)) {
                 continue;

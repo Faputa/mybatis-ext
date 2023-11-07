@@ -9,4 +9,6 @@ public interface DemoMapper extends DemoMapper0 {
     int countDidaTask();
 
     int countDidaTask2();
+
+    int countDidaTask3();
 }
