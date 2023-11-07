@@ -28,6 +28,7 @@ public class MybatisExtAspect {
             }
             ExtConfiguration extConfiguration = new ExtConfiguration(configuration);
             extConfiguration.setMapperLocations(properties.resolveMapperLocations());
+            extConfiguration.validateAllMapperMethod(false);
             return new DefaultSqlSessionFactory(extConfiguration);
         }
         return result;
