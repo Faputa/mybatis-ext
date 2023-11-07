@@ -134,6 +134,7 @@ public class ExtEnhancer {
             return ms;
         }
         if (!loadedStatementId.contains(id)) {
+            // TODO hasDefinedStatement是否多余？考虑移除
             if (!hasDefinedStatement(methodName, mapperInterface)) {
                 return buildMappedStatement(id, methodName, mapperInterface);
             }
