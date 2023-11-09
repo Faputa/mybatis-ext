@@ -31,3 +31,7 @@ https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/zh/ind
 
 吐槽mybatisplus，侵入性强+乱用分层模型+弱鸡JPA+代码实现脏
 https://www.zhihu.com/question/279766037
+
+考虑用注解还是基接口标记需要被增强的接口
+    用注解，无法提供默认的增强方法
+    用基接口，存在标记传染的问题
