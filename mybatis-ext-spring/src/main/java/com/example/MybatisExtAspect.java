@@ -2,7 +2,7 @@ package com.example;
 
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -16,6 +16,7 @@ public class MybatisExtAspect {
 
     @Autowired
     private MybatisProperties properties;
+    private SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
 
     @Around("@annotation(org.springframework.context.annotation.Bean)")
     public Object aroundBeanMethod(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -29,7 +30,7 @@ public class MybatisExtAspect {
             ExtConfiguration extConfiguration = new ExtConfiguration(configuration);
             extConfiguration.setMapperLocations(properties.resolveMapperLocations());
             extConfiguration.validateAllMapperMethod(false);
-            return new DefaultSqlSessionFactory(extConfiguration);
+            return sqlSessionFactoryBuilder.build(extConfiguration);
         }
         return result;
     }
