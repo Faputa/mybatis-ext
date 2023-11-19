@@ -12,6 +12,7 @@
         <module>mybatis-ext-spring</module>
         <module>mybatis-ext-spring-test</module>
         <module>mybatis-ext-test</module>
+        <module>mybatis-flex-test</module>
         <module>mybatis-plus-test</module>
         <module>mybatis-spring-test</module>
     </modules>
