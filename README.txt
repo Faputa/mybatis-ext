@@ -35,3 +35,41 @@ https://www.zhihu.com/question/279766037
 考虑用注解还是基接口标记需要被增强的接口
     用注解，无法提供默认的增强方法
     用基接口，存在标记传染的问题
+
+TODO
+通用动态SQL方法
+    save
+    saveBatch
+    update
+    updateFull
+    delete
+    deleteBatch
+    get
+    list
+    count
+    exists
+    ——————
+    实现方案
+        SqlProvider 问题：无法重写
+        buildMappedStatement
+方法名定义查询
+    find|select|list|get...By...
+    update...By...
+    delete|remove...By...
+    count...By...
+    exists...By...
+维表字段
+    一对一
+    多对一
+    一对多
+    多对多
+    ——————
+    支持场景
+        懒加载
+        即时加载
+queryDSL
+代码生成器
+逆向生成表
+    更新
+    重新创建
+    无动作
