@@ -26,7 +26,7 @@ public class DemoExtMain {
         configuration.addMapper(DemoExtMapper.class);
         // 再注册父类
         configuration.addMapper(DemoMapper.class);
-        configuration.validateAllMapperMethod(false);
+        configuration.validateAllMapperMethod();
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
         SqlSession session = sqlSessionFactory.openSession();
         DemoExtMapper demoMapper = session.getMapper(DemoExtMapper.class);
