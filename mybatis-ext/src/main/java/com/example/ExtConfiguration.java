@@ -47,7 +47,6 @@ import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeAliasRegistry;
 import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
-import org.springframework.core.io.Resource;
 
 public class ExtConfiguration extends Configuration implements ConfigurationInterface {
 
@@ -741,14 +740,6 @@ public class ExtConfiguration extends Configuration implements ConfigurationInte
     @Override
     public void addCacheRef(String namespace, String referencedNamespace) {
         this.originConfiguration.addCacheRef(namespace, referencedNamespace);
-    }
-
-    public Resource[] getMapperLocations() {
-        return this.extEnhancer.getMapperLocations();
-    }
-
-    public void setMapperLocations(Resource[] mapperLocations) {
-        this.extEnhancer.setMapperLocations(mapperLocations);
     }
 
     public void validateAllMapperMethod(boolean panicIfStatementNotFound) {
