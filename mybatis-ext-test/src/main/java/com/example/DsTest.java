@@ -7,7 +7,7 @@ import java.sql.Statement;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 
-public class TT {
+public class DsTest {
     public static void main(String[] args) throws SQLException {
         MysqlDataSource dataSource = new MysqlDataSource();
         // dataSource.setURL("jdbc:mysql://localhost:3306/visual?serverTimezone=Asia/Shanghai&characterEncoding=utf8&useSSL=false");

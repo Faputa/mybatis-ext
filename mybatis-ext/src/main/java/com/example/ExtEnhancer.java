@@ -13,8 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.apache.ibatis.binding.BindingException;
-import org.apache.ibatis.logging.Log;
-import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.MappedStatement.Builder;
 import org.apache.ibatis.mapping.ResultMap;
@@ -26,8 +24,6 @@ import org.apache.ibatis.session.Configuration;
 
 public class ExtEnhancer {
 
-    private static final Log logger = LogFactory.getLog(ExtEnhancer.class);
-
     private Configuration configuration;
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
     private final Set<String> builtStatementId = ConcurrentHashMap.newKeySet();;
@@ -36,13 +32,13 @@ public class ExtEnhancer {
         this.configuration = configuration;
     }
 
-    public void validateAllMapperMethod(boolean panicIfStatementNotFound) {
+    public void validateAllMapperMethod() {
         for (Class<?> mapperInterface : configuration.getMapperRegistry().getMappers()) {
-            validateMapperMethod(mapperInterface, panicIfStatementNotFound);
+            validateMapperMethod(mapperInterface);
         }
     }
 
-    public void validateMapperMethod(Class<?> mapperInterface, boolean panicIfStatementNotFound) {
+    public void validateMapperMethod(Class<?> mapperInterface) {
         if (!mapperInterface.isInterface()) {
             return;
         }
@@ -56,11 +52,7 @@ public class ExtEnhancer {
             String statementId = mapperInterface.getName() + "." + method.getName();
             MappedStatement ms = resolveMappedStatement(statementId);
             if (ms == null) {
-                String message = "Invalid bound statement (not found): " + statementId;
-                if (panicIfStatementNotFound) {
-                    throw new BindingException(message);
-                }
-                logger.warn(message);
+                throw new BindingException("Invalid bound statement (not found): " + statementId);
             }
         }
     }

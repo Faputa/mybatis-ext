@@ -742,12 +742,12 @@ public class ExtConfiguration extends Configuration implements ConfigurationInte
         this.originConfiguration.addCacheRef(namespace, referencedNamespace);
     }
 
-    public void validateAllMapperMethod(boolean panicIfStatementNotFound) {
-        this.extEnhancer.validateAllMapperMethod(panicIfStatementNotFound);
+    public void validateAllMapperMethod() {
+        this.extEnhancer.validateAllMapperMethod();
     }
 
-    public void validateMapperMethod(Class<?> mapperInterface, boolean panicIfStatementNotFound) {
-        this.extEnhancer.validateMapperMethod(mapperInterface, panicIfStatementNotFound);
+    public void validateMapperMethod(Class<?> mapperInterface) {
+        this.extEnhancer.validateMapperMethod(mapperInterface);
     }
 
 }

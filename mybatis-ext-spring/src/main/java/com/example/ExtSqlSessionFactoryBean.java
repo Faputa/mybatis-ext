@@ -16,7 +16,7 @@ public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
             return sqlSessionFactory;
         }
         ExtConfiguration extConfiguration = new ExtConfiguration(configuration);
-        extConfiguration.validateAllMapperMethod(false);
+        extConfiguration.validateAllMapperMethod();
         return sqlSessionFactoryBuilder.build(extConfiguration);
     }
 
