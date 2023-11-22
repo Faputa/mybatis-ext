@@ -117,14 +117,13 @@ public class ExtEnhancer {
                 assert entityClass != null;
                 if (tableType == null) {
                     tableType = entityClass;
-                }
-                if (tableType != entityClass) {
+                } else if (tableType != entityClass) {
                     throw new IllegalArgumentException("tableType inconsistency: " + id);
                 }
-                if (returnType == null) {
+                if (returnType == null || returnType.isAssignableFrom(method.getReturnType())) {
                     returnType = method.getReturnType();
-                }
-                if (returnType != method.getReturnType() && Void.class != method.getReturnType()) {
+                } else if (!method.getReturnType().isAssignableFrom(returnType)
+                        && Void.class != method.getReturnType()) {
                     throw new IllegalArgumentException("returnType inconsistency: " + id);
                 }
                 parametersList.add(method.getParameters());
@@ -249,7 +248,7 @@ public class ExtEnhancer {
     }
 
     private MappedStatement resolveMappedStatement(Class<?> mapperClass, String methodName) {
-        if (mapperClass == null) {
+        if (mapperClass == null || mapperClass == Object.class) {
             return null;
         }
         String statementId = mapperClass.getName() + "." + methodName;
