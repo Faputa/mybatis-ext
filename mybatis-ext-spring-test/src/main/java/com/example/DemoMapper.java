@@ -3,8 +3,7 @@ package com.example;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-@ExtMapper(Demo.class)
-public interface DemoMapper {
+public interface DemoMapper extends BaseMapper<Demo> {
 
     int countDidaTask();
 

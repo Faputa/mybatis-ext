@@ -746,8 +746,4 @@ public class ExtConfiguration extends Configuration implements ConfigurationInte
         this.extEnhancer.validateAllMapperMethod();
     }
 
-    public void validateMapperMethod(Class<?> mapperInterface) {
-        this.extEnhancer.validateMapperMethod(mapperInterface);
-    }
-
 }

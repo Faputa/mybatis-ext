@@ -5,7 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import com.mybatisflex.core.BaseMapper;
 
 @Mapper
-@ExtMapper(Demo.class)
+@Mapping(Demo.class)
 public interface DemoMapper extends BaseMapper<Demo> {
 
     int countDidaTask();
