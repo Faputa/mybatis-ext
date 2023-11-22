@@ -2,11 +2,14 @@ package com.example;
 
 import java.sql.Timestamp;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 @TableName("camera")
 public class Demo {
 
+    // 必须添加此注解，否则不会生成ID相关的语句
+    @TableId
     private Long cameraId;
     private Long orgId;
     private String cameraName;

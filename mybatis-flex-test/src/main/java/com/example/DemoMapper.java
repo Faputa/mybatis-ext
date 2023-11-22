@@ -12,5 +12,5 @@ public interface DemoMapper extends BaseMapper<Demo> {
 
     int countDidaTask2();
 
-    int countDidaTask3();
+    // int countDidaTask3();
 }
