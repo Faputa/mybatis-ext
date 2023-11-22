@@ -1,6 +1,6 @@
 package com.example;
 
-@ExtMapper(Demo.class)
+@Mapping(Demo.class)
 public interface DemoMapper {
 
     int countDidaTask();

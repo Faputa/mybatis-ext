@@ -2,6 +2,9 @@ package com.example;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,37 +27,12 @@ import org.apache.ibatis.session.Configuration;
 
 public class ExtEnhancer {
 
-    private Configuration configuration;
-    private Map<String, Class<?>> mapperCache = Collections.emptyMap();
+    private final Configuration configuration;
     private final Set<String> builtStatementId = ConcurrentHashMap.newKeySet();;
+    private Map<String, Class<?>> mapperCache = Collections.emptyMap();
 
     public ExtEnhancer(Configuration configuration) {
         this.configuration = configuration;
-    }
-
-    public void validateAllMapperMethod() {
-        for (Class<?> mapperInterface : configuration.getMapperRegistry().getMappers()) {
-            validateMapperMethod(mapperInterface);
-        }
-    }
-
-    public void validateMapperMethod(Class<?> mapperInterface) {
-        if (!mapperInterface.isInterface()) {
-            return;
-        }
-        if (mapperInterface.getAnnotation(ExtMapper.class) == null) {
-            return;
-        }
-        for (Method method : mapperInterface.getDeclaredMethods()) {
-            if (isBridgeOrDefault(method)) {
-                continue;
-            }
-            String statementId = mapperInterface.getName() + "." + method.getName();
-            MappedStatement ms = resolveMappedStatement(statementId);
-            if (ms == null) {
-                throw new BindingException("Invalid bound statement (not found): " + statementId);
-            }
-        }
     }
 
     public MappedStatement getMappedStatement(String id) {
@@ -78,11 +56,27 @@ public class ExtEnhancer {
         }
         MappedStatement ms = resolveMappedStatement(statementName);
         if (ms != null) {
-            if (Objects.equals(ms.getId(), statementName)) {
-                return true;
-            }
+            return Objects.equals(ms.getId(), statementName);
         }
         return false;
+    }
+
+    public void validateAllMapperMethod() {
+        for (Class<?> mapperClass : configuration.getMapperRegistry().getMappers()) {
+            if (!isEnhancedMapper(mapperClass)) {
+                continue;
+            }
+            for (Method method : mapperClass.getMethods()) {
+                if (isBridgeOrDefault(method)) {
+                    continue;
+                }
+                String statementId = mapperClass.getName() + "." + method.getName();
+                MappedStatement ms = resolveMappedStatement(statementId);
+                if (ms == null) {
+                    throw new BindingException("Invalid bound statement (not found): " + statementId);
+                }
+            }
+        }
     }
 
     private MappedStatement resolveMappedStatement(String id) {
@@ -92,38 +86,45 @@ public class ExtEnhancer {
         }
         String namespace = id.substring(0, lastIndexOf);
         String methodName = id.substring(lastIndexOf + 1);
-        Class<?> mapperInterface = getMapperInterface(namespace);
-        if (mapperInterface == null) {
+        Class<?> mapperClass = getMapperClass(namespace);
+        if (mapperClass == null) {
             return null;
         }
-        MappedStatement ms = resolveMappedStatement(mapperInterface, methodName, mapperInterface);
+        MappedStatement ms = resolveMappedStatement(mapperClass, methodName);
         if (ms != null) {
             return ms;
         }
         if (!builtStatementId.contains(id)) {
             builtStatementId.add(id);
-            return buildMappedStatement(id, methodName, mapperInterface);
+            return buildMappedStatement(id, methodName, mapperClass);
         }
         return null;
     }
 
-    private MappedStatement buildMappedStatement(String id, String methodName, Class<?> mapperInterface) {
-        ExtMapper jpaMapper = mapperInterface.getAnnotation(ExtMapper.class);
-        if (jpaMapper == null) {
+    private MappedStatement buildMappedStatement(String id, String methodName, Class<?> mapperClass) {
+        if (!isEnhancedMapper(mapperClass)) {
             return null;
         }
-        Class<?> tableType = jpaMapper.value();
+        Class<?> tableType = null;
         Class<?> returnType = null;
         List<Parameter[]> parametersList = new ArrayList<>();
-        for (Method method : mapperInterface.getDeclaredMethods()) {
+        for (Method method : mapperClass.getMethods()) {
             if (isBridgeOrDefault(method)) {
                 continue;
             }
             if (method.getName().equals(methodName)) {
+                Class<?> entityClass = getEntityClass(mapperClass, method);
+                assert entityClass != null;
+                if (tableType == null) {
+                    tableType = entityClass;
+                }
+                if (tableType != entityClass) {
+                    throw new IllegalArgumentException("tableType inconsistency: " + id);
+                }
                 if (returnType == null) {
                     returnType = method.getReturnType();
                 }
-                if (!returnType.equals(method.getReturnType()) && !Void.class.equals(method.getReturnType())) {
+                if (returnType != method.getReturnType() && Void.class != method.getReturnType()) {
                     throw new IllegalArgumentException("returnType inconsistency: " + id);
                 }
                 parametersList.add(method.getParameters());
@@ -136,8 +137,87 @@ public class ExtEnhancer {
         return ms;
     }
 
+    private boolean isEnhancedMapper(Class<?> mapperClass) {
+        return mapperClass.isInterface() && !isGenericClass(mapperClass)
+                && (mapperClass.getAnnotation(Mapping.class) != null
+                        || ExtMapper.class.isAssignableFrom(mapperClass));
+    }
+
+    private boolean isGenericClass(Class<?> type) {
+        return type.getTypeParameters().length > 0;
+    }
+
     private boolean isBridgeOrDefault(Method method) {
         return method.isBridge() || method.isDefault();
+    }
+
+    private Class<?> getEntityClass(Class<?> mapperClass, Method method) {
+        return getEntityClass(mapperClass, method, null);
+    }
+
+    private Class<?> getEntityClass(Class<?> mapperClass, Method method, Type[] actualTypeArguments) {
+        // 检查方法是否在继承路径上
+        if (method != null && !mapperClass.isAssignableFrom(method.getDeclaringClass())
+                && !method.getDeclaringClass().isAssignableFrom(mapperClass)) {
+            return null;
+        }
+        // 检查注解
+        Mapping mapping = mapperClass.getAnnotation(Mapping.class);
+        if (mapping != null) {
+            return mapping.value();
+        }
+        // 检查基接口
+        Type[] genericInterfaces = mapperClass.getGenericInterfaces();
+        for (Type type : genericInterfaces) {
+            if (type instanceof ParameterizedType) {
+                // 泛型基接口
+                ParameterizedType parameterizedType = (ParameterizedType) type;
+                Type rawType = parameterizedType.getRawType();
+                Type[] typeArguments = parameterizedType.getActualTypeArguments();
+                adjustTypeArguments(mapperClass, actualTypeArguments, typeArguments);
+                if (rawType == ExtMapper.class) {
+                    // 找到了
+                    if (typeArguments[0] instanceof Class) {
+                        return (Class<?>) typeArguments[0];
+                    }
+                } else if (rawType instanceof Class) {
+                    // 其他泛型基接口
+                    Class<?> entityClass = getEntityClass((Class<?>) rawType, method, typeArguments);
+                    if (entityClass != null) {
+                        return entityClass;
+                    }
+                }
+            } else if (type instanceof Class) {
+                // 其他基接口
+                Class<?> entityClass = getEntityClass((Class<?>) type, method);
+                if (entityClass != null) {
+                    return entityClass;
+                }
+            }
+        }
+        // 检查基类
+        Class<?> superclass = mapperClass.getSuperclass();
+        if (superclass == null || superclass == Object.class) {
+            return null;
+        }
+        Type[] typeArguments = superclass.getTypeParameters();
+        adjustTypeArguments(mapperClass, actualTypeArguments, typeArguments);
+        return getEntityClass(superclass, method, typeArguments);
+    }
+
+    private void adjustTypeArguments(Class<?> subclass, Type[] subclassTypeArguments, Type[] typeArguments) {
+        for (int i = 0; i < typeArguments.length; i++) {
+            if (typeArguments[i] instanceof TypeVariable) {
+                TypeVariable<?> typeVariable = (TypeVariable<?>) typeArguments[i];
+                TypeVariable<?>[] typeParameters = subclass.getTypeParameters();
+                for (int j = 0; j < typeParameters.length; j++) {
+                    if (Objects.equals(typeVariable.getName(), typeParameters[j].getName())) {
+                        typeArguments[i] = subclassTypeArguments[j];
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private MappedStatement buildMappedStatement(String id, String methodName, List<Parameter[]> parametersList,
@@ -160,33 +240,29 @@ public class ExtEnhancer {
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }
 
-    private Class<?> getMapperInterface(String namespace) {
+    private Class<?> getMapperClass(String namespace) {
         Collection<Class<?>> mappers = configuration.getMapperRegistry().getMappers();
         if (!mapperCache.containsKey(namespace)) {
-            mapperCache = mappers.stream().collect(Collectors.toMap(v -> v.getName(), v -> v));
+            mapperCache = mappers.stream().collect(Collectors.toMap(Class::getName, v -> v));
         }
-        Class<?> mapperInterface = mapperCache.get(namespace);
-        return mapperInterface;
+        return mapperCache.get(namespace);
     }
 
-    private MappedStatement resolveMappedStatement(Class<?> mapperInterface, String methodName,
-            Class<?> declaringClass) {
-        String statementId = mapperInterface.getName() + "." + methodName;
+    private MappedStatement resolveMappedStatement(Class<?> mapperClass, String methodName) {
+        if (mapperClass == null) {
+            return null;
+        }
+        String statementId = mapperClass.getName() + "." + methodName;
         if (configuration.hasStatement(statementId)) {
             return configuration.getMappedStatement(statementId);
         }
-        if (mapperInterface.equals(declaringClass)) {
-            return null;
-        }
-        for (Class<?> superInterface : mapperInterface.getInterfaces()) {
-            if (declaringClass.isAssignableFrom(superInterface)) {
-                MappedStatement ms = resolveMappedStatement(superInterface, methodName, declaringClass);
-                if (ms != null) {
-                    return ms;
-                }
+        for (Class<?> superInterface : mapperClass.getInterfaces()) {
+            MappedStatement ms = resolveMappedStatement(superInterface, methodName);
+            if (ms != null) {
+                return ms;
             }
         }
-        return null;
+        return resolveMappedStatement(mapperClass.getSuperclass(), methodName);
     }
 
 }
