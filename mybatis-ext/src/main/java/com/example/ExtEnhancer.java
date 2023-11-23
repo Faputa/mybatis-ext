@@ -1,5 +1,6 @@
 package com.example;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
@@ -138,8 +139,22 @@ public class ExtEnhancer {
 
     private boolean isEnhancedMapper(Class<?> mapperClass) {
         return mapperClass.isInterface() && !isGenericClass(mapperClass)
-                && (mapperClass.getAnnotation(Mapping.class) != null
-                        || ExtMapper.class.isAssignableFrom(mapperClass));
+                && (ExtMapper.class.isAssignableFrom(mapperClass) || hasAnnotation(mapperClass, Mapping.class));
+    }
+
+    private boolean hasAnnotation(Class<?> clazz, Class<? extends Annotation> annotation) {
+        if (clazz.isAnnotationPresent(annotation)) {
+            return true;
+        }
+        if (clazz.getSuperclass() != null && hasAnnotation(clazz.getSuperclass(), annotation)) {
+            return true;
+        }
+        for (Class<?> interf : clazz.getInterfaces()) {
+            if (hasAnnotation(interf, annotation)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isGenericClass(Class<?> type) {
