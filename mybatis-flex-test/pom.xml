@@ -5,12 +5,12 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.7.17</version>
+		<version>2.7.18</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.example</groupId>
+	<groupId>com.mybatisext</groupId>
 	<artifactId>mybatis-flex-test</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<properties>
 		<java.version>1.8</java.version>
 	</properties>
@@ -27,7 +27,7 @@
 			<scope>provided</scope>
 		</dependency>
         <dependency>
-            <groupId>com.example</groupId>
+            <groupId>com.mybatisext</groupId>
             <artifactId>mybatis-ext-spring</artifactId>
             <version>0.0.1</version>
         </dependency>
@@ -49,14 +49,5 @@
 			<scope>runtime</scope>
 		</dependency>
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build>
 
 </project>

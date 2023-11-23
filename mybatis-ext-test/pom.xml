@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
+    <groupId>com.mybatisext</groupId>
     <artifactId>mybatis-ext-test</artifactId>
     <version>0.0.1</version>
 
@@ -20,19 +20,21 @@
             <version>3.5.13</version>
         </dependency>
         <dependency>
-            <groupId>com.example</groupId>
+            <groupId>com.mybatisext</groupId>
             <artifactId>mybatis-ext</artifactId>
             <version>0.0.1</version>
         </dependency>
-        <!-- <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.3.30</version>
-        </dependency> -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>8.0.33</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.10.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
