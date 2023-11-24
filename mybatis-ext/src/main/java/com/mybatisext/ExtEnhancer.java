@@ -121,7 +121,8 @@ public class ExtEnhancer {
         if (!isEnhancedMapper(mapperClass)) {
             return null;
         }
-        Class<?> tableType = null;
+        Class<?> tableType = getEntityClass(mapperClass);
+        assert tableType != null;
         Class<?> returnType = null;
         List<Method> methods = new ArrayList<>();
         for (Method method : mapperClass.getMethods()) {
@@ -129,13 +130,6 @@ public class ExtEnhancer {
                 continue;
             }
             if (method.getName().equals(methodName)) {
-                Class<?> entityClass = getEntityClass(mapperClass, method);
-                assert entityClass != null;
-                if (tableType == null) {
-                    tableType = entityClass;
-                } else if (tableType != entityClass) {
-                    throw new IllegalArgumentException("tableType inconsistency: " + id);
-                }
                 if (returnType == null || returnType.isAssignableFrom(method.getReturnType())) {
                     returnType = method.getReturnType();
                 } else if (!method.getReturnType().isAssignableFrom(returnType)
@@ -166,13 +160,12 @@ public class ExtEnhancer {
         return method.isBridge() || method.isDefault();
     }
 
-    private Class<?> getEntityClass(Class<?> mapperClass, Method method) {
-        MapTable annotation = AnnotationResolver.findAnnotation(mapperClass, MapTable.class,
-                method.getDeclaringClass());
+    private Class<?> getEntityClass(Class<?> mapperClass) {
+        MapTable annotation = AnnotationResolver.findAnnotation(mapperClass, MapTable.class);
         if (annotation != null) {
             return annotation.value();
         }
-        return TypeArgumentResolver.findClass(mapperClass, ExtMapper.class, 0, method.getDeclaringClass());
+        return TypeArgumentResolver.findClass(mapperClass, ExtMapper.class, 0);
     }
 
     private Class<?> getMapperClass(String namespace) {

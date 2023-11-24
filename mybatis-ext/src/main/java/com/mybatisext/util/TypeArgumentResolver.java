@@ -9,16 +9,11 @@ import javax.annotation.Nullable;
 
 public class TypeArgumentResolver {
 
-    public static Class<?> findClass(Class<?> clazz, Class<?> search, int index, @Nullable Class<?> fixedClass) {
-        return findClass(clazz, search, index, fixedClass, null);
+    public static Class<?> findClass(Class<?> clazz, Class<?> search, int index) {
+        return findClass(clazz, search, index, null);
     }
 
-    private static Class<?> findClass(Class<?> clazz, Class<?> search, int index, @Nullable Class<?> fixedClass,
-            @Nullable Type[] clazzTypeArguments) {
-        // 检查固定类是否在继承路径上
-        if (fixedClass != null && !clazz.isAssignableFrom(fixedClass) && !fixedClass.isAssignableFrom(clazz)) {
-            return null;
-        }
+    private static Class<?> findClass(Class<?> clazz, Class<?> search, int index, @Nullable Type[] clazzTypeArguments) {
         // 找到了
         if (clazz == search) {
             if (clazzTypeArguments != null && clazzTypeArguments[index] instanceof Class) {
@@ -35,14 +30,14 @@ public class TypeArgumentResolver {
                 if (rawType instanceof Class) {
                     Type[] typeArguments = parameterizedType.getActualTypeArguments();
                     adjustTypeArguments(clazz, clazzTypeArguments, typeArguments);
-                    Class<?> entityClass = findClass((Class<?>) rawType, search, index, fixedClass, typeArguments);
+                    Class<?> entityClass = findClass((Class<?>) rawType, search, index, typeArguments);
                     if (entityClass != null) {
                         return entityClass;
                     }
                 }
             } else if (type instanceof Class) {
                 // 其他基接口
-                Class<?> entityClass = findClass((Class<?>) type, search, index, fixedClass);
+                Class<?> entityClass = findClass((Class<?>) type, search, index);
                 if (entityClass != null) {
                     return entityClass;
                 }
@@ -55,7 +50,7 @@ public class TypeArgumentResolver {
         }
         Type[] typeArguments = superclass.getTypeParameters();
         adjustTypeArguments(clazz, clazzTypeArguments, typeArguments);
-        return findClass(superclass, search, index, fixedClass, typeArguments);
+        return findClass(superclass, search, index, typeArguments);
     }
 
     private static void adjustTypeArguments(Class<?> clazz, @Nullable Type[] clazzTypeArguments, Type[] typeArguments) {
