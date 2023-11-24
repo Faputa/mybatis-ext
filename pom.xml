@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mybatisext</groupId>
-    <artifactId>mybatis-ext-lab</artifactId>
+    <artifactId>mybatis-ext-root</artifactId>
     <version>0.0.1</version>
     <modules>
         <module>mybatis-ext</module>
