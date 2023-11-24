@@ -18,7 +18,6 @@ import org.apache.ibatis.session.Configuration;
 import com.mybatisext.annotation.MapTable;
 import com.mybatisext.mapper.ExtMapper;
 import com.mybatisext.statement.MappedStatementBuilder;
-import com.mybatisext.util.AnnotationResolver;
 import com.mybatisext.util.TypeArgumentResolver;
 
 public class ExtEnhancer {
@@ -148,8 +147,7 @@ public class ExtEnhancer {
 
     private boolean isEnhancedMapper(Class<?> mapperClass) {
         return mapperClass.isInterface() && !isGenericClass(mapperClass)
-                && (ExtMapper.class.isAssignableFrom(mapperClass)
-                        || AnnotationResolver.hasAnnotation(mapperClass, MapTable.class));
+                && (mapperClass.isAnnotationPresent(MapTable.class) || ExtMapper.class.isAssignableFrom(mapperClass));
     }
 
     private boolean isGenericClass(Class<?> type) {
@@ -161,7 +159,7 @@ public class ExtEnhancer {
     }
 
     private Class<?> getEntityClass(Class<?> mapperClass) {
-        MapTable annotation = AnnotationResolver.findAnnotation(mapperClass, MapTable.class);
+        MapTable annotation = mapperClass.getAnnotation(MapTable.class);
         if (annotation != null) {
             return annotation.value();
         }
