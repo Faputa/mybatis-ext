@@ -1,9 +1,8 @@
 package com.mybatisext.test;
 
-import com.mybatisext.annotation.MapTable;
+import com.mybatisext.mapper.BaseMapper;
 
-@MapTable(Demo.class)
-public interface DemoMapper0 {
+public interface DemoMapper0 extends BaseMapper<Demo> {
 
     int countDidaTask();
 
