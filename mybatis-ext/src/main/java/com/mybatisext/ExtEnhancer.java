@@ -131,8 +131,7 @@ public class ExtEnhancer {
             if (method.getName().equals(methodName)) {
                 if (returnType == null || returnType.isAssignableFrom(method.getReturnType())) {
                     returnType = method.getReturnType();
-                } else if (!method.getReturnType().isAssignableFrom(returnType)
-                        && Void.class != method.getReturnType()) {
+                } else if (!method.getReturnType().isAssignableFrom(returnType) && Void.class != method.getReturnType()) {
                     throw new IllegalArgumentException("returnType inconsistency: " + id);
                 }
                 methods.add(method);
@@ -146,8 +145,7 @@ public class ExtEnhancer {
     }
 
     private boolean isEnhancedMapper(Class<?> mapperClass) {
-        return mapperClass.isInterface() && !isGenericClass(mapperClass)
-                && (mapperClass.isAnnotationPresent(MapTable.class) || ExtMapper.class.isAssignableFrom(mapperClass));
+        return mapperClass.isInterface() && !isGenericClass(mapperClass) && (mapperClass.isAnnotationPresent(MapTable.class) || ExtMapper.class.isAssignableFrom(mapperClass));
     }
 
     private boolean isGenericClass(Class<?> type) {
@@ -163,7 +161,7 @@ public class ExtEnhancer {
         if (annotation != null) {
             return annotation.value();
         }
-        return TypeArgumentResolver.findClass(mapperClass, ExtMapper.class, 0);
+        return TypeArgumentResolver.resolveTypeArgument(mapperClass, ExtMapper.class, 0);
     }
 
     private Class<?> getMapperClass(String namespace) {
