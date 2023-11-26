@@ -496,25 +496,20 @@ public class ExtConfiguration extends Configuration implements ConfigurationInte
     }
 
     @Override
-    public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameterObject,
-            BoundSql boundSql) {
+    public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameterObject, BoundSql boundSql) {
         return this.originConfiguration.newParameterHandler(mappedStatement, parameterObject, boundSql);
     }
 
     @Override
     @SuppressWarnings("rawtypes")
-    public ResultSetHandler newResultSetHandler(Executor executor, MappedStatement mappedStatement, RowBounds rowBounds,
-            ParameterHandler parameterHandler, ResultHandler resultHandler, BoundSql boundSql) {
-        return this.originConfiguration.newResultSetHandler(executor, mappedStatement, rowBounds, parameterHandler,
-                resultHandler, boundSql);
+    public ResultSetHandler newResultSetHandler(Executor executor, MappedStatement mappedStatement, RowBounds rowBounds, ParameterHandler parameterHandler, ResultHandler resultHandler, BoundSql boundSql) {
+        return this.originConfiguration.newResultSetHandler(executor, mappedStatement, rowBounds, parameterHandler, resultHandler, boundSql);
     }
 
     @Override
     @SuppressWarnings("rawtypes")
-    public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement,
-            Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
-        return this.originConfiguration.newStatementHandler(executor, mappedStatement, parameterObject, rowBounds,
-                resultHandler, boundSql);
+    public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
+        return this.originConfiguration.newStatementHandler(executor, mappedStatement, parameterObject, rowBounds, resultHandler, boundSql);
     }
 
     @Override

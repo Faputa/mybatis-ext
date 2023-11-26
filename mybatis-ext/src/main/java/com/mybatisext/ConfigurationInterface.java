@@ -224,16 +224,13 @@ public interface ConfigurationInterface {
 
     public MetaObject newMetaObject(Object object);
 
-    public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameterObject,
-            BoundSql boundSql);
+    public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameterObject, BoundSql boundSql);
 
     @SuppressWarnings("rawtypes")
-    public ResultSetHandler newResultSetHandler(Executor executor, MappedStatement mappedStatement, RowBounds rowBounds,
-            ParameterHandler parameterHandler, ResultHandler resultHandler, BoundSql boundSql);
+    public ResultSetHandler newResultSetHandler(Executor executor, MappedStatement mappedStatement, RowBounds rowBounds, ParameterHandler parameterHandler, ResultHandler resultHandler, BoundSql boundSql);
 
     @SuppressWarnings("rawtypes")
-    public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement,
-            Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql);
+    public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql);
 
     public Executor newExecutor(Transaction transaction);
 
