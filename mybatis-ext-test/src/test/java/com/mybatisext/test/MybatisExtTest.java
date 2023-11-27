@@ -25,16 +25,16 @@ public class MybatisExtTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment);
-        // 先注册子类，此时无法确定DemoExtMapper中所有的方法
+        // 先注册子类，此时无法确定CameraExtMapper中所有的方法
         // mapper.xml的路径默认和mapper.class一样
-        configuration.addMapper(DemoMapper.class);
+        configuration.addMapper(CameraMapper.class);
         // 再注册父类
-        configuration.addMapper(DemoMapper0.class);
+        configuration.addMapper(CameraMapper0.class);
         configuration.validateAllMapperMethod();
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
         SqlSession session = sqlSessionFactory.openSession();
-        DemoMapper demoMapper = session.getMapper(DemoMapper.class);
-        System.out.println(demoMapper.countDidaTask());
-        System.out.println(demoMapper.countDidaTask2());
+        CameraMapper cameraMapper = session.getMapper(CameraMapper.class);
+        System.out.println(cameraMapper.countCamera());
+        System.out.println(cameraMapper.countCamera2());
     }
 }

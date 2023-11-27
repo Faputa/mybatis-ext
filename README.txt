@@ -15,7 +15,7 @@ extends Configuration
     @Override addMappers(String packageName, Class<?> superType)
     @Override addMappers(String packageName)
     @Override addMapper(Class<T> type)
-    反例：考虑下面的情况（实验：DemoExtMapper）
+    反例：考虑下面的情况（实验：CameraExtMapper）
         子mapper继承父mapper
         父子mapper各自有自己的statement实现
         子mapper先注册，父mapper后注册

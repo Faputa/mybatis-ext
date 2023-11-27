@@ -6,11 +6,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/** 一对一关系 */
 @Inherited
-@Target(ElementType.TYPE)
+@Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface MapTable {
+public @interface OneToOne {
 
-    /** 标记mapper映射的表 */
-    Class<?> value();
 }

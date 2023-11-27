@@ -8,10 +8,9 @@ public class MybatisExtSpringTest {
 	@Test
 	public void test() {
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
-		DemoMapper demoMapper = context.getBean(DemoMapper.class);
-		System.out.println("########" + demoMapper.countDidaTask());
-		System.out.println("########" + demoMapper.countDidaTask2());
+		CameraMapper cameraMapper = context.getBean(CameraMapper.class);
+		System.out.println("########" + cameraMapper.countCamera());
+		System.out.println("########" + cameraMapper.countCamera2());
 		context.close();
 	}
-
 }

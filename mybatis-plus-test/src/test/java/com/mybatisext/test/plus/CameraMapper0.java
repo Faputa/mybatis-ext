@@ -9,9 +9,9 @@ import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.mybatisext.mapper.ExtMapper;
 
 @Mapper
-public interface DemoMapper0 extends BaseMapper<Demo>, ExtMapper<Demo> {
+public interface CameraMapper0 extends BaseMapper<Camera>, ExtMapper<Camera> {
 
     @Override
-    Long selectCount(@Param(Constants.WRAPPER) Wrapper<Demo> queryWrapper);
+    Long selectCount(@Param(Constants.WRAPPER) Wrapper<Camera> queryWrapper);
 
 }

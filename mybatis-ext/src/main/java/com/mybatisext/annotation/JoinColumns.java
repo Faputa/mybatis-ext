@@ -7,10 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Inherited
-@Target(ElementType.TYPE)
+@Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface MapTable {
+public @interface JoinColumns {
 
-    /** 标记mapper映射的表 */
-    Class<?> value();
+    JoinColumn[] value();
 }

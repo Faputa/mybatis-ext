@@ -9,7 +9,7 @@ import com.mybatisext.ExtConfiguration;
 
 public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
 
-    private SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
+    private final SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
 
     protected SqlSessionFactory buildSqlSessionFactory() throws Exception {
         SqlSessionFactory sqlSessionFactory = super.buildSqlSessionFactory();
@@ -21,5 +21,4 @@ public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
         extConfiguration.validateAllMapperMethod();
         return sqlSessionFactoryBuilder.build(extConfiguration);
     }
-
 }

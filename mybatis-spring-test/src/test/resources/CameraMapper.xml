@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mybatisext.test.spring.CameraMapper">
+
+	<resultMap id="Camera" type="com.mybatisext.test.spring.Camera">
+		<id property="cameraId" column="camera_id" />
+        <result property="cameraName" column="camera_name" />
+		<association property="org" column="{orgId=org_id}" select="selectOrg" />
+	</resultMap>
+
+	<resultMap id="Camera_lazy" type="com.mybatisext.test.spring.Camera">
+		<id property="cameraId" column="camera_id" />
+        <result property="cameraName" column="camera_name" />
+		<association property="org" column="org_id" select="selectOrg" fetchType="lazy" />
+	</resultMap>
+
+	<resultMap id="Camera_join" type="com.mybatisext.test.spring.Camera">
+		<id property="cameraId" column="camera_id" />
+        <result property="cameraName" column="camera_name" />
+		<association property="org" column="org_id" resultMap="Org" />
+	</resultMap>
+
+	<resultMap id="Org" type="com.mybatisext.test.spring.Org">
+		<id property="orgId" column="org_id" />
+		<result property="pid" column="pid" />
+		<result property="orgName" column="org_name" />
+		<result property="orgCode" column="org_code" />
+		<result property="fastCode" column="fast_code" />
+		<result property="insertTime" column="insert_time" />
+		<result property="updateTime" column="update_time" />
+	</resultMap>
+
+	<select id="selectCamera" resultMap="Camera">
+		select * from camera
+	</select>
+
+	<select id="selectCameraLazy" resultMap="Camera_lazy">
+		select * from camera
+	</select>
+
+	<select id="selectCameraJoin" resultMap="Camera_join">
+		select
+		a.camera_id,
+		a.camera_name,
+		b.*
+		from camera a
+		left join org b on b.org_id=a.org_id
+	</select>
+
+	<select id="selectOrg" resultMap="Org">
+		select * from org where org_id=#{orgId}
+	</select>
+
+	<select id="countCamera" resultType="long">
+		select count(*) from camera
+	</select>
+</mapper>

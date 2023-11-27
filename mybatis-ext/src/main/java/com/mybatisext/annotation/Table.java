@@ -11,4 +11,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Table {
 
+    /** 表名，默认为类名小写转下划线 */
+    String name() default "";
+
+    /** 表注释 */
+    String comment() default "";
 }

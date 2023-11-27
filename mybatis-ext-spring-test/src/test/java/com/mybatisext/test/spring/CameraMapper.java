@@ -5,9 +5,9 @@ import org.apache.ibatis.annotations.Mapper;
 import com.mybatisext.mapper.BaseMapper;
 
 @Mapper
-public interface DemoMapper extends BaseMapper<Demo> {
+public interface CameraMapper extends BaseMapper<Camera> {
 
-    int countDidaTask();
+    long countCamera();
 
-    int countDidaTask2();
+    long countCamera2();
 }

@@ -1,9 +1,15 @@
-package com.mybatisext.test.spring;
+package com.mybatisext.test.plus;
 
 import java.sql.Timestamp;
 
-public class Demo {
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 
+@TableName("camera")
+public class Camera {
+
+    // 必须添加此注解，否则不会生成ID相关的语句
+    @TableId
     private Long cameraId;
     private Long orgId;
     private String cameraName;
@@ -193,5 +199,4 @@ public class Demo {
     public void setDeleted(Boolean deleted) {
         this.deleted = deleted;
     }
-
 }
