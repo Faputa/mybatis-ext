@@ -50,8 +50,8 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
 
 public class ExtConfiguration extends Configuration implements ConfigurationInterface {
 
-    private Configuration originConfiguration;
-    private ExtEnhancer extEnhancer;
+    private final Configuration originConfiguration;
+    private final ExtEnhancer extEnhancer;
 
     public ExtConfiguration() {
         this.originConfiguration = new Configuration();
@@ -63,8 +63,8 @@ public class ExtConfiguration extends Configuration implements ConfigurationInte
         this.extEnhancer = new ExtEnhancer(originConfiguration);
     }
 
-    public ExtConfiguration(Configuration configuration) {
-        this.originConfiguration = configuration;
+    public ExtConfiguration(Configuration originConfiguration) {
+        this.originConfiguration = originConfiguration;
         this.extEnhancer = new ExtEnhancer(originConfiguration);
     }
 
