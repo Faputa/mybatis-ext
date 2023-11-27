@@ -6,6 +6,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.apache.ibatis.mapping.FetchType;
+
 @Inherited
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
@@ -16,6 +18,9 @@ public @interface JoinColumn {
 
     /** 属性，默认为属性名 */
     String property() default "";
+
+    /** 获取类型，默认连表查询 */
+    FetchType fetchType() default FetchType.DEFAULT;
 
     /** 注释 */
     String comment() default "";
