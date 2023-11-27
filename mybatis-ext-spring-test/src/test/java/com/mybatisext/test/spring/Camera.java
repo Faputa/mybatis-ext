@@ -1,8 +1,8 @@
-package com.mybatisext.test;
+package com.mybatisext.test.spring;
 
 import java.sql.Timestamp;
 
-public class Demo {
+public class Camera {
 
     private Long cameraId;
     private Long orgId;
@@ -193,5 +193,4 @@ public class Demo {
     public void setDeleted(Boolean deleted) {
         this.deleted = deleted;
     }
-
 }

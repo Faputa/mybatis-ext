@@ -6,12 +6,12 @@ import com.mybatisext.annotation.MapTable;
 import com.mybatisflex.core.BaseMapper;
 
 @Mapper
-@MapTable(Demo.class)
-public interface DemoMapper extends BaseMapper<Demo> {
+@MapTable(Camera.class)
+public interface CameraMapper extends BaseMapper<Camera> {
 
-    int countDidaTask();
+    long countCamera();
 
-    int countDidaTask2();
+    long countCamera2();
 
-    // int countDidaTask3();
+    // long countCamera3();
 }

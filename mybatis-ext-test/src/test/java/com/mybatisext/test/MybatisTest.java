@@ -28,11 +28,11 @@ public class MybatisTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         Configuration configuration = new Configuration(environment);
-        configuration.addMapper(DemoMapper0.class);
+        configuration.addMapper(CameraMapper0.class);
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
         SqlSession session = sqlSessionFactory.openSession();
-        DemoMapper0 demoMapper = session.getMapper(DemoMapper0.class);
-        System.out.println(demoMapper.countDidaTask());
-        assertThrows(BindingException.class, () -> demoMapper.countDidaTask2());
+        CameraMapper0 cameraMapper = session.getMapper(CameraMapper0.class);
+        System.out.println(cameraMapper.countCamera());
+        assertThrows(BindingException.class, () -> cameraMapper.countCamera2());
     }
 }

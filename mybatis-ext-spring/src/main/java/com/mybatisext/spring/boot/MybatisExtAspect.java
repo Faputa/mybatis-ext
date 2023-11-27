@@ -14,7 +14,7 @@ import com.mybatisext.ExtConfiguration;
 @Component
 public class MybatisExtAspect {
 
-    private SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
+    private final SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
 
     @Around("@annotation(org.springframework.context.annotation.Bean)")
     public Object aroundBeanMethod(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -31,5 +31,4 @@ public class MybatisExtAspect {
         }
         return result;
     }
-
 }

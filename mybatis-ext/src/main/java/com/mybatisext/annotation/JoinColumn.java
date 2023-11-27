@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 @Inherited
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Column {
+public @interface JoinColumn {
 
     /** 字段名，默认为属性名小写转下划线 */
     String name() default "";
@@ -19,4 +19,10 @@ public @interface Column {
 
     /** 注释 */
     String comment() default "";
+
+    /** 关联表 */
+    Class<?> tableClass();
+
+    /** 关联列，默认为属性名小写转下划线 */
+    String referencedColumnName() default "";
 }

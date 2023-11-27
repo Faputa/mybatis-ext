@@ -1,12 +1,16 @@
-package com.mybatisext.test.flex;
+package com.mybatisext.test.jpa;
 
 import java.sql.Timestamp;
 
-import com.mybatisflex.annotation.Table;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-@Table("camera")
-public class Demo {
+@Entity
+@Table(name = "camera")
+public class Camera {
 
+    @Id
     private Long cameraId;
     private Long orgId;
     private String cameraName;
@@ -196,5 +200,4 @@ public class Demo {
     public void setDeleted(Boolean deleted) {
         this.deleted = deleted;
     }
-
 }

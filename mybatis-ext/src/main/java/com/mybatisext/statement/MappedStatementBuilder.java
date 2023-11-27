@@ -22,15 +22,15 @@ public class MappedStatementBuilder {
     }
 
     public MappedStatement build(String id, String methodName, List<Method> methods, Class<?> returnType, Class<?> tableType) {
-        if (!"countDidaTask2".equals(methodName)) {
+        if (!"countCamera2".equals(methodName)) {
             return null;
         }
         // TODO
         // 考虑自己实现SqlSource
         XMLLanguageDriver xmlLanguageDriver = new XMLLanguageDriver();
-        SqlSource sqlSource = xmlLanguageDriver.createSqlSource(originConfiguration, "<script>select count(*) from org</script>", Object.class);
+        SqlSource sqlSource = xmlLanguageDriver.createSqlSource(originConfiguration, "<script>select count(*) from camera</script>", Object.class);
         List<ResultMap> resultMaps = new ArrayList<>();
-        ResultMap inlineResultMap = new ResultMap.Builder(originConfiguration, id + "-Inline", Integer.class, new ArrayList<>(), null).build();
+        ResultMap inlineResultMap = new ResultMap.Builder(originConfiguration, id + "-Inline", Long.class, new ArrayList<>(), null).build();
         resultMaps.add(inlineResultMap);
         Builder builder = new MappedStatement.Builder(originConfiguration, id, sqlSource, SqlCommandType.SELECT);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();

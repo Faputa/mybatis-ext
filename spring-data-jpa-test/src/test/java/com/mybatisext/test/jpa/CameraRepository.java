@@ -2,10 +2,10 @@ package com.mybatisext.test.jpa;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface DemoRepository extends JpaRepository<Demo, Long> {
+public interface CameraRepository extends JpaRepository<Camera, Long> {
 
     // 不注释会报错
-    // long countDidaTask();
+    // long countCamera();
 
     long countByOrgId(Long orgId);
 }
