@@ -9,7 +9,7 @@
 		<version>2.7.18</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-    <groupId>com.mybatisext</groupId>
+    <groupId>io.github.mybatis-ext</groupId>
     <artifactId>mybatis-ext-spring-test</artifactId>
     <version>0.0.1</version>
 
@@ -20,7 +20,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.mybatisext</groupId>
+            <groupId>io.github.mybatis-ext</groupId>
             <artifactId>mybatis-ext-spring</artifactId>
             <version>0.0.1</version>
         </dependency>

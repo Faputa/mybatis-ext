@@ -14,13 +14,13 @@
         <property name="password" value="${spring.datasource.password}" />
     </bean>
 
-    <bean id="sqlSessionFactory" class="com.mybatisext.spring.ExtSqlSessionFactoryBean">
+    <bean id="sqlSessionFactory" class="io.github.mybatisext.spring.ExtSqlSessionFactoryBean">
         <property name="dataSource" ref="dataSource" />
         <property name="mapperLocations" value="${mybatis.mapper-locations}" />
     </bean>
 
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-        <property name="basePackage" value="com.mybatisext.test.spring" />
+        <property name="basePackage" value="io.github.mybatisext.test.spring" />
     </bean>
 
 </beans>
