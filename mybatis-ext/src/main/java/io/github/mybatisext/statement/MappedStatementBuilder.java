@@ -16,16 +16,21 @@ import org.apache.ibatis.session.Configuration;
 public class MappedStatementBuilder {
 
     private final Configuration originConfiguration;
+    private final NamedStatementBuilder namedStatementBuilder = new NamedStatementBuilder();
 
     public MappedStatementBuilder(Configuration originConfiguration) {
         this.originConfiguration = originConfiguration;
     }
 
     public MappedStatement build(String id, String methodName, List<Method> methods, Class<?> returnType, Class<?> tableType) {
+        MappedStatement ms = namedStatementBuilder.build(id, methodName, methods, returnType, tableType);
+        if (ms != null) {
+            return ms;
+        }
+        // TODO
         if (!"countCamera2".equals(methodName)) {
             return null;
         }
-        // TODO
         // 考虑自己实现SqlSource
         XMLLanguageDriver xmlLanguageDriver = new XMLLanguageDriver();
         SqlSource sqlSource = xmlLanguageDriver.createSqlSource(originConfiguration, "<script>select count(*) from camera</script>", Object.class);
