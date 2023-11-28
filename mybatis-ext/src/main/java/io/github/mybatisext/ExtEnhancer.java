@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -125,17 +126,20 @@ public class ExtEnhancer {
         Class<?> returnType = null;
         List<Method> methods = new ArrayList<>();
         for (Method method : mapperClass.getMethods()) {
-            if (isBridgeOrDefault(method)) {
+            if (isBridgeOrDefault(method) || !method.getName().equals(methodName)) {
                 continue;
             }
-            if (method.getName().equals(methodName)) {
-                if (returnType == null || returnType.isAssignableFrom(method.getReturnType())) {
-                    returnType = method.getReturnType();
-                } else if (!method.getReturnType().isAssignableFrom(returnType) && Void.class != method.getReturnType()) {
-                    throw new IllegalArgumentException("returnType inconsistency: " + id);
-                }
-                methods.add(method);
+            Class<?> mReturnType = method.getReturnType();
+            if (mReturnType == Optional.class) {
+                mReturnType = TypeArgumentResolver.resolveTypeArgument(method.getGenericReturnType(), Optional.class, 0);
             }
+            assert mReturnType != null;
+            if (returnType == null || returnType.isAssignableFrom(mReturnType)) {
+                returnType = mReturnType;
+            } else if (!mReturnType.isAssignableFrom(returnType) && Void.class != mReturnType) {
+                throw new IllegalArgumentException("returnType inconsistency: " + id);
+            }
+            methods.add(method);
         }
         MappedStatement ms = statementBuilder.build(id, methodName, methods, returnType, tableType);
         if (ms != null) {
