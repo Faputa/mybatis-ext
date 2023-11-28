@@ -1,0 +1,58 @@
+package io.github.mybatisext.util;
+
+import javax.annotation.Nullable;
+
+public class StringHelper {
+
+    public static boolean isBlank(@Nullable String str) {
+        return str == null || str.trim().length() == 0;
+    }
+
+    public static String underscoreToLowerCamel(String str) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c == '_') {
+                continue;
+            }
+            if (i > 0 && str.charAt(i - 1) == '_' && sb.length() > 0) {
+                sb.append(Character.toUpperCase(c));
+            } else {
+                sb.append(Character.toLowerCase(c));
+            }
+        }
+        return sb.toString();
+    }
+
+    public static String underscoreToUpperCamel(String str) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c == '_') {
+                continue;
+            }
+            if ((i > 0 && str.charAt(i - 1) == '_') || sb.length() == 0) {
+                sb.append(Character.toUpperCase(c));
+            } else {
+                sb.append(Character.toLowerCase(c));
+            }
+        }
+        return sb.toString();
+    }
+
+    public static String camelToUnderscore(String str) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (Character.isUpperCase(c)) {
+                if (i > 0 && (Character.isLowerCase(str.charAt(i - 1)) || (i < str.length() - 1 && Character.isLowerCase(str.charAt(i + 1))))) {
+                    sb.append("_");
+                }
+                sb.append(Character.toLowerCase(c));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+}
