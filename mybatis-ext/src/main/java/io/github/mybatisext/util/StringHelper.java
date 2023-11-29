@@ -8,7 +8,7 @@ public class StringHelper {
         return str == null || str.trim().length() == 0;
     }
 
-    public static String underscoreToLowerCamel(String str) {
+    public static String snakeToLowerCamel(String str) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
@@ -24,7 +24,7 @@ public class StringHelper {
         return sb.toString();
     }
 
-    public static String underscoreToUpperCamel(String str) {
+    public static String snakeToUpperCamel(String str) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
@@ -40,7 +40,7 @@ public class StringHelper {
         return sb.toString();
     }
 
-    public static String camelToUnderscore(String str) {
+    public static String camelToSnake(String str) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);

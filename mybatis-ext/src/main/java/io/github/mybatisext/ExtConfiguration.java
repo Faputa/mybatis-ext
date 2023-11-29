@@ -53,19 +53,19 @@ public class ExtConfiguration extends Configuration implements ConfigurationInte
     private final Configuration originConfiguration;
     private final ExtEnhancer extEnhancer;
 
-    public ExtConfiguration() {
+    public ExtConfiguration(ExtContext extContext) {
         this.originConfiguration = new Configuration();
-        this.extEnhancer = new ExtEnhancer(originConfiguration);
+        this.extEnhancer = new ExtEnhancer(originConfiguration, extContext);
     }
 
-    public ExtConfiguration(Environment environment) {
+    public ExtConfiguration(Environment environment, ExtContext extContext) {
         this.originConfiguration = new Configuration(environment);
-        this.extEnhancer = new ExtEnhancer(originConfiguration);
+        this.extEnhancer = new ExtEnhancer(originConfiguration, extContext);
     }
 
-    public ExtConfiguration(Configuration originConfiguration) {
+    public ExtConfiguration(Configuration originConfiguration, ExtContext extContext) {
         this.originConfiguration = originConfiguration;
-        this.extEnhancer = new ExtEnhancer(originConfiguration);
+        this.extEnhancer = new ExtEnhancer(originConfiguration, extContext);
     }
 
     @Override

@@ -9,6 +9,8 @@ import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
 
 import io.github.mybatisext.ExtConfiguration;
+import io.github.mybatisext.ExtContext;
+
 import com.mysql.cj.jdbc.MysqlDataSource;
 
 public class MybatisExtTest {
@@ -24,7 +26,7 @@ public class MybatisExtTest {
 
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
-        ExtConfiguration configuration = new ExtConfiguration(environment);
+        ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         // 先注册子类，此时无法确定CameraExtMapper中所有的方法
         // mapper.xml的路径默认和mapper.class一样
         configuration.addMapper(CameraMapper.class);

@@ -6,6 +6,7 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import io.github.mybatisext.ExtConfiguration;
@@ -13,6 +14,9 @@ import io.github.mybatisext.ExtConfiguration;
 @Aspect
 @Component
 public class MybatisExtAspect {
+
+    @Autowired
+    private MybatisExtProperties properties;
 
     private final SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
 
@@ -25,7 +29,7 @@ public class MybatisExtAspect {
             if (configuration instanceof ExtConfiguration) {
                 return result;
             }
-            ExtConfiguration extConfiguration = new ExtConfiguration(configuration);
+            ExtConfiguration extConfiguration = new ExtConfiguration(configuration, properties.toExtContext());
             extConfiguration.validateAllMapperMethod();
             return sqlSessionFactoryBuilder.build(extConfiguration);
         }

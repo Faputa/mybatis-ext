@@ -73,3 +73,52 @@ queryDSL
     更新
     重新创建
     无动作
+
+
+>>>元数据结构设计
+
+构建sql需要的信息
+    保存、修改
+        表的列
+    查询、条件
+        实体字段
+
+支持多层维度属性
+例子
+a
+    id
+    name
+b
+    id
+    name
+    a_id
+c
+    id
+    name
+    b_id
+
+A
+    ...
+B
+    ...
+C
+    id → t0_id
+    name → t0_name
+    bId → t0_b_id
+    bName → t1_name
+        b
+        b_id=b.id
+    aName → t2_name
+        b,a
+        b_id=b.id
+        b.a_id=a.id
+
+select
+t0.id as t0_id,
+t0.name as t0_name,
+t0.b_id as t0_b_id,
+t1.name as t1_name,
+t2.name as t2_name
+from c t0
+left join b t1 on b.id = c.b_id
+left join a t2 on a.id = b.a_id
