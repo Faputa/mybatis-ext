@@ -24,22 +24,6 @@ public class TypeArgumentResolver {
         return analyzeGenericType(sourceType, null, null, targetType, index);
     }
 
-    private static Class<?> analyzeClass(Class<?> classType, @Nullable Type[] classTypeArguments, Class<?> targetType, int index) {
-        // 找到了
-        if (classType == targetType && classTypeArguments != null && classTypeArguments[index] instanceof Class) {
-            return (Class<?>) classTypeArguments[index];
-        }
-        // 检查接口
-        for (Type interfaceType : classType.getGenericInterfaces()) {
-            Class<?> resolvedClass = analyzeGenericType(interfaceType, classType, classTypeArguments, targetType, index);
-            if (resolvedClass != null) {
-                return resolvedClass;
-            }
-        }
-        // 检查超类
-        return analyzeGenericType(classType.getGenericSuperclass(), classType, classTypeArguments, targetType, index);
-    }
-
     private static Class<?> analyzeGenericType(Type genericType, @Nullable Class<?> childType, @Nullable Type[] childTypeArguments, Class<?> targetType, int index) {
         if (genericType instanceof ParameterizedType) {
             return analyzeParameterizedType((ParameterizedType) genericType, childType, childTypeArguments, targetType, index);
@@ -61,6 +45,22 @@ public class TypeArgumentResolver {
             return analyzeClass((Class<?>) rawType, typeArguments, targetType, index);
         }
         return null;
+    }
+
+    private static Class<?> analyzeClass(Class<?> classType, @Nullable Type[] classTypeArguments, Class<?> targetType, int index) {
+        // 找到了
+        if (classType == targetType && classTypeArguments != null && classTypeArguments[index] instanceof Class) {
+            return (Class<?>) classTypeArguments[index];
+        }
+        // 检查接口
+        for (Type interfaceType : classType.getGenericInterfaces()) {
+            Class<?> resolvedClass = analyzeGenericType(interfaceType, classType, classTypeArguments, targetType, index);
+            if (resolvedClass != null) {
+                return resolvedClass;
+            }
+        }
+        // 检查超类
+        return analyzeGenericType(classType.getGenericSuperclass(), classType, classTypeArguments, targetType, index);
     }
 
     private static void adjustTypeArguments(Class<?> childType, Type[] childTypeArguments, Type[] typeArguments) {
