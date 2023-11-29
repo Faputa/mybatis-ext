@@ -45,7 +45,8 @@ public class StringHelper {
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
             if (Character.isUpperCase(c)) {
-                if (i > 0 && (Character.isLowerCase(str.charAt(i - 1)) || (i < str.length() - 1 && Character.isLowerCase(str.charAt(i + 1))))) {
+                if (i > 0 && (Character.isLowerCase(str.charAt(i - 1))
+                        || (i < str.length() - 1 && Character.isLowerCase(str.charAt(i + 1))))) {
                     sb.append("_");
                 }
                 sb.append(Character.toLowerCase(c));

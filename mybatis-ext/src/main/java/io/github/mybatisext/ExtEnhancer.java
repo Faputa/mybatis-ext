@@ -149,7 +149,8 @@ public class ExtEnhancer {
     }
 
     private boolean isEnhancedMapper(Class<?> mapperClass) {
-        return mapperClass.isInterface() && !isGenericClass(mapperClass) && (mapperClass.isAnnotationPresent(MapTable.class) || ExtMapper.class.isAssignableFrom(mapperClass));
+        return mapperClass.isInterface() && !isGenericClass(mapperClass)
+                && (mapperClass.isAnnotationPresent(MapTable.class) || ExtMapper.class.isAssignableFrom(mapperClass));
     }
 
     private boolean isGenericClass(Class<?> type) {
