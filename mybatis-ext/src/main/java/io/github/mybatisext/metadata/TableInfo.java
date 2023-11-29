@@ -12,7 +12,7 @@ public class TableInfo {
     /** 列 */
     private List<ColumnInfo> columnInfos = new ArrayList<>();
     /** 连接表 */
-    private List<JoinTable> joinTables = new ArrayList<>();
+    private List<JoinTableInfo> joinTableInfos = new ArrayList<>();
 
     public String getName() {
         return name;
@@ -38,11 +38,11 @@ public class TableInfo {
         this.columnInfos = columnInfos;
     }
 
-    public List<JoinTable> getJoinTables() {
-        return joinTables;
+    public List<JoinTableInfo> getJoinTableInfos() {
+        return joinTableInfos;
     }
 
-    public void setJoinTables(List<JoinTable> joinTables) {
-        this.joinTables = joinTables;
+    public void setJoinTableInfos(List<JoinTableInfo> joinTableInfos) {
+        this.joinTableInfos = joinTableInfos;
     }
 }

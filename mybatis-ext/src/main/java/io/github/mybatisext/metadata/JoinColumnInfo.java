@@ -1,6 +1,6 @@
 package io.github.mybatisext.metadata;
 
-public class JoinColumn {
+public class JoinColumnInfo {
 
     private String name;
     private String referencedColumnName;

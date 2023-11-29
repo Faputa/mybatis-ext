@@ -13,12 +13,14 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
+import io.github.mybatisext.ExtContext;
+
 public class MappedStatementBuilder {
 
     private final Configuration originConfiguration;
     private final NamedStatementBuilder namedStatementBuilder = new NamedStatementBuilder();
 
-    public MappedStatementBuilder(Configuration originConfiguration) {
+    public MappedStatementBuilder(Configuration originConfiguration, ExtContext extContext) {
         this.originConfiguration = originConfiguration;
     }
 

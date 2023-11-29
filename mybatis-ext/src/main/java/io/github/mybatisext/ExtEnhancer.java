@@ -29,9 +29,9 @@ public class ExtEnhancer {
 
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
 
-    public ExtEnhancer(Configuration originConfiguration) {
+    public ExtEnhancer(Configuration originConfiguration, ExtContext extContext) {
         this.originConfiguration = originConfiguration;
-        this.statementBuilder = new MappedStatementBuilder(originConfiguration);
+        this.statementBuilder = new MappedStatementBuilder(originConfiguration, extContext);
     }
 
     public MappedStatement getMappedStatement(String id) {

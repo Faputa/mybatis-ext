@@ -3,10 +3,10 @@ package io.github.mybatisext.metadata;
 import java.util.ArrayList;
 import java.util.List;
 
-public class JoinTable {
+public class JoinTableInfo {
 
     TableInfo tableInfo;
-    List<JoinColumn> joinColumns = new ArrayList<>();
+    List<JoinColumnInfo> joinColumnInfos = new ArrayList<>();
 
     public TableInfo getTableInfo() {
         return tableInfo;
@@ -16,11 +16,11 @@ public class JoinTable {
         this.tableInfo = tableInfo;
     }
 
-    public List<JoinColumn> getJoinColumns() {
-        return joinColumns;
+    public List<JoinColumnInfo> getJoinColumnInfos() {
+        return joinColumnInfos;
     }
 
-    public void setJoinColumns(List<JoinColumn> joinColumns) {
-        this.joinColumns = joinColumns;
+    public void setJoinColumnInfos(List<JoinColumnInfo> joinColumnInfos) {
+        this.joinColumnInfos = joinColumnInfos;
     }
 }
