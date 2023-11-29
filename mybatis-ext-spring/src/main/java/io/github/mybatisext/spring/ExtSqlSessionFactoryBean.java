@@ -6,16 +6,16 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.mybatis.spring.SqlSessionFactoryBean;
 
 import io.github.mybatisext.ExtConfiguration;
-import io.github.mybatisext.spring.boot.MybatisExtProperties;
+import io.github.mybatisext.ExtContext;
 
 public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
 
-    private MybatisExtProperties properties = new MybatisExtProperties();
+    private ExtContext extContext = new ExtContext();
 
     private final SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
 
-    public void setProperties(MybatisExtProperties properties) {
-        this.properties = properties;
+    public void setExtContext(ExtContext extContext) {
+        this.extContext = extContext;
     }
 
     protected SqlSessionFactory buildSqlSessionFactory() throws Exception {
@@ -24,7 +24,7 @@ public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
         if (configuration instanceof ExtConfiguration) {
             return sqlSessionFactory;
         }
-        ExtConfiguration extConfiguration = new ExtConfiguration(configuration, properties.toExtContext());
+        ExtConfiguration extConfiguration = new ExtConfiguration(configuration, extContext);
         extConfiguration.validateAllMapperMethod();
         return sqlSessionFactoryBuilder.build(extConfiguration);
     }
