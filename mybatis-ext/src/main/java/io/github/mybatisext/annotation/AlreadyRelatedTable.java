@@ -1,17 +1,15 @@
 package io.github.mybatisext.annotation;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ ElementType.METHOD, ElementType.FIELD })
+@Repeatable(AlreadyRelatedTables.class)
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RelatedColumn {
+public @interface AlreadyRelatedTable {
 
-    /** 关联表的实体类 */
-    Class<?> tableClass() default void.class;
-
-    /** 关联表中的字段名 */
-    String name() default "";
+    Class<?> value();
 }

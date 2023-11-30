@@ -5,13 +5,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Target({ ElementType.METHOD, ElementType.FIELD })
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RelatedColumn {
+public @interface AlreadyRelatedTables {
 
-    /** 关联表的实体类 */
-    Class<?> tableClass() default void.class;
-
-    /** 关联表中的字段名 */
-    String name() default "";
+    AlreadyRelatedTable[] value();
 }
