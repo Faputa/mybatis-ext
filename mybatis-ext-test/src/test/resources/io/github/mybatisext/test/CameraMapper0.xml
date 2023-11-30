@@ -5,4 +5,9 @@
 	<select id="countCamera" resultType="long">
 		select count(*) from camera
 	</select>
+
+	<delete id="deleteCameraTwice">
+		delete from camera where false;
+		delete from camera where false;
+	</delete>
 </mapper>
