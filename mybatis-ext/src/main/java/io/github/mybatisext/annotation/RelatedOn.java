@@ -9,6 +9,6 @@ public @interface RelatedOn {
     /** 本地字段 */
     String column();
 
-    /** 远端字段 */
+    /** 关联字段 */
     String relatedColumn();
 }
