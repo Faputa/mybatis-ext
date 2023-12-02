@@ -2,21 +2,21 @@ package io.github.mybatisext.metadata;
 
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
+import io.github.mybatisext.annotation.JoinOn;
+import io.github.mybatisext.annotation.ParentTable;
+import io.github.mybatisext.annotation.ParentTables;
 import io.github.mybatisext.annotation.RelatedColumn;
-import io.github.mybatisext.annotation.RelatedOn;
-import io.github.mybatisext.annotation.RelatedTable;
-import io.github.mybatisext.annotation.RelatedTables;
 import io.github.mybatisext.annotation.Table;
 
 @Table
-@RelatedTable(tableClass = Task.class, relatedOn = @RelatedOn(column = "task_id", relatedColumn = "task_id"))
-@RelatedTable(tableClass = Camera.class, relatedOn = @RelatedOn(column = "camera_id", relatedColumn = "camera_id"))
-@RelatedTable(tableClass = Model.class, relatedOn = @RelatedOn(column = "model_id", relatedColumn = "model_id"))
+@ParentTable(tableClass = Task.class, joinOn = @JoinOn(column = "task_id", joinColumn = "task_id"))
+@ParentTable(tableClass = Camera.class, joinOn = @JoinOn(column = "camera_id", joinColumn = "camera_id"))
+@ParentTable(tableClass = Model.class, joinOn = @JoinOn(column = "model_id", joinColumn = "model_id"))
 public class TaskCameraModel {
 
     public static void main(String[] args) {
-        RelatedTable[] relatedTables = TaskCameraModel.class.getAnnotationsByType(RelatedTable.class);
-        RelatedTables relatedTables2 = TaskCameraModel.class.getAnnotation(RelatedTables.class);
+        ParentTable[] relatedTables = TaskCameraModel.class.getAnnotationsByType(ParentTable.class);
+        ParentTables relatedTables2 = TaskCameraModel.class.getAnnotation(ParentTables.class);
         System.out.println(relatedTables);
         System.out.println(relatedTables2);
     }

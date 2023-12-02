@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RelatedTables {
-    
-    RelatedTable[] value();
+public @interface JoinTables {
+
+    JoinTable[] value();
 }

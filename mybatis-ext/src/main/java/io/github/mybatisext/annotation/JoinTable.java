@@ -6,10 +6,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Repeatable(AlreadyRelatedTables.class)
+@Repeatable(JoinTables.class)
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AlreadyRelatedTable {
+public @interface JoinTable {
 
     Class<?> value();
 }

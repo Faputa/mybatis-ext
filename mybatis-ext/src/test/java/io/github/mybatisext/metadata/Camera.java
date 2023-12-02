@@ -2,16 +2,16 @@ package io.github.mybatisext.metadata;
 
 import java.sql.Timestamp;
 
-import io.github.mybatisext.annotation.AlreadyRelatedTable;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
-import io.github.mybatisext.annotation.RelatedOn;
-import io.github.mybatisext.annotation.RelatedTable;
+import io.github.mybatisext.annotation.JoinOn;
+import io.github.mybatisext.annotation.JoinTable;
+import io.github.mybatisext.annotation.ParentTable;
 import io.github.mybatisext.annotation.Table;
 
 @Table
-@AlreadyRelatedTable(TaskCameraModel.class)
-@RelatedTable(tableClass = Org.class, relatedOn = @RelatedOn(column = "org_id", relatedColumn = "org_id"))
+@JoinTable(TaskCameraModel.class)
+@ParentTable(tableClass = Org.class, joinOn = @JoinOn(column = "org_id", joinColumn = "org_id"))
 public class Camera {
 
     @Id

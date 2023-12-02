@@ -2,13 +2,13 @@ package io.github.mybatisext.metadata;
 
 import java.sql.Timestamp;
 
-import io.github.mybatisext.annotation.AlreadyRelatedTable;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
+import io.github.mybatisext.annotation.JoinTable;
 import io.github.mybatisext.annotation.Table;
 
 @Table
-@AlreadyRelatedTable(TaskCameraModel.class)
+@JoinTable(TaskCameraModel.class)
 public class Task {
 
     @Id
