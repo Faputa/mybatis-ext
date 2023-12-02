@@ -6,10 +6,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Repeatable(ParentTables.class)
+@Repeatable(ChildTables.class)
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ParentTable {
+public @interface ChildTable {
 
     /** 关联表的实体类 */
     Class<?> tableClass();
