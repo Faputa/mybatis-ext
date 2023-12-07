@@ -17,4 +17,7 @@ public @interface Table {
 
     /** 模式名 */
     String schema() default "";
+
+    /** 别名 */
+    String alias() default "";
 }
