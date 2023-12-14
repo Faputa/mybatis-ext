@@ -9,6 +9,10 @@ public class TableInfo {
     private String name;
     /** 表注释 */
     private String comment;
+    /** 模式 */
+    private String schema;
+    /** 别名 */
+    private String alias;
     /** 列 */
     private List<ColumnInfo> columnInfos = new ArrayList<>();
     /** 连接表 */
@@ -28,6 +32,22 @@ public class TableInfo {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public String getSchema() {
+        return schema;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 
     public List<ColumnInfo> getColumnInfos() {

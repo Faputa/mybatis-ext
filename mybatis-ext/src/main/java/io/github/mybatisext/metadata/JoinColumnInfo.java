@@ -1,23 +1,34 @@
 package io.github.mybatisext.metadata;
 
+import io.github.mybatisext.annotation.JoinColumn;
+
 public class JoinColumnInfo {
 
-    private String name;
-    private String referencedColumnName;
+    private JoinColumn joinColumn;
+    private JoinTableInfo leftTable;
+    private JoinTableInfo rightTable;
 
-    public String getName() {
-        return name;
+    public JoinColumn getJoinColumn() {
+        return joinColumn;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setJoinColumn(JoinColumn joinColumn) {
+        this.joinColumn = joinColumn;
     }
 
-    public String getReferencedColumnName() {
-        return referencedColumnName;
+    public JoinTableInfo getLeftTable() {
+        return leftTable;
     }
 
-    public void setReferencedColumnName(String referencedColumnName) {
-        this.referencedColumnName = referencedColumnName;
+    public void setLeftTable(JoinTableInfo leftTable) {
+        this.leftTable = leftTable;
+    }
+
+    public JoinTableInfo getRightTable() {
+        return rightTable;
+    }
+
+    public void setRightTable(JoinTableInfo rightTable) {
+        this.rightTable = rightTable;
     }
 }

@@ -2,16 +2,20 @@ package io.github.mybatisext.metadata;
 
 public class ColumnInfo {
 
-    /** 列名 */
+    /** 字段名 */
     private String name;
-    /** 列注释 */
+    /** 注释 */
     private String comment;
-    /** 属性 */
-    private String property;
-    /** 是否主键 */
-    private boolean primary = false;
     /** 是否可空 */
-    private boolean nullable = true;
+    private boolean nullable;
+    /** DDL语句 */
+    private String columnDefinition;
+    /** 长度 */
+    private int length;
+    /** 精度 */
+    private int precision;
+    /** 标度 */
+    private int scale;
 
     public String getName() {
         return name;
@@ -29,27 +33,43 @@ public class ColumnInfo {
         this.comment = comment;
     }
 
-    public String getProperty() {
-        return property;
-    }
-
-    public void setProperty(String property) {
-        this.property = property;
-    }
-
-    public boolean isPrimary() {
-        return primary;
-    }
-
-    public void setPrimary(boolean primary) {
-        this.primary = primary;
-    }
-
     public boolean isNullable() {
         return nullable;
     }
 
     public void setNullable(boolean nullable) {
         this.nullable = nullable;
+    }
+
+    public String getColumnDefinition() {
+        return columnDefinition;
+    }
+
+    public void setColumnDefinition(String columnDefinition) {
+        this.columnDefinition = columnDefinition;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public void setLength(int length) {
+        this.length = length;
+    }
+
+    public int getPrecision() {
+        return precision;
+    }
+
+    public void setPrecision(int precision) {
+        this.precision = precision;
+    }
+
+    public int getScale() {
+        return scale;
+    }
+
+    public void setScale(int scale) {
+        this.scale = scale;
     }
 }
