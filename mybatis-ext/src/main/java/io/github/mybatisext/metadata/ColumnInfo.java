@@ -16,6 +16,8 @@ public class ColumnInfo {
     private int precision;
     /** 标度 */
     private int scale;
+    /** JDBC类型 */
+    private String jdbcType;
 
     public String getName() {
         return name;
@@ -71,5 +73,13 @@ public class ColumnInfo {
 
     public void setScale(int scale) {
         this.scale = scale;
+    }
+
+    public String getJdbcType() {
+        return jdbcType;
+    }
+
+    public void setJdbcType(String jdbcType) {
+        this.jdbcType = jdbcType;
     }
 }

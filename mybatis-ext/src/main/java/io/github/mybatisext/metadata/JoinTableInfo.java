@@ -5,8 +5,12 @@ import java.util.List;
 
 public class JoinTableInfo {
 
-    TableInfo tableInfo;
-    List<JoinColumnInfo> joinColumnInfos = new ArrayList<>();
+    private TableInfo tableInfo;
+    private List<JoinColumnInfo> leftJoinColumnInfos = new ArrayList<>();
+    private List<JoinColumnInfo> rightJoinColumnInfos = new ArrayList<>();
+    private String alias;
+    private boolean merged;
+    private boolean visited;
 
     public TableInfo getTableInfo() {
         return tableInfo;
@@ -16,11 +20,43 @@ public class JoinTableInfo {
         this.tableInfo = tableInfo;
     }
 
-    public List<JoinColumnInfo> getJoinColumnInfos() {
-        return joinColumnInfos;
+    public String getAlias() {
+        return alias;
     }
 
-    public void setJoinColumnInfos(List<JoinColumnInfo> joinColumnInfos) {
-        this.joinColumnInfos = joinColumnInfos;
+    public void setAlias(String alias) {
+        this.alias = alias;
+    }
+
+    public List<JoinColumnInfo> getLeftJoinColumnInfos() {
+        return leftJoinColumnInfos;
+    }
+
+    public void setLeftJoinColumnInfos(List<JoinColumnInfo> leftJoinColumnInfos) {
+        this.leftJoinColumnInfos = leftJoinColumnInfos;
+    }
+
+    public List<JoinColumnInfo> getRightJoinColumnInfos() {
+        return rightJoinColumnInfos;
+    }
+
+    public void setRightJoinColumnInfos(List<JoinColumnInfo> rightJoinColumnInfos) {
+        this.rightJoinColumnInfos = rightJoinColumnInfos;
+    }
+
+    public boolean isMerged() {
+        return merged;
+    }
+
+    public void setMerged(boolean merged) {
+        this.merged = merged;
+    }
+
+    public boolean isVisited() {
+        return visited;
+    }
+
+    public void setVisited(boolean visited) {
+        this.visited = visited;
     }
 }
