@@ -2,10 +2,18 @@ package io.github.mybatisext.util;
 
 import javax.annotation.Nullable;
 
-public class StringHelper {
+public class StringUtils {
 
     public static boolean isBlank(@Nullable String str) {
         return str == null || str.trim().length() == 0;
+    }
+
+    public static boolean isNotBlank(@Nullable String str) {
+        return !isBlank(str);
+    }
+
+    public static String capitalize(String str) {
+        return Character.toUpperCase(str.charAt(0)) + str.substring(1);
     }
 
     public static String snakeToLowerCamel(String str) {

@@ -1,7 +1,9 @@
 package io.github.mybatisext.metadata;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TableInfo {
 
@@ -11,12 +13,14 @@ public class TableInfo {
     private String comment;
     /** 模式 */
     private String schema;
-    /** 别名 */
-    private String alias;
     /** 列 */
     private List<ColumnInfo> columnInfos = new ArrayList<>();
-    /** 连接表 */
-    private List<JoinTableInfo> joinTableInfos = new ArrayList<>();
+    /** 连接图 */
+    private JoinTableInfo joinTableInfo;
+    /** 别名到关联表的映射 */
+    private Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
+    /** 名字到属性的映射 */
+    private Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
 
     public String getName() {
         return name;
@@ -42,14 +46,6 @@ public class TableInfo {
         this.schema = schema;
     }
 
-    public String getAlias() {
-        return alias;
-    }
-
-    public void setAlias(String alias) {
-        this.alias = alias;
-    }
-
     public List<ColumnInfo> getColumnInfos() {
         return columnInfos;
     }
@@ -58,11 +54,27 @@ public class TableInfo {
         this.columnInfos = columnInfos;
     }
 
-    public List<JoinTableInfo> getJoinTableInfos() {
-        return joinTableInfos;
+    public JoinTableInfo getJoinTableInfo() {
+        return joinTableInfo;
     }
 
-    public void setJoinTableInfos(List<JoinTableInfo> joinTableInfos) {
-        this.joinTableInfos = joinTableInfos;
+    public void setJoinTableInfo(JoinTableInfo joinTableInfo) {
+        this.joinTableInfo = joinTableInfo;
+    }
+
+    public Map<String, JoinTableInfo> getAliasToJoinTableInfo() {
+        return aliasToJoinTableInfo;
+    }
+
+    public void setAliasToJoinTableInfo(Map<String, JoinTableInfo> aliasToJoinTableInfo) {
+        this.aliasToJoinTableInfo = aliasToJoinTableInfo;
+    }
+
+    public Map<String, PropertyInfo> getNameToPropertyInfo() {
+        return nameToPropertyInfo;
+    }
+
+    public void setNameToPropertyInfo(Map<String, PropertyInfo> nameToPropertyInfo) {
+        this.nameToPropertyInfo = nameToPropertyInfo;
     }
 }
