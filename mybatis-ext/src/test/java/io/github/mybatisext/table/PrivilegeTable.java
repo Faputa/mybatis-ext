@@ -2,11 +2,12 @@ package io.github.mybatisext.table;
 
 import java.util.List;
 
-import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
+import io.github.mybatisext.annotation.JoinRelation;
+import io.github.mybatisext.annotation.JoinRelations;
+import io.github.mybatisext.annotation.Table;
 
 @Table
 public class PrivilegeTable {
@@ -45,7 +46,9 @@ public class PrivilegeTable {
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "connection_id", rightColumn = "id"), table = MetadataConnection.class, column = "name")
     private String dbName;
 
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class, column = "name")
+    @JoinRelations({
+            @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class, column = "name")
+    })
     private String tableName;
 
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class)

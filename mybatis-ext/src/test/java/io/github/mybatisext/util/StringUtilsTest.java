@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 public class StringUtilsTest {
-    
+
     @Test
-    public void test(){
+    public void test() {
         assertEquals("my_variable_name", StringUtils.camelToSnake("myVariableName"));
         assertEquals("my_url_string", StringUtils.camelToSnake("myURLString"));
         assertEquals("my_url_string", StringUtils.camelToSnake("myUrlSTRING"));

@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.JoinRelations;
 import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.util.StringUtils;
@@ -58,9 +57,7 @@ public class TableInfoFactory {
         if (StringUtils.isBlank(tableInfo.getName())) {
             tableInfo.setName(StringUtils.camelToSnake(tableClass.getSimpleName()));
         }
-        if (StringUtils.isBlank(joinTableInfo.getAlias())) {
-            tableInfo.getAliasToJoinTableInfo().put("t0", joinTableInfo);
-        } else {
+        if (StringUtils.isNotBlank(joinTableInfo.getAlias())) {
             tableInfo.getAliasToJoinTableInfo().put(joinTableInfo.getAlias(), joinTableInfo);
         }
     }
@@ -78,8 +75,8 @@ public class TableInfoFactory {
                 tableInfo.getNameToPropertyInfo().put(propertyInfo.getName(), propertyInfo);
                 continue;
             }
-            JoinRelations joinRelations = field.getAnnotation(JoinRelations.class);
-            if (joinRelations != null) {
+            JoinRelation[] joinRelations = field.getAnnotationsByType(JoinRelation.class);
+            if (joinRelations.length > 0) {
                 PropertyInfo propertyInfo = buildPropertyInfo(field.getName(), field.getType(), tableInfo, null);
                 tableInfo.getNameToPropertyInfo().put(propertyInfo.getName(), propertyInfo);
                 processJoinRelations(tableInfo, joinRelations, field.getGenericType(), propertyInfo, featureToJoinTableInfo, aliasCount);
@@ -109,16 +106,25 @@ public class TableInfoFactory {
                 tableInfo.getNameToPropertyInfo().put(propertyInfo.getName(), propertyInfo);
                 continue;
             }
-            JoinRelations joinRelations = readMethod.getAnnotation(JoinRelations.class);
-            if (joinRelations != null) {
+            JoinRelation[] joinRelations = readMethod.getAnnotationsByType(JoinRelation.class);
+            if (joinRelations.length > 0) {
                 PropertyInfo propertyInfo = buildPropertyInfo(propertyDescriptor.getName(), propertyDescriptor.getPropertyType(), tableInfo, null);
                 tableInfo.getNameToPropertyInfo().put(propertyInfo.getName(), propertyInfo);
                 processJoinRelations(tableInfo, joinRelations, readMethod.getGenericReturnType(), propertyInfo, featureToJoinTableInfo, aliasCount);
             }
         }
+
+        String alias = tableInfo.getJoinTableInfo().getAlias();
+        if (StringUtils.isBlank(alias)) {
+            aliasCount.set(0);
+            while (tableInfo.getAliasToJoinTableInfo().containsKey(alias = "t" + aliasCount.getAndIncrement())) {
+            }
+            tableInfo.getJoinTableInfo().setAlias(alias);
+            tableInfo.getAliasToJoinTableInfo().put(alias, tableInfo.getJoinTableInfo());
+        }
     }
 
-    private static void processJoinRelations(TableInfo rootTableInfo, JoinRelations joinRelations, Type propertyType, PropertyInfo propertyInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
+    private static void processJoinRelations(TableInfo rootTableInfo, JoinRelation[] joinRelations, Type propertyType, PropertyInfo propertyInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
         if (StringUtils.isNotBlank(rootTableInfo.getJoinTableInfo().getAlias())) {
             aliasToJoinTableInfo.put(rootTableInfo.getJoinTableInfo().getAlias(), rootTableInfo.getJoinTableInfo());
@@ -128,9 +134,9 @@ public class TableInfoFactory {
         mergeJoinTableInfos(rootTableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
     }
 
-    private static void buildJoinTableInfos(TableInfo rootTableInfo, JoinRelations joinRelations, Type propertyType, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
+    private static void buildJoinTableInfos(TableInfo rootTableInfo, JoinRelation[] joinRelations, Type propertyType, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
         JoinTableInfo lastJoinTableInfo = null;
-        for (JoinRelation joinRelation : joinRelations.value()) {
+        for (JoinRelation joinRelation : joinRelations) {
             JoinTableInfo joinTableInfo;
             TableInfo tableInfo = resolveTableInfoFromJoinRelation(propertyType, joinRelation);
             if (StringUtils.isNotBlank(joinRelation.tableAlias())) {
@@ -191,6 +197,7 @@ public class TableInfoFactory {
 
     private static void mergeJoinTableInfos(TableInfo rootTableInfo, PropertyInfo propertyInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         ArrayList<JoinTableInfo> joinTableInfos = new ArrayList<>();
+        rootTableInfo.getJoinTableInfo().setMerged(true);
         joinTableInfos.add(rootTableInfo.getJoinTableInfo());
 
         for (int i = 0; i < joinTableInfos.size(); i++) {
@@ -237,7 +244,7 @@ public class TableInfoFactory {
     }
 
     private static TableInfo resolveTableInfoFromJoinRelation(Type propertyType, JoinRelation joinRelation) {
-        if (joinRelation.table() != null) {
+        if (joinRelation.table() != void.class) {
             return getTableInfo(joinRelation.table());
         }
         return getTableInfo(unwarpPropertyType(propertyType));
@@ -245,16 +252,17 @@ public class TableInfoFactory {
 
     private static Class<?> unwarpPropertyType(Type propertyType) {
         if (propertyType instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) propertyType;
-            Type rawType = parameterizedType.getRawType();
-            if (rawType instanceof List) {
-                return TypeArgumentResolver.resolveTypeArgument(propertyType, List.class, 0);
-            }
-            if (rawType instanceof Set) {
-                return TypeArgumentResolver.resolveTypeArgument(propertyType, Set.class, 0);
-            }
-            if (rawType == Optional.class) {
-                return TypeArgumentResolver.resolveTypeArgument(propertyType, Optional.class, 0);
+            Type rawType = ((ParameterizedType) propertyType).getRawType();
+            if (rawType instanceof Class) {
+                if (((Class<?>) rawType).isAssignableFrom(List.class)) {
+                    return TypeArgumentResolver.resolveTypeArgument(propertyType, List.class, 0);
+                }
+                if (((Class<?>) rawType).isAssignableFrom(Set.class)) {
+                    return TypeArgumentResolver.resolveTypeArgument(propertyType, Set.class, 0);
+                }
+                if (rawType == Optional.class) {
+                    return TypeArgumentResolver.resolveTypeArgument(propertyType, Optional.class, 0);
+                }
             }
         } else if (propertyType instanceof Class) {
             return (Class<?>) propertyType;
