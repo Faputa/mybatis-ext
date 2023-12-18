@@ -41,6 +41,7 @@ public class MetadataConnection implements Serializable {
     private Timestamp createTime;
     @Column
     private Timestamp updateTime;
+
     public String getId() {
         return id;
     }
