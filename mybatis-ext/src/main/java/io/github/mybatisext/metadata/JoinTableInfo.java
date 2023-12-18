@@ -10,7 +10,6 @@ public class JoinTableInfo {
     private List<JoinColumnInfo> rightJoinColumnInfos = new ArrayList<>();
     private String alias;
     private boolean merged;
-    private boolean visited;
 
     public TableInfo getTableInfo() {
         return tableInfo;
@@ -50,13 +49,5 @@ public class JoinTableInfo {
 
     public void setMerged(boolean merged) {
         this.merged = merged;
-    }
-
-    public boolean isVisited() {
-        return visited;
-    }
-
-    public void setVisited(boolean visited) {
-        this.visited = visited;
     }
 }

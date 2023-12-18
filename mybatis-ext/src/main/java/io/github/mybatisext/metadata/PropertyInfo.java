@@ -1,7 +1,6 @@
 package io.github.mybatisext.metadata;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 
 public class PropertyInfo {
 
@@ -10,7 +9,7 @@ public class PropertyInfo {
     private ColumnInfo columnInfo;
     private boolean isCollection;
     private String javaType;
-    private List<String> tableAliases = new ArrayList<>();
+    private LinkedHashSet<String> tableAliases = new LinkedHashSet<>();
 
     public String getName() {
         return name;
@@ -52,11 +51,11 @@ public class PropertyInfo {
         this.javaType = javaType;
     }
 
-    public List<String> getTableAliases() {
+    public LinkedHashSet<String> getTableAliases() {
         return tableAliases;
     }
 
-    public void setTableAliases(List<String> tableAliases) {
+    public void setTableAliases(LinkedHashSet<String> tableAliases) {
         this.tableAliases = tableAliases;
     }
 }
