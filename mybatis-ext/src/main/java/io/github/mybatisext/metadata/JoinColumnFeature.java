@@ -6,7 +6,7 @@ public class JoinColumnFeature {
 
     private String leftColumn;
     private String rightColumn;
-    private TableInfo leftTable;
+    private JoinTableInfo leftTable;
     private TableInfo rightTable;
 
     public String getLeftColumn() {
@@ -25,11 +25,11 @@ public class JoinColumnFeature {
         this.rightColumn = rightColumn;
     }
 
-    public TableInfo getLeftTable() {
+    public JoinTableInfo getLeftTable() {
         return leftTable;
     }
 
-    public void setLeftTable(TableInfo leftTable) {
+    public void setLeftTable(JoinTableInfo leftTable) {
         this.leftTable = leftTable;
     }
 

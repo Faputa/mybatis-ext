@@ -67,6 +67,7 @@ public class TableInfoFactory {
 
     private static void processProperty(Class<?> tableClass, TableInfo tableInfo) {
         AtomicInteger aliasCount = new AtomicInteger(1);
+        Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo = new HashMap<>();
 
         for (Field field : tableClass.getDeclaredFields()) {
             Column column = field.getAnnotation(Column.class);
@@ -81,7 +82,7 @@ public class TableInfoFactory {
             if (joinRelations != null) {
                 PropertyInfo propertyInfo = buildPropertyInfo(field.getName(), field.getType(), tableInfo, null);
                 tableInfo.getNameToPropertyInfo().put(propertyInfo.getName(), propertyInfo);
-                processJoinRelations(tableInfo, joinRelations, field.getGenericType(), propertyInfo, aliasCount);
+                processJoinRelations(tableInfo, joinRelations, field.getGenericType(), propertyInfo, featureToJoinTableInfo, aliasCount);
             }
         }
 
@@ -112,23 +113,22 @@ public class TableInfoFactory {
             if (joinRelations != null) {
                 PropertyInfo propertyInfo = buildPropertyInfo(propertyDescriptor.getName(), propertyDescriptor.getPropertyType(), tableInfo, null);
                 tableInfo.getNameToPropertyInfo().put(propertyInfo.getName(), propertyInfo);
-                processJoinRelations(tableInfo, joinRelations, readMethod.getGenericReturnType(), propertyInfo, aliasCount);
+                processJoinRelations(tableInfo, joinRelations, readMethod.getGenericReturnType(), propertyInfo, featureToJoinTableInfo, aliasCount);
             }
         }
     }
 
-    private static void processJoinRelations(TableInfo rootTableInfo, JoinRelations joinRelations, Type propertyType, PropertyInfo propertyInfo, AtomicInteger aliasCount) {
+    private static void processJoinRelations(TableInfo rootTableInfo, JoinRelations joinRelations, Type propertyType, PropertyInfo propertyInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
-        JoinTableInfo rootJoinTableInfo = rootTableInfo.getJoinTableInfo();
-        if (StringUtils.isNotBlank(rootJoinTableInfo.getAlias())) {
-            aliasToJoinTableInfo.put(rootJoinTableInfo.getAlias(), rootJoinTableInfo);
+        if (StringUtils.isNotBlank(rootTableInfo.getJoinTableInfo().getAlias())) {
+            aliasToJoinTableInfo.put(rootTableInfo.getJoinTableInfo().getAlias(), rootTableInfo.getJoinTableInfo());
         }
-        buildJoinTableInfos(joinRelations, propertyType, aliasToJoinTableInfo, rootJoinTableInfo);
+        buildJoinTableInfos(rootTableInfo, joinRelations, propertyType, aliasToJoinTableInfo);
         checkJoinTableInfos(aliasToJoinTableInfo);
-        mergeJoinTableInfos(rootTableInfo, rootJoinTableInfo, propertyInfo, aliasCount);
+        mergeJoinTableInfos(rootTableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
     }
 
-    private static void buildJoinTableInfos(JoinRelations joinRelations, Type propertyType, Map<String, JoinTableInfo> aliasToJoinTableInfo, JoinTableInfo rootJoinTableInfo) {
+    private static void buildJoinTableInfos(TableInfo rootTableInfo, JoinRelations joinRelations, Type propertyType, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
         JoinTableInfo lastJoinTableInfo = null;
         for (JoinRelation joinRelation : joinRelations.value()) {
             JoinTableInfo joinTableInfo;
@@ -172,8 +172,8 @@ public class TableInfoFactory {
                         lastJoinTableInfo.getRightJoinColumnInfos().add(joinColumnInfo);
                         joinColumnInfo.setLeftTable(lastJoinTableInfo);
                     } else {
-                        rootJoinTableInfo.getRightJoinColumnInfos().add(joinColumnInfo);
-                        joinColumnInfo.setLeftTable(rootJoinTableInfo);
+                        rootTableInfo.getJoinTableInfo().getRightJoinColumnInfos().add(joinColumnInfo);
+                        joinColumnInfo.setLeftTable(rootTableInfo.getJoinTableInfo());
                     }
                 }
             }
@@ -189,62 +189,40 @@ public class TableInfoFactory {
         });
     }
 
-    private static void mergeJoinTableInfos(TableInfo rootTableInfo, JoinTableInfo rootJoinTableInfo, PropertyInfo propertyInfo, AtomicInteger aliasCount) {
-        rootTableInfo.getAliasToJoinTableInfo().forEach((alias, joinTableInfo) -> {
-            joinTableInfo.setVisited(false);
-        });
-
+    private static void mergeJoinTableInfos(TableInfo rootTableInfo, PropertyInfo propertyInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         ArrayList<JoinTableInfo> joinTableInfos = new ArrayList<>();
-        rootJoinTableInfo.setVisited(true);
-        joinTableInfos.add(rootJoinTableInfo);
+        joinTableInfos.add(rootTableInfo.getJoinTableInfo());
 
-        int levelBegin = 0;
-        int levelEnd = joinTableInfos.size();
-        for (int i = levelBegin; i < levelEnd; i++) {
+        for (int i = 0; i < joinTableInfos.size(); i++) {
             // 拷贝一次，防止迭代器失效
             ArrayList<JoinColumnInfo> joinColumnInfos = new ArrayList<>(joinTableInfos.get(i).getRightJoinColumnInfos());
             for (JoinColumnInfo joinColumnInfo : joinColumnInfos) {
                 JoinTableInfo joinTableInfo = joinColumnInfo.getRightTable();
-                if (!joinTableInfo.isMerged()) {
-                    continue;
-                }
-                if (!joinTableInfo.getLeftJoinColumnInfos().stream().map(v -> v.getLeftTable().isVisited()).reduce((a, b) -> a && b).get()) {
-                    continue;
-                }
-                joinTableInfo.setVisited(true);
-                joinTableInfos.add(joinTableInfo);
-
-                Set<JoinColumnFeature> joinColumnFeatures = joinTableInfo.getLeftJoinColumnInfos().stream().map(v -> buildJoinColumnFeature(v)).collect(Collectors.toSet());
-                for (JoinColumnInfo joinColumnInfo2 : joinTableInfos.get(i).getRightJoinColumnInfos()) {
-                    JoinTableInfo joinTableInfo2 = joinColumnInfo2.getRightTable();
-                    if (joinTableInfo2.isMerged()) {
-                        continue;
-                    }
-                    if (!joinColumnFeatures.equals(joinTableInfo2.getLeftJoinColumnInfos().stream().map(v -> buildJoinColumnFeature(v)).collect(Collectors.toSet()))) {
-                        continue;
-                    }
-                    for (JoinColumnInfo joinColumnInfo3 : joinTableInfo2.getLeftJoinColumnInfos()) {
-                        joinColumnInfo3.getLeftTable().getRightJoinColumnInfos().remove(joinColumnInfo3);
-                    }
-                    for (JoinColumnInfo joinColumnInfo3 : joinTableInfo2.getRightJoinColumnInfos()) {
-                        joinColumnInfo3.setLeftTable(joinTableInfo);
-                    }
-                    joinTableInfo2.getLeftJoinColumnInfos().clear();
-                    joinTableInfo2.getRightJoinColumnInfos().clear();
-                    propertyInfo.getTableAliases().add(joinTableInfo.getAlias());
-                }
-            }
-
-            for (JoinColumnInfo joinColumnInfo : joinTableInfos.get(i).getRightJoinColumnInfos()) {
-                JoinTableInfo joinTableInfo = joinColumnInfo.getRightTable();
                 if (joinTableInfo.isMerged()) {
                     continue;
                 }
-                if (!joinTableInfo.getLeftJoinColumnInfos().stream().map(v -> v.getLeftTable().isVisited()).reduce((a, b) -> a && b).get()) {
+                if (!joinTableInfo.getLeftJoinColumnInfos().stream().map(v -> v.getLeftTable().isMerged()).reduce((a, b) -> a && b).get()) {
                     continue;
                 }
-                joinTableInfo.setVisited(true);
+
+                Set<JoinColumnFeature> joinColumnFeatures = joinTableInfo.getLeftJoinColumnInfos().stream().map(v -> buildJoinColumnFeature(v)).collect(Collectors.toSet());
+                JoinTableInfo existedJoinTableInfo = featureToJoinTableInfo.get(joinColumnFeatures);
+
+                if (existedJoinTableInfo != null) {
+                    for (JoinColumnInfo tmpJoinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
+                        tmpJoinColumnInfo.getLeftTable().getRightJoinColumnInfos().remove(tmpJoinColumnInfo);
+                    }
+                    for (JoinColumnInfo tmpJoinColumnInfo : joinTableInfo.getRightJoinColumnInfos()) {
+                        tmpJoinColumnInfo.setLeftTable(existedJoinTableInfo);
+                    }
+                    joinTableInfo.getLeftJoinColumnInfos().clear();
+                    joinTableInfo.getRightJoinColumnInfos().clear();
+                    propertyInfo.getTableAliases().add(existedJoinTableInfo.getAlias());
+                    continue;
+                }
+
                 joinTableInfos.add(joinTableInfo);
+                featureToJoinTableInfo.put(joinColumnFeatures, joinTableInfo);
 
                 joinTableInfo.setMerged(true);
                 String alias = joinTableInfo.getAlias();
@@ -255,9 +233,6 @@ public class TableInfoFactory {
                 rootTableInfo.getAliasToJoinTableInfo().put(alias, joinTableInfo);
                 propertyInfo.getTableAliases().add(alias);
             }
-
-            levelBegin = levelEnd;
-            levelEnd = joinTableInfos.size();
         }
     }
 
@@ -314,7 +289,7 @@ public class TableInfoFactory {
         JoinColumnFeature joinColumnFeature = new JoinColumnFeature();
         joinColumnFeature.setLeftColumn(joinColumnInfo.getJoinColumn().leftColumn());
         joinColumnFeature.setRightColumn(joinColumnInfo.getJoinColumn().rightColumn());
-        joinColumnFeature.setLeftTable(joinColumnInfo.getLeftTable().getTableInfo());
+        joinColumnFeature.setLeftTable(joinColumnInfo.getLeftTable());
         joinColumnFeature.setRightTable(joinColumnInfo.getRightTable().getTableInfo());
         return joinColumnFeature;
     }
