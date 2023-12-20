@@ -1,6 +1,7 @@
 package io.github.mybatisext.test.spring;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 public class Org {
 
@@ -12,6 +13,9 @@ public class Org {
     private Timestamp insertTime;
     private Timestamp updateTime;
     private Boolean deleted;
+
+    private List<Camera> cameras;
+    private List<String> cameraNames;
 
     public Long getId() {
         return orgId;
@@ -86,5 +90,21 @@ public class Org {
 
     public void setDeleted(Boolean deleted) {
         this.deleted = deleted;
+    }
+
+    public List<Camera> getCameras() {
+        return cameras;
+    }
+
+    public void setCameras(List<Camera> cameras) {
+        this.cameras = cameras;
+    }
+
+    public List<String> getCameraNames() {
+        return cameraNames;
+    }
+
+    public void setCameraNames(List<String> cameraNames) {
+        this.cameraNames = cameraNames;
     }
 }
