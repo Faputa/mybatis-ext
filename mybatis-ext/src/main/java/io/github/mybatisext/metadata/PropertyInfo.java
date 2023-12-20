@@ -8,7 +8,8 @@ public class PropertyInfo {
     private TableInfo tableInfo;
     private ColumnInfo columnInfo;
     private boolean isCollection;
-    private String javaType;
+    private Class<?> javaType;
+    private Class<?> ofType;
     private LinkedHashSet<String> tableAliases = new LinkedHashSet<>();
 
     public String getName() {
@@ -43,12 +44,20 @@ public class PropertyInfo {
         this.isCollection = isCollection;
     }
 
-    public String getJavaType() {
+    public Class<?> getJavaType() {
         return javaType;
     }
 
-    public void setJavaType(String javaType) {
+    public void setJavaType(Class<?> javaType) {
         this.javaType = javaType;
+    }
+
+    public Class<?> getOfType() {
+        return ofType;
+    }
+
+    public void setOfType(Class<?> ofType) {
+        this.ofType = ofType;
     }
 
     public LinkedHashSet<String> getTableAliases() {
