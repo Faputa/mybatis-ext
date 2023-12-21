@@ -8,10 +8,10 @@ import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
 
+import com.mysql.cj.jdbc.MysqlDataSource;
+
 import io.github.mybatisext.ExtConfiguration;
 import io.github.mybatisext.ExtContext;
-
-import com.mysql.cj.jdbc.MysqlDataSource;
 
 public class MybatisExtTest {
 
@@ -38,5 +38,7 @@ public class MybatisExtTest {
         CameraMapper cameraMapper = session.getMapper(CameraMapper.class);
         System.out.println(cameraMapper.countCamera());
         System.out.println(cameraMapper.countCamera2());
+        System.out.println(session.<Long>selectOne("countCamera"));
+        System.out.println(session.<Long>selectOne("countCamera2"));
     }
 }
