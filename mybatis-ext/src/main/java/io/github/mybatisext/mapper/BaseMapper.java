@@ -4,43 +4,23 @@ import java.util.List;
 
 public interface BaseMapper<T> extends ExtMapper<T> {
 
-    default int save(T entity) {
-        return 0;
-    }
+    int save(T entity);
 
-    default int saveBatch(List<T> list) {
-        return 0;
-    }
+    int saveBatch(List<T> list);
 
-    default int update(T entity) {
-        return 0;
-    }
+    int update(T entity);
 
-    default int updateFull(T entity) {
-        return 0;
-    }
+    int updateFull(T entity);
 
-    default int delete(T query) {
-        return 0;
-    }
+    int delete(T query);
 
-    default int deleteBatch(T query) {
-        return 0;
-    }
+    int deleteBatch(T query);
 
-    default T get(T query) {
-        return null;
-    }
+    T get(T query);
 
-    default List<T> list(T query) {
-        return java.util.Collections.emptyList();
-    }
+    List<T> list(T query);
 
-    default long count(T query) {
-        return 0;
-    }
+    long count(T query);
 
-    default boolean exists(T query) {
-        return false;
-    }
+    boolean exists(T query);
 }

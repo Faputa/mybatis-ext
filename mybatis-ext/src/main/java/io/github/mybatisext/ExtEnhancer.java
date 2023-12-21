@@ -17,6 +17,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.annotation.MapTable;
+import io.github.mybatisext.mapper.BaseMapper;
 import io.github.mybatisext.mapper.ExtMapper;
 import io.github.mybatisext.statement.MappedStatementBuilder;
 import io.github.mybatisext.util.TypeArgumentResolver;
@@ -67,6 +68,9 @@ public class ExtEnhancer {
             }
             for (Method method : mapperClass.getMethods()) {
                 if (isBridgeOrDefault(method)) {
+                    continue;
+                }
+                if (method.getDeclaringClass() == BaseMapper.class) {
                     continue;
                 }
                 String statementId = mapperClass.getName() + "." + method.getName();
