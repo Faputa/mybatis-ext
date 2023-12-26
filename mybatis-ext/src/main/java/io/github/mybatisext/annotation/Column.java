@@ -5,6 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.apache.ibatis.type.JdbcType;
+
 @Target({ ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Column {
@@ -29,4 +31,7 @@ public @interface Column {
 
     /** 标度 */
     int scale() default 0;
+
+    /** JDBC类型 */
+    JdbcType jdbcType() default JdbcType.UNDEFINED;
 }

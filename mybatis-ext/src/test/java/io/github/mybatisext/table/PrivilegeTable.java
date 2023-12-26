@@ -212,5 +212,4 @@ public class PrivilegeTable {
     public void setColPrivilegeFields(List<PrivilegeColField> colPrivilegeFields) {
         this.colPrivilegeFields = colPrivilegeFields;
     }
-
 }

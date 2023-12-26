@@ -1,7 +1,5 @@
 package io.github.mybatisext.table;
 
-import java.util.Objects;
-
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.Table;
@@ -61,25 +59,5 @@ public class PrivilegeColField {
 
     public void setHandleStrategy(String handleStrategy) {
         this.handleStrategy = handleStrategy;
-    }
-
-    // 用于去重
-    @Override
-    public int hashCode() {
-        return Objects.hash(tableId, userId, field);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || getClass() != obj.getClass()) {
-            return false;
-        }
-        PrivilegeColField other = (PrivilegeColField) obj;
-        return Objects.equals(tableId, other.tableId)
-                && Objects.equals(userId, other.userId)
-                && Objects.equals(field, other.field);
     }
 }

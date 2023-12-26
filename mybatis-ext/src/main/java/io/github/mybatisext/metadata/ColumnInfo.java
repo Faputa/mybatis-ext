@@ -1,5 +1,7 @@
 package io.github.mybatisext.metadata;
 
+import org.apache.ibatis.type.JdbcType;
+
 public class ColumnInfo {
 
     /** 字段名 */
@@ -17,7 +19,7 @@ public class ColumnInfo {
     /** 标度 */
     private int scale;
     /** JDBC类型 */
-    private String jdbcType;
+    private JdbcType jdbcType;
 
     public String getName() {
         return name;
@@ -75,11 +77,11 @@ public class ColumnInfo {
         this.scale = scale;
     }
 
-    public String getJdbcType() {
+    public JdbcType getJdbcType() {
         return jdbcType;
     }
 
-    public void setJdbcType(String jdbcType) {
+    public void setJdbcType(JdbcType jdbcType) {
         this.jdbcType = jdbcType;
     }
 }
