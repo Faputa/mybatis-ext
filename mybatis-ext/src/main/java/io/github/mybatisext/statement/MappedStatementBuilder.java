@@ -18,14 +18,14 @@ import io.github.mybatisext.ExtContext;
 public class MappedStatementBuilder {
 
     private final Configuration originConfiguration;
-    private final NamedStatementBuilder namedStatementBuilder = new NamedStatementBuilder();
+    private final AutoMethodStatementBuilder autoMethodStatementBuilder = new AutoMethodStatementBuilder();
 
     public MappedStatementBuilder(Configuration originConfiguration, ExtContext extContext) {
         this.originConfiguration = originConfiguration;
     }
 
     public MappedStatement build(String id, String methodName, List<Method> methods, Class<?> returnType, Class<?> tableType) {
-        MappedStatement ms = namedStatementBuilder.build(id, methodName, methods, returnType, tableType);
+        MappedStatement ms = autoMethodStatementBuilder.build(id, methodName, methods, returnType, tableType);
         if (ms != null) {
             return ms;
         }
@@ -37,7 +37,7 @@ public class MappedStatementBuilder {
         XMLLanguageDriver xmlLanguageDriver = new XMLLanguageDriver();
         SqlSource sqlSource = xmlLanguageDriver.createSqlSource(originConfiguration, "<script>select count(*) from camera</script>", Object.class);
         List<ResultMap> resultMaps = new ArrayList<>();
-        ResultMap inlineResultMap = new ResultMap.Builder(originConfiguration, id + "-Inline", Long.class, new ArrayList<>(), null).build();
+        ResultMap inlineResultMap = new ResultMap.Builder(originConfiguration, id + "-Inline", Long.class, new ArrayList<>()).build();
         resultMaps.add(inlineResultMap);
         Builder builder = new MappedStatement.Builder(originConfiguration, id, sqlSource, SqlCommandType.SELECT);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();

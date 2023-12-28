@@ -8,7 +8,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 /**
  * 根据方法名生成statement
  */
-public class NamedStatementBuilder {
+public class AutoMethodStatementBuilder {
 
     public MappedStatement build(String id, String methodName, List<Method> methods, Class<?> returnType, Class<?> tableType) {
         // TODO

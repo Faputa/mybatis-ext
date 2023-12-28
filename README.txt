@@ -173,3 +173,41 @@ left join a t2 on a.id = b.a_id
                 替换子节点为已存在的节点
             否则
                 合并子节点
+
+resultmap子节点
+    id
+    result
+    association
+    collection
+    discriminator
+
+resultmap命名自动生成规则
+    类名+别名+递归层数+生成标志
+    类名+别名+字段名+递归层数+生成标志
+
+resultmap嵌套select命名自动生成规则
+    包名+select+类名简写+递归层数+生成标志
+    包名+selec+类名简写+字段名+递归层数+生成标志
+
+考虑取消resultType
+    遍历PropertyInfo
+        如果columnInfo不为空
+            如果idType不为空
+                resultType为ID
+            否则
+                resultType为RESULT
+        否则
+            如果ofType不为空
+                resultType为COLLECTION
+                递归
+            否则
+                resultType为ASSOCIATION
+                递归
+
+考虑支持父类
+    如果存在父类有三种情况
+        父类字段和子类表没有关系
+            忽略
+        父类字段是子类表的字段
+            嵌合
+        父类的表是子类表的关联表（右表）
