@@ -9,4 +9,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Id {
 
+    IdType idType() default IdType.NONE;
+
+    Class<?> customIdGenerator() default void.class;
 }

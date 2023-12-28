@@ -1,8 +1,7 @@
 package io.github.mybatisext.metadata;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class TableInfo {
@@ -13,14 +12,16 @@ public class TableInfo {
     private String comment;
     /** 模式 */
     private String schema;
-    /** 列 */
-    private List<ColumnInfo> columnInfos = new ArrayList<>();
+    /** 实体类 */
+    private Class<?> tableClass;
     /** 连接图 */
     private JoinTableInfo joinTableInfo;
     /** 别名到关联表的映射 */
     private Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
     /** 名字到属性的映射 */
     private Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
+    /** 名字到列的映射 */
+    private Map<String, ColumnInfo> nameToColumnInfo = new LinkedHashMap<>();
 
     public String getName() {
         return name;
@@ -46,12 +47,12 @@ public class TableInfo {
         this.schema = schema;
     }
 
-    public List<ColumnInfo> getColumnInfos() {
-        return columnInfos;
+    public Class<?> getTableClass() {
+        return tableClass;
     }
 
-    public void setColumnInfos(List<ColumnInfo> columnInfos) {
-        this.columnInfos = columnInfos;
+    public void setTableClass(Class<?> tableClass) {
+        this.tableClass = tableClass;
     }
 
     public JoinTableInfo getJoinTableInfo() {
@@ -76,5 +77,18 @@ public class TableInfo {
 
     public void setNameToPropertyInfo(Map<String, PropertyInfo> nameToPropertyInfo) {
         this.nameToPropertyInfo = nameToPropertyInfo;
+    }
+
+    public Map<String, ColumnInfo> getNameToColumnInfo() {
+        return nameToColumnInfo;
+    }
+
+    public void setNameToColumnInfo(Map<String, ColumnInfo> nameToColumnInfo) {
+        this.nameToColumnInfo = nameToColumnInfo;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

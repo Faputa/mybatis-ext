@@ -2,15 +2,33 @@ package io.github.mybatisext.metadata;
 
 import java.util.LinkedHashSet;
 
+import io.github.mybatisext.annotation.IdType;
+import io.github.mybatisext.annotation.LoadType;
+import io.github.mybatisext.idgenerator.IdGenerator;
+import io.github.mybatisext.resultmap.ResultType;
+
 public class PropertyInfo {
 
     private String name;
     private TableInfo tableInfo;
-    private ColumnInfo columnInfo;
-    private boolean isCollection;
     private Class<?> javaType;
+    private ResultType resultType;
+
+    // resultType=ID,RESULT
+    private ColumnInfo columnInfo;
+
+    // resultType=ID
+    private IdType idType;
+    private IdGenerator<?> customIdGenerator;
+
+    // resultType=COLLECTION
     private Class<?> ofType;
+
+    // resultType=ASSOCIATION,COLLECTION
+    private LoadType loadType;
+    // 依赖的其他表的别名
     private LinkedHashSet<String> tableAliases = new LinkedHashSet<>();
+    private String columnName;
 
     public String getName() {
         return name;
@@ -28,6 +46,22 @@ public class PropertyInfo {
         this.tableInfo = tableInfo;
     }
 
+    public Class<?> getJavaType() {
+        return javaType;
+    }
+
+    public void setJavaType(Class<?> javaType) {
+        this.javaType = javaType;
+    }
+
+    public ResultType getResultType() {
+        return resultType;
+    }
+
+    public void setResultType(ResultType resultType) {
+        this.resultType = resultType;
+    }
+
     public ColumnInfo getColumnInfo() {
         return columnInfo;
     }
@@ -36,20 +70,20 @@ public class PropertyInfo {
         this.columnInfo = columnInfo;
     }
 
-    public boolean isCollection() {
-        return isCollection;
+    public IdType getIdType() {
+        return idType;
     }
 
-    public void setCollection(boolean isCollection) {
-        this.isCollection = isCollection;
+    public void setIdType(IdType idType) {
+        this.idType = idType;
     }
 
-    public Class<?> getJavaType() {
-        return javaType;
+    public IdGenerator<?> getCustomIdGenerator() {
+        return customIdGenerator;
     }
 
-    public void setJavaType(Class<?> javaType) {
-        this.javaType = javaType;
+    public void setCustomIdGenerator(IdGenerator<?> customIdGenerator) {
+        this.customIdGenerator = customIdGenerator;
     }
 
     public Class<?> getOfType() {
@@ -60,11 +94,27 @@ public class PropertyInfo {
         this.ofType = ofType;
     }
 
+    public LoadType getLoadType() {
+        return loadType;
+    }
+
+    public void setLoadType(LoadType loadType) {
+        this.loadType = loadType;
+    }
+
     public LinkedHashSet<String> getTableAliases() {
         return tableAliases;
     }
 
     public void setTableAliases(LinkedHashSet<String> tableAliases) {
         this.tableAliases = tableAliases;
+    }
+
+    public String getColumnName() {
+        return columnName;
+    }
+
+    public void setColumnName(String columnName) {
+        this.columnName = columnName;
     }
 }

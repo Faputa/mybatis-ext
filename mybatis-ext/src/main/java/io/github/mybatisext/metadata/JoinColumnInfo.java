@@ -2,6 +2,7 @@ package io.github.mybatisext.metadata;
 
 import io.github.mybatisext.annotation.JoinColumn;
 
+// TODO 考虑优化关联关系图结构，去除JoinColumnInfo
 public class JoinColumnInfo {
 
     private JoinColumn joinColumn;
