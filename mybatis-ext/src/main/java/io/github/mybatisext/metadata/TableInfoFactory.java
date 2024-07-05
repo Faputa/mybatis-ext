@@ -153,25 +153,46 @@ public class TableInfoFactory {
         }
         TableInfo parentTableInfo = getTableInfo(superclass);
 
-        // 收集别名
-        // TODO 考虑自顶向下拷贝JoinTableInfo，以独立子类继承父类的表的关联关系图
-        tableInfo.getAliasToJoinTableInfo().putAll(parentTableInfo.getAliasToJoinTableInfo());
-
-        // 处理关联信息
-        for (JoinColumn joinColumn : joinParent.joinColumn()) {
-            JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
-            joinColumnInfo.setJoinColumn(joinColumn);
-            joinColumnInfo.setLeftTable(tableInfo.getJoinTableInfo());
-            joinColumnInfo.setRightTable(parentTableInfo.getJoinTableInfo());
-            tableInfo.getJoinTableInfo().getRightJoinColumnInfos().add(joinColumnInfo);
-            parentTableInfo.getJoinTableInfo().getLeftJoinColumnInfos().add(joinColumnInfo);
+        // 收集别名，拷贝关联关系图
+        List<JoinTableInfo> joinTableInfos = new ArrayList<>();
+        Map<JoinColumnInfo, JoinColumnInfo> oldToNewJoinColumnInfo = new HashMap<>();
+        joinTableInfos.add(parentTableInfo.getJoinTableInfo());
+        for (int i = 0; i < joinTableInfos.size(); i++) {
+            JoinTableInfo joinTableInfo = joinTableInfos.get(i);
+            JoinTableInfo newJoinTableInfo = new JoinTableInfo();
+            newJoinTableInfo.setAlias(joinTableInfo.getAlias());
+            newJoinTableInfo.setTableInfo(joinTableInfo.getTableInfo());
+            newJoinTableInfo.setMerged(true);
+            if (parentTableInfo.getJoinTableInfo() == joinTableInfo) {
+                // 处理关联信息
+                for (JoinColumn joinColumn : joinParent.joinColumn()) {
+                    JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
+                    joinColumnInfo.setJoinColumn(joinColumn);
+                    joinColumnInfo.setLeftTable(tableInfo.getJoinTableInfo());
+                    tableInfo.getJoinTableInfo().getRightJoinColumnInfos().add(joinColumnInfo);
+                    joinColumnInfo.setRightTable(newJoinTableInfo);
+                    newJoinTableInfo.getLeftJoinColumnInfos().add(joinColumnInfo);
+                }
+            }
+            for (JoinColumnInfo joinColumnInfo : joinTableInfo.getRightJoinColumnInfos()) {
+                if (joinColumnInfo.getRightTable().getLeftJoinColumnInfos().stream().map(v -> joinTableInfos.contains(v.getLeftTable())).reduce((a, b) -> a && b).get()) {
+                    joinTableInfos.add(joinColumnInfo.getRightTable());
+                }
+                JoinColumnInfo newJoinColumnInfo = new JoinColumnInfo();
+                newJoinColumnInfo.setJoinColumn(joinColumnInfo.getJoinColumn());
+                newJoinColumnInfo.setLeftTable(newJoinTableInfo);
+                newJoinTableInfo.getRightJoinColumnInfos().add(newJoinColumnInfo);
+                oldToNewJoinColumnInfo.put(joinColumnInfo, newJoinColumnInfo);
+            }
+            for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
+                JoinColumnInfo newJoinColumnInfo = oldToNewJoinColumnInfo.get(joinColumnInfo);
+                newJoinColumnInfo.setRightTable(newJoinTableInfo);
+                newJoinTableInfo.getLeftJoinColumnInfos().add(newJoinColumnInfo);
+            }
+            Set<JoinColumnFeature> joinColumnFeatures = newJoinTableInfo.getLeftJoinColumnInfos().stream().map(v -> buildJoinColumnFeature(v)).collect(Collectors.toSet());
+            featureToJoinTableInfo.put(joinColumnFeatures, newJoinTableInfo);
+            tableInfo.getAliasToJoinTableInfo().put(newJoinTableInfo.getAlias(), newJoinTableInfo);
         }
-
-        // 收集featureToJoinTableInfo
-        parentTableInfo.getAliasToJoinTableInfo().forEach((alias, joinTableInfo) -> {
-            Set<JoinColumnFeature> joinColumnFeatures = joinTableInfo.getLeftJoinColumnInfos().stream().map(v -> buildJoinColumnFeature(v)).collect(Collectors.toSet());
-            featureToJoinTableInfo.put(joinColumnFeatures, joinTableInfo);
-        });
 
         // 处理属性信息
         parentTableInfo.getNameToPropertyInfo().forEach((name, propertyInfo) -> {
