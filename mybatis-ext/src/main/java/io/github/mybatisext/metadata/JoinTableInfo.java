@@ -50,4 +50,9 @@ public class JoinTableInfo {
     public void setMerged(boolean merged) {
         this.merged = merged;
     }
+
+    @Override
+    public String toString() {
+        return tableInfo.getName() + " AS " + alias;
+    }
 }

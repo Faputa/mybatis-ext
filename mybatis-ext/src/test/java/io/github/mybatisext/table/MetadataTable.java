@@ -1,14 +1,16 @@
 package io.github.mybatisext.table;
 
-import java.io.Serializable;
 import java.sql.Timestamp;
 
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
+import io.github.mybatisext.annotation.JoinColumn;
+import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.Table;
 
 @Table
-public class MetadataTable implements Serializable {
+@JoinParent(joinColumn = @JoinColumn(leftColumn = "connection_id", rightColumn = "id"))
+public class MetadataTable extends MetadataConnection {
 
     @Id
     @Column
