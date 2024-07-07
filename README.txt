@@ -211,3 +211,45 @@ resultmap嵌套select命名自动生成规则
         父类字段是子类表的字段
             嵌合
         父类的表是子类表的关联表（右表）
+
+queryDSL
+    select ? from ? where ?
+    select ? from ? left join ? on ? where ?
+    select ? from ? order by ?
+    select ? from ? group by ?
+    select ? from ? group by ? having ?
+    insert into ? values (?)
+    insert into ? (?) values (?)
+    update ? set ? where ?
+    update ? left join ? on ? set ? where ?
+    delete from ? where ?
+    delete from ? left join ? on ? where ?
+
+dsl设计思路
+    dsl=ast+astBuilder
+
+select(...)
+selectAll(A.class)
+selectProperty(P.class)
+
+ast设计，参考jsqlparser
+    Select
+        List<SelectItem> selectItems
+        FromItem fromItem
+        List<Join> joins
+        Expression where
+        List<Expression> groupBy
+        Expression having
+        Limit limit
+    Update
+    Insert
+    Delete
+
+考虑优化冗余join表
+    因为selectAll的时候可能已经存在join表，如果在此基础上增加join表，可能存在冗余
+    是，对selectAll优化
+    否，对selectProperty优化
+
+考虑方法重载
+    确定参数类型
+    确定参数数量
