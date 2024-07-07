@@ -154,11 +154,11 @@ public class TableInfoFactory {
         TableInfo parentTableInfo = getTableInfo(superclass);
 
         // 收集别名，拷贝关联关系图
-        List<JoinTableInfo> joinTableInfos = new ArrayList<>();
+        List<JoinTableInfo> queue = new ArrayList<>();
         Map<JoinColumnInfo, JoinColumnInfo> oldToNewJoinColumnInfo = new HashMap<>();
-        joinTableInfos.add(parentTableInfo.getJoinTableInfo());
-        for (int i = 0; i < joinTableInfos.size(); i++) {
-            JoinTableInfo joinTableInfo = joinTableInfos.get(i);
+        queue.add(parentTableInfo.getJoinTableInfo());
+        for (int i = 0; i < queue.size(); i++) {
+            JoinTableInfo joinTableInfo = queue.get(i);
             JoinTableInfo newJoinTableInfo = new JoinTableInfo();
             newJoinTableInfo.setAlias(joinTableInfo.getAlias());
             newJoinTableInfo.setTableInfo(joinTableInfo.getTableInfo());
@@ -175,8 +175,8 @@ public class TableInfoFactory {
                 }
             }
             for (JoinColumnInfo joinColumnInfo : joinTableInfo.getRightJoinColumnInfos()) {
-                if (joinColumnInfo.getRightTable().getLeftJoinColumnInfos().stream().map(v -> joinTableInfos.contains(v.getLeftTable())).reduce((a, b) -> a && b).get()) {
-                    joinTableInfos.add(joinColumnInfo.getRightTable());
+                if (!queue.contains(joinColumnInfo.getRightTable()) && joinColumnInfo.getRightTable().getLeftJoinColumnInfos().stream().map(v -> queue.contains(v.getLeftTable())).reduce((a, b) -> a && b).get()) {
+                    queue.add(joinColumnInfo.getRightTable());
                 }
                 JoinColumnInfo newJoinColumnInfo = new JoinColumnInfo();
                 newJoinColumnInfo.setJoinColumn(joinColumnInfo.getJoinColumn());
@@ -342,14 +342,12 @@ public class TableInfoFactory {
     }
 
     private static void mergeJoinTableInfos(TableInfo rootTableInfo, PropertyInfo propertyInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
-        ArrayList<JoinTableInfo> joinTableInfos = new ArrayList<>();
-        joinTableInfos.add(rootTableInfo.getJoinTableInfo());
+        List<JoinTableInfo> queue = new ArrayList<>();
+        queue.add(rootTableInfo.getJoinTableInfo());
 
-        for (int i = 0; i < joinTableInfos.size(); i++) {
-            // 拷贝一次，防止迭代器失效
-            ArrayList<JoinColumnInfo> joinColumnInfos = new ArrayList<>(joinTableInfos.get(i).getRightJoinColumnInfos());
-            for (JoinColumnInfo joinColumnInfo : joinColumnInfos) {
-                JoinTableInfo joinTableInfo = joinColumnInfo.getRightTable();
+        for (int i = 0; i < queue.size(); i++) {
+            Set<JoinTableInfo> joinTableInfos = queue.get(i).getRightJoinColumnInfos().stream().map(v -> v.getRightTable()).collect(Collectors.toSet());
+            for (JoinTableInfo joinTableInfo : joinTableInfos) {
                 if (joinTableInfo.isMerged()) {
                     continue;
                 }
@@ -370,12 +368,12 @@ public class TableInfoFactory {
                     }
                     joinTableInfo.getLeftJoinColumnInfos().clear();
                     joinTableInfo.getRightJoinColumnInfos().clear();
-                    joinTableInfos.add(existedJoinTableInfo);
+                    queue.add(existedJoinTableInfo);
                     propertyInfo.getTableAliases().add(existedJoinTableInfo.getAlias());
                     continue;
                 }
 
-                joinTableInfos.add(joinTableInfo);
+                queue.add(joinTableInfo);
                 featureToJoinTableInfo.put(joinColumnFeatures, joinTableInfo);
 
                 joinTableInfo.setMerged(true);
