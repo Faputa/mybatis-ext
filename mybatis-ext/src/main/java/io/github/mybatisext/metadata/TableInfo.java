@@ -17,11 +17,11 @@ public class TableInfo {
     /** 连接图 */
     private JoinTableInfo joinTableInfo;
     /** 别名到关联表的映射 */
-    private Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
+    final private Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
     /** 名字到属性的映射 */
-    private Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
+    final private Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
     /** 名字到列的映射 */
-    private Map<String, ColumnInfo> nameToColumnInfo = new LinkedHashMap<>();
+    final private Map<String, ColumnInfo> nameToColumnInfo = new LinkedHashMap<>();
 
     public String getName() {
         return name;
@@ -67,24 +67,12 @@ public class TableInfo {
         return aliasToJoinTableInfo;
     }
 
-    public void setAliasToJoinTableInfo(Map<String, JoinTableInfo> aliasToJoinTableInfo) {
-        this.aliasToJoinTableInfo = aliasToJoinTableInfo;
-    }
-
     public Map<String, PropertyInfo> getNameToPropertyInfo() {
         return nameToPropertyInfo;
     }
 
-    public void setNameToPropertyInfo(Map<String, PropertyInfo> nameToPropertyInfo) {
-        this.nameToPropertyInfo = nameToPropertyInfo;
-    }
-
     public Map<String, ColumnInfo> getNameToColumnInfo() {
         return nameToColumnInfo;
-    }
-
-    public void setNameToColumnInfo(Map<String, ColumnInfo> nameToColumnInfo) {
-        this.nameToColumnInfo = nameToColumnInfo;
     }
 
     @Override

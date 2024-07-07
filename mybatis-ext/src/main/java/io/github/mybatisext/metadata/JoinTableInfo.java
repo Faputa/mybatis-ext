@@ -1,13 +1,13 @@
 package io.github.mybatisext.metadata;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JoinTableInfo {
 
     private TableInfo tableInfo;
-    private List<JoinColumnInfo> leftJoinColumnInfos = new ArrayList<>();
-    private List<JoinColumnInfo> rightJoinColumnInfos = new ArrayList<>();
+    private final Map<JoinColumnInfo, JoinTableInfo> leftJoinTableInfos = new HashMap<>();
+    private final Map<JoinColumnInfo, JoinTableInfo> rightJoinTableInfos = new HashMap<>();
     private String alias;
     private boolean merged;
 
@@ -27,20 +27,12 @@ public class JoinTableInfo {
         this.alias = alias;
     }
 
-    public List<JoinColumnInfo> getLeftJoinColumnInfos() {
-        return leftJoinColumnInfos;
+    public Map<JoinColumnInfo, JoinTableInfo> getLeftJoinTableInfos() {
+        return leftJoinTableInfos;
     }
 
-    public void setLeftJoinColumnInfos(List<JoinColumnInfo> leftJoinColumnInfos) {
-        this.leftJoinColumnInfos = leftJoinColumnInfos;
-    }
-
-    public List<JoinColumnInfo> getRightJoinColumnInfos() {
-        return rightJoinColumnInfos;
-    }
-
-    public void setRightJoinColumnInfos(List<JoinColumnInfo> rightJoinColumnInfos) {
-        this.rightJoinColumnInfos = rightJoinColumnInfos;
+    public Map<JoinColumnInfo, JoinTableInfo> getRightJoinTableInfos() {
+        return rightJoinTableInfos;
     }
 
     public boolean isMerged() {

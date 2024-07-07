@@ -155,7 +155,7 @@ public class TableInfoFactory {
 
         // 收集别名，拷贝关联关系图
         List<JoinTableInfo> queue = new ArrayList<>();
-        Map<JoinColumnInfo, JoinColumnInfo> oldToNewJoinColumnInfo = new HashMap<>();
+        Map<JoinTableInfo, JoinTableInfo> oldToNewJoinTableInfo = new HashMap<>();
         queue.add(parentTableInfo.getJoinTableInfo());
         for (int i = 0; i < queue.size(); i++) {
             JoinTableInfo joinTableInfo = queue.get(i);
@@ -163,33 +163,28 @@ public class TableInfoFactory {
             newJoinTableInfo.setAlias(joinTableInfo.getAlias());
             newJoinTableInfo.setTableInfo(joinTableInfo.getTableInfo());
             newJoinTableInfo.setMerged(true);
+            oldToNewJoinTableInfo.put(joinTableInfo, newJoinTableInfo);
             if (parentTableInfo.getJoinTableInfo() == joinTableInfo) {
                 // 处理关联信息
                 for (JoinColumn joinColumn : joinParent.joinColumn()) {
                     JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
-                    joinColumnInfo.setJoinColumn(joinColumn);
-                    joinColumnInfo.setLeftTable(tableInfo.getJoinTableInfo());
-                    tableInfo.getJoinTableInfo().getRightJoinColumnInfos().add(joinColumnInfo);
-                    joinColumnInfo.setRightTable(newJoinTableInfo);
-                    newJoinTableInfo.getLeftJoinColumnInfos().add(joinColumnInfo);
+                    joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
+                    joinColumnInfo.setRightColumn(joinColumn.rightColumn());
+                    tableInfo.getJoinTableInfo().getRightJoinTableInfos().put(joinColumnInfo, newJoinTableInfo);
+                    newJoinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, tableInfo.getJoinTableInfo());
                 }
             }
-            for (JoinColumnInfo joinColumnInfo : joinTableInfo.getRightJoinColumnInfos()) {
-                if (!queue.contains(joinColumnInfo.getRightTable()) && joinColumnInfo.getRightTable().getLeftJoinColumnInfos().stream().map(v -> queue.contains(v.getLeftTable())).reduce((a, b) -> a && b).get()) {
-                    queue.add(joinColumnInfo.getRightTable());
+            joinTableInfo.getRightJoinTableInfos().forEach((joinColumnInfo, rightJoinTable) -> {
+                if (!queue.contains(rightJoinTable) && rightJoinTable.getLeftJoinTableInfos().values().stream().map(v -> queue.contains(v)).reduce((a, b) -> a && b).get()) {
+                    queue.add(rightJoinTable);
                 }
-                JoinColumnInfo newJoinColumnInfo = new JoinColumnInfo();
-                newJoinColumnInfo.setJoinColumn(joinColumnInfo.getJoinColumn());
-                newJoinColumnInfo.setLeftTable(newJoinTableInfo);
-                newJoinTableInfo.getRightJoinColumnInfos().add(newJoinColumnInfo);
-                oldToNewJoinColumnInfo.put(joinColumnInfo, newJoinColumnInfo);
-            }
-            for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
-                JoinColumnInfo newJoinColumnInfo = oldToNewJoinColumnInfo.get(joinColumnInfo);
-                newJoinColumnInfo.setRightTable(newJoinTableInfo);
-                newJoinTableInfo.getLeftJoinColumnInfos().add(newJoinColumnInfo);
-            }
-            Set<JoinColumnFeature> joinColumnFeatures = newJoinTableInfo.getLeftJoinColumnInfos().stream().map(v -> buildJoinColumnFeature(v)).collect(Collectors.toSet());
+            });
+            joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTable) -> {
+                JoinTableInfo newLeftJoinTableInfo = oldToNewJoinTableInfo.get(leftJoinTable);
+                newLeftJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, newJoinTableInfo);
+                newJoinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, newLeftJoinTableInfo);
+            });
+            Set<JoinColumnFeature> joinColumnFeatures = newJoinTableInfo.getLeftJoinTableInfos().entrySet().stream().map(v -> buildJoinColumnFeature(v.getKey(), v.getValue(), newJoinTableInfo)).collect(Collectors.toSet());
             featureToJoinTableInfo.put(joinColumnFeatures, newJoinTableInfo);
             tableInfo.getAliasToJoinTableInfo().put(newJoinTableInfo.getAlias(), newJoinTableInfo);
         }
@@ -304,28 +299,27 @@ public class TableInfoFactory {
 
             for (JoinColumn joinColumn : joinRelation.joinColumn()) {
                 JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
-                joinColumnInfo.setJoinColumn(joinColumn);
-                joinColumnInfo.setRightTable(joinTableInfo);
-                joinTableInfo.getLeftJoinColumnInfos().add(joinColumnInfo);
+                joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
+                joinColumnInfo.setRightColumn(joinColumn.rightColumn());
 
                 if (StringUtils.isNotBlank(joinColumn.leftTableAlias())) {
                     JoinTableInfo leftJoinTableInfo = aliasToJoinTableInfo.get(joinColumn.leftTableAlias());
                     if (leftJoinTableInfo != null) {
-                        leftJoinTableInfo.getRightJoinColumnInfos().add(joinColumnInfo);
-                        joinColumnInfo.setLeftTable(leftJoinTableInfo);
+                        leftJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
+                        joinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, leftJoinTableInfo);
                     } else {
                         leftJoinTableInfo = new JoinTableInfo();
-                        leftJoinTableInfo.getRightJoinColumnInfos().add(joinColumnInfo);
-                        joinColumnInfo.setLeftTable(leftJoinTableInfo);
+                        leftJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
+                        joinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, leftJoinTableInfo);
                         aliasToJoinTableInfo.put(joinColumn.leftTableAlias(), leftJoinTableInfo);
                     }
                 } else {
                     if (lastJoinTableInfo != null) {
-                        lastJoinTableInfo.getRightJoinColumnInfos().add(joinColumnInfo);
-                        joinColumnInfo.setLeftTable(lastJoinTableInfo);
+                        lastJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
+                        joinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, lastJoinTableInfo);
                     } else {
-                        rootTableInfo.getJoinTableInfo().getRightJoinColumnInfos().add(joinColumnInfo);
-                        joinColumnInfo.setLeftTable(rootTableInfo.getJoinTableInfo());
+                        rootTableInfo.getJoinTableInfo().getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
+                        joinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, rootTableInfo.getJoinTableInfo());
                     }
                 }
             }
@@ -346,28 +340,28 @@ public class TableInfoFactory {
         queue.add(rootTableInfo.getJoinTableInfo());
 
         for (int i = 0; i < queue.size(); i++) {
-            Set<JoinTableInfo> joinTableInfos = queue.get(i).getRightJoinColumnInfos().stream().map(v -> v.getRightTable()).collect(Collectors.toSet());
+            Set<JoinTableInfo> joinTableInfos = queue.get(i).getRightJoinTableInfos().values().stream().collect(Collectors.toSet());
             for (JoinTableInfo joinTableInfo : joinTableInfos) {
                 if (joinTableInfo.isMerged()) {
                     continue;
                 }
-                if (!joinTableInfo.getLeftJoinColumnInfos().stream().map(v -> v.getLeftTable().isMerged()).reduce((a, b) -> a && b).get()) {
+                if (!joinTableInfo.getLeftJoinTableInfos().values().stream().map(v -> v.isMerged()).reduce((a, b) -> a && b).get()) {
                     continue;
                 }
 
-                Set<JoinColumnFeature> joinColumnFeatures = joinTableInfo.getLeftJoinColumnInfos().stream().map(v -> buildJoinColumnFeature(v)).collect(Collectors.toSet());
+                Set<JoinColumnFeature> joinColumnFeatures = joinTableInfo.getLeftJoinTableInfos().entrySet().stream().map(v -> buildJoinColumnFeature(v.getKey(), v.getValue(), joinTableInfo)).collect(Collectors.toSet());
                 JoinTableInfo existedJoinTableInfo = featureToJoinTableInfo.get(joinColumnFeatures);
 
                 if (existedJoinTableInfo != null) {
-                    for (JoinColumnInfo tmpJoinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
-                        tmpJoinColumnInfo.getLeftTable().getRightJoinColumnInfos().remove(tmpJoinColumnInfo);
-                    }
-                    for (JoinColumnInfo tmpJoinColumnInfo : joinTableInfo.getRightJoinColumnInfos()) {
-                        tmpJoinColumnInfo.setLeftTable(existedJoinTableInfo);
-                        existedJoinTableInfo.getRightJoinColumnInfos().add(tmpJoinColumnInfo);
-                    }
-                    joinTableInfo.getLeftJoinColumnInfos().clear();
-                    joinTableInfo.getRightJoinColumnInfos().clear();
+                    joinTableInfo.getLeftJoinTableInfos().forEach((leftJoinColumnInfo, leftJoinTableInfo) -> {
+                        leftJoinTableInfo.getRightJoinTableInfos().remove(leftJoinColumnInfo);
+                    });
+                    joinTableInfo.getRightJoinTableInfos().forEach((rightJoinColumnInfo, rightJoinTableInfo) -> {
+                        rightJoinTableInfo.getLeftJoinTableInfos().put(rightJoinColumnInfo, existedJoinTableInfo);
+                        existedJoinTableInfo.getRightJoinTableInfos().put(rightJoinColumnInfo, rightJoinTableInfo);
+                    });
+                    joinTableInfo.getLeftJoinTableInfos().clear();
+                    joinTableInfo.getRightJoinTableInfos().clear();
                     queue.add(existedJoinTableInfo);
                     propertyInfo.getTableAliases().add(existedJoinTableInfo.getAlias());
                     continue;
@@ -428,12 +422,12 @@ public class TableInfoFactory {
         throw new MybatisExtException("Unsupported property type: " + propertyType);
     }
 
-    private static JoinColumnFeature buildJoinColumnFeature(JoinColumnInfo joinColumnInfo) {
+    private static JoinColumnFeature buildJoinColumnFeature(JoinColumnInfo joinColumnInfo, JoinTableInfo leftJoinTableInfo, JoinTableInfo righJoinTableInfo) {
         JoinColumnFeature joinColumnFeature = new JoinColumnFeature();
-        joinColumnFeature.setLeftColumn(joinColumnInfo.getJoinColumn().leftColumn());
-        joinColumnFeature.setRightColumn(joinColumnInfo.getJoinColumn().rightColumn());
-        joinColumnFeature.setLeftTable(joinColumnInfo.getLeftTable());
-        joinColumnFeature.setRightTable(joinColumnInfo.getRightTable().getTableInfo());
+        joinColumnFeature.setLeftColumn(joinColumnInfo.getLeftColumn());
+        joinColumnFeature.setRightColumn(joinColumnInfo.getRightColumn());
+        joinColumnFeature.setLeftTable(leftJoinTableInfo);
+        joinColumnFeature.setRightTable(righJoinTableInfo.getTableInfo());
         return joinColumnFeature;
     }
 }
