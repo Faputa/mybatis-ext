@@ -1,35 +1,28 @@
 package io.github.mybatisext.metadata;
 
-import io.github.mybatisext.annotation.JoinColumn;
-
-// TODO 考虑优化关联关系图结构，去除JoinColumnInfo
 public class JoinColumnInfo {
 
-    private JoinColumn joinColumn;
-    private JoinTableInfo leftTable;
-    private JoinTableInfo rightTable;
+    private String leftColumn;
+    private String rightColumn;
 
-    public JoinColumn getJoinColumn() {
-        return joinColumn;
+    public String getLeftColumn() {
+        return leftColumn;
     }
 
-    public void setJoinColumn(JoinColumn joinColumn) {
-        this.joinColumn = joinColumn;
+    public void setLeftColumn(String leftColumn) {
+        this.leftColumn = leftColumn;
     }
 
-    public JoinTableInfo getLeftTable() {
-        return leftTable;
+    public String getRightColumn() {
+        return rightColumn;
     }
 
-    public void setLeftTable(JoinTableInfo leftTable) {
-        this.leftTable = leftTable;
+    public void setRightColumn(String rightColumn) {
+        this.rightColumn = rightColumn;
     }
 
-    public JoinTableInfo getRightTable() {
-        return rightTable;
-    }
-
-    public void setRightTable(JoinTableInfo rightTable) {
-        this.rightTable = rightTable;
+    @Override
+    public String toString() {
+        return "left." + leftColumn + "=right." + rightColumn;
     }
 }

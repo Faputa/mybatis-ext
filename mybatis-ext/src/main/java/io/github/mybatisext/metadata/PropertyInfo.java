@@ -27,7 +27,7 @@ public class PropertyInfo {
     // resultType=ASSOCIATION,COLLECTION
     private LoadType loadType;
     // 依赖的其他表的别名
-    private LinkedHashSet<String> tableAliases = new LinkedHashSet<>();
+    final private LinkedHashSet<String> tableAliases = new LinkedHashSet<>();
     private String columnName;
 
     public String getName() {
@@ -104,10 +104,6 @@ public class PropertyInfo {
 
     public LinkedHashSet<String> getTableAliases() {
         return tableAliases;
-    }
-
-    public void setTableAliases(LinkedHashSet<String> tableAliases) {
-        this.tableAliases = tableAliases;
     }
 
     public String getColumnName() {
