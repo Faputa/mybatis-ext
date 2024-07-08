@@ -72,14 +72,8 @@ public class TableInfoFactory {
     private static void processProperty(Class<?> tableClass, TableInfo tableInfo) {
         AtomicInteger aliasCount = new AtomicInteger(1);
         Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo = new HashMap<>();
-        Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>(tableInfo.getAliasToJoinTableInfo());
 
-        List<PropertyInfo> parentPropertyInfos = new ArrayList<>();
-        JoinParent joinParent = tableClass.getAnnotation(JoinParent.class);
-        if (joinParent != null) {
-            processJoinParent(tableClass, joinParent, tableInfo, parentPropertyInfos, featureToJoinTableInfo, aliasToJoinTableInfo);
-        }
-
+        boolean inJoinParent = false;
         for (Class<?> c = tableClass; c != null && c != Object.class; c = c.getSuperclass()) {
             for (Field field : c.getDeclaredFields()) {
                 if (tableInfo.getNameToPropertyInfo().containsKey(field.getName())) {
@@ -87,52 +81,59 @@ public class TableInfoFactory {
                 }
                 Column column = field.getAnnotation(Column.class);
                 if (column != null) {
-                    processColumn(tableInfo, column, field.getAnnotation(Id.class), field.getName(), field.getType());
+                    if (inJoinParent) {
+                        processJoinProperty(tableInfo, c, new JoinRelation[0], column, field.getAnnotation(LoadStrategy.class), field.getName(), field.getGenericType(), featureToJoinTableInfo, aliasCount);
+                    } else {
+                        processColumn(tableInfo, column, field.getAnnotation(Id.class), field.getName(), field.getType());
+                    }
                 } else {
                     JoinRelation[] joinRelations = field.getAnnotationsByType(JoinRelation.class);
                     if (joinRelations.length > 0) {
-                        processJoinRelations(tableInfo, joinRelations, field.getAnnotation(LoadStrategy.class), field.getName(), field.getGenericType(), featureToJoinTableInfo, aliasToJoinTableInfo, aliasCount);
+                        processJoinProperty(tableInfo, c, joinRelations, null, field.getAnnotation(LoadStrategy.class), field.getName(), field.getGenericType(), featureToJoinTableInfo, aliasCount);
                     }
                 }
             }
-            if (!c.isAnnotationPresent(EmbedParent.class)) {
-                break;
-            }
-        }
 
-        BeanInfo beanInfo;
-        try {
-            beanInfo = Introspector.getBeanInfo(tableClass, Introspector.IGNORE_ALL_BEANINFO);
-        } catch (IntrospectionException e) {
-            throw new MybatisExtException(e);
-        }
+            BeanInfo beanInfo;
+            try {
+                beanInfo = Introspector.getBeanInfo(c, Introspector.IGNORE_ALL_BEANINFO);
+            } catch (IntrospectionException e) {
+                throw new MybatisExtException(e);
+            }
 
-        for (PropertyDescriptor propertyDescriptor : beanInfo.getPropertyDescriptors()) {
-            if (tableInfo.getNameToPropertyInfo().containsKey(propertyDescriptor.getName())) {
-                continue;
-            }
-            Method readMethod = propertyDescriptor.getReadMethod();
-            if (readMethod == null) {
-                continue;
-            }
-            if (readMethod.getDeclaringClass() != tableClass && !tableClass.isAnnotationPresent(EmbedParent.class)) {
-                continue;
-            }
-            Column column = readMethod.getAnnotation(Column.class);
-            if (column != null) {
-                processColumn(tableInfo, column, readMethod.getAnnotation(Id.class), propertyDescriptor.getName(), propertyDescriptor.getPropertyType());
-            } else {
-                JoinRelation[] joinRelations = readMethod.getAnnotationsByType(JoinRelation.class);
-                if (joinRelations.length > 0) {
-                    processJoinRelations(tableInfo, joinRelations, readMethod.getAnnotation(LoadStrategy.class), readMethod.getName(), readMethod.getGenericReturnType(), featureToJoinTableInfo, aliasToJoinTableInfo, aliasCount);
+            for (PropertyDescriptor propertyDescriptor : beanInfo.getPropertyDescriptors()) {
+                if (tableInfo.getNameToPropertyInfo().containsKey(propertyDescriptor.getName())) {
+                    continue;
+                }
+                Method readMethod = propertyDescriptor.getReadMethod();
+                if (readMethod == null) {
+                    continue;
+                }
+                if (readMethod.getDeclaringClass() != c) {
+                    continue;
+                }
+                Column column = readMethod.getAnnotation(Column.class);
+                if (column != null) {
+                    if (inJoinParent) {
+                        processJoinProperty(tableInfo, c, new JoinRelation[0], column, readMethod.getAnnotation(LoadStrategy.class), readMethod.getName(), readMethod.getGenericReturnType(), featureToJoinTableInfo, aliasCount);
+                    } else {
+                        processColumn(tableInfo, column, readMethod.getAnnotation(Id.class), propertyDescriptor.getName(), propertyDescriptor.getPropertyType());
+                    }
+                } else {
+                    JoinRelation[] joinRelations = readMethod.getAnnotationsByType(JoinRelation.class);
+                    if (joinRelations.length > 0) {
+                        processJoinProperty(tableInfo, c, joinRelations, null, readMethod.getAnnotation(LoadStrategy.class), readMethod.getName(), readMethod.getGenericReturnType(), featureToJoinTableInfo, aliasCount);
+                    }
                 }
             }
-        }
 
-        for (PropertyInfo propertyInfo : parentPropertyInfos) {
-            if (!tableInfo.getNameToPropertyInfo().containsKey(propertyInfo.getName())) {
-                tableInfo.getNameToPropertyInfo().put(propertyInfo.getName(), propertyInfo);
+            if (c.isAnnotationPresent(EmbedParent.class)) {
+                continue;
             }
+            if (!c.isAnnotationPresent(JoinParent.class)) {
+                break;
+            }
+            inJoinParent = true;
         }
 
         String alias = tableInfo.getJoinTableInfo().getAlias();
@@ -143,74 +144,6 @@ public class TableInfoFactory {
             tableInfo.getJoinTableInfo().setAlias(alias);
             tableInfo.getAliasToJoinTableInfo().put(alias, tableInfo.getJoinTableInfo());
         }
-    }
-
-    private static void processJoinParent(Class<?> tableClass, JoinParent joinParent, TableInfo tableInfo, List<PropertyInfo> parentPropertyInfos, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
-        Class<?> superclass = tableClass.getSuperclass();
-        if (superclass == null || superclass == Object.class) {
-            throw new MybatisExtException("Illegal parent class: " + superclass);
-        }
-        TableInfo parentTableInfo = getTableInfo(superclass);
-        JoinTableInfo parentJoinTableInfo = null;
-
-        // 收集别名，拷贝关联关系图
-        List<JoinTableInfo> queue = new ArrayList<>();
-        Map<JoinTableInfo, JoinTableInfo> oldToNewJoinTableInfo = new HashMap<>();
-        queue.add(parentTableInfo.getJoinTableInfo());
-        for (int i = 0; i < queue.size(); i++) {
-            JoinTableInfo joinTableInfo = queue.get(i);
-            JoinTableInfo newJoinTableInfo = new JoinTableInfo();
-            newJoinTableInfo.setAlias(joinTableInfo.getAlias());
-            newJoinTableInfo.setTableInfo(joinTableInfo.getTableInfo());
-            oldToNewJoinTableInfo.put(joinTableInfo, newJoinTableInfo);
-            if (parentTableInfo.getJoinTableInfo() == joinTableInfo) {
-                parentJoinTableInfo = newJoinTableInfo;
-                // 处理关联信息
-                for (JoinColumn joinColumn : joinParent.joinColumn()) {
-                    JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
-                    joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
-                    joinColumnInfo.setRightColumn(joinColumn.rightColumn());
-                    tableInfo.getJoinTableInfo().getRightJoinTableInfos().put(joinColumnInfo, newJoinTableInfo);
-                    newJoinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, tableInfo.getJoinTableInfo());
-                }
-                if (StringUtils.isNotBlank(joinParent.alias())) {
-                    if (tableInfo.getAliasToJoinTableInfo().containsKey(joinParent.alias())) {
-                        throw new MybatisExtException("Duplicate table alias: " + joinParent.alias());
-                    }
-                    newJoinTableInfo.setAlias(joinParent.alias());
-                    aliasToJoinTableInfo.put(joinParent.alias(), newJoinTableInfo);
-                }
-            }
-            joinTableInfo.getRightJoinTableInfos().forEach((joinColumnInfo, rightJoinTable) -> {
-                if (!queue.contains(rightJoinTable) && rightJoinTable.getLeftJoinTableInfos().values().stream().map(v -> queue.contains(v)).reduce((a, b) -> a && b).get()) {
-                    queue.add(rightJoinTable);
-                }
-            });
-            joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTable) -> {
-                JoinTableInfo newLeftJoinTableInfo = oldToNewJoinTableInfo.get(leftJoinTable);
-                assert newLeftJoinTableInfo != null;
-                newLeftJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, newJoinTableInfo);
-                newJoinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, newLeftJoinTableInfo);
-            });
-            Set<JoinColumnFeature> joinColumnFeatures = newJoinTableInfo.getLeftJoinTableInfos().entrySet().stream().map(v -> buildJoinColumnFeature(v.getKey(), v.getValue(), newJoinTableInfo)).collect(Collectors.toSet());
-            featureToJoinTableInfo.put(joinColumnFeatures, newJoinTableInfo);
-            tableInfo.getAliasToJoinTableInfo().put(newJoinTableInfo.getAlias(), newJoinTableInfo);
-        }
-
-        // 处理属性信息
-        JoinTableInfo finalParentJoinTableInfo = parentJoinTableInfo;
-        parentTableInfo.getNameToPropertyInfo().forEach((name, propertyInfo) -> {
-            PropertyInfo newPropertyInfo = new PropertyInfo();
-            newPropertyInfo.setName(propertyInfo.getName());
-            newPropertyInfo.setTableInfo(propertyInfo.getTableInfo());
-            newPropertyInfo.setJavaType(propertyInfo.getJavaType());
-            newPropertyInfo.setResultType(propertyInfo.getResultType());
-            newPropertyInfo.setOfType(propertyInfo.getOfType());
-            newPropertyInfo.setLoadType(joinParent.loadType());
-            newPropertyInfo.setJoinTableInfo(finalParentJoinTableInfo);
-            newPropertyInfo.setColumnName(propertyInfo.getColumnInfo() != null ? propertyInfo.getColumnInfo().getName() : propertyInfo.getColumnName());
-            parentPropertyInfos.add(newPropertyInfo);
-        });
     }
 
     private static void processColumn(TableInfo tableInfo, Column column, @Nullable Id id, String propertyName, Class<?> propertyClass) {
@@ -258,33 +191,78 @@ public class TableInfoFactory {
         propertyInfo.setResultType(ResultType.ID);
     }
 
-    private static void processJoinRelations(TableInfo tableInfo, JoinRelation[] joinRelations, @Nullable LoadStrategy loadStrategy, String propertyName, Type propertyType, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, Map<String, JoinTableInfo> aliasToJoinTableInfo, AtomicInteger aliasCount) {
+    private static void processJoinProperty(TableInfo tableInfo, Class<?> currentClass, JoinRelation[] joinRelations, @Nullable Column column, @Nullable LoadStrategy loadStrategy, String propertyName, Type propertyType, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         PropertyInfo propertyInfo = new PropertyInfo();
         propertyInfo.setName(propertyName);
         propertyInfo.setTableInfo(tableInfo);
-        if (loadStrategy != null) {
-            propertyInfo.setLoadType(loadStrategy.value());
-        }
         resolvePropertyType(propertyInfo, propertyType);
         tableInfo.getNameToPropertyInfo().put(propertyName, propertyInfo);
 
-        JoinRelation lastJoinRelation = joinRelations[joinRelations.length - 1];
-        if (lastJoinRelation.table() != void.class) {
-            if (StringUtils.isNotBlank(lastJoinRelation.column())) {
-                propertyInfo.setColumnName(lastJoinRelation.column());
-            } else {
-                propertyInfo.setColumnName(StringUtils.camelToSnake(propertyName));
+        if (loadStrategy != null) {
+            propertyInfo.setLoadType(loadStrategy.value());
+        }
+
+        if (column != null) {
+            propertyInfo.setColumnName(StringUtils.isNotBlank(column.name()) ? column.name() : StringUtils.camelToSnake(propertyName));
+        } else {
+            JoinRelation joinRelation = joinRelations[joinRelations.length - 1];
+            if (joinRelation.table() != void.class) {
+                propertyInfo.setColumnName(StringUtils.isNotBlank(joinRelation.column()) ? joinRelation.column() : StringUtils.camelToSnake(propertyName));
             }
         }
 
-        Map<String, JoinTableInfo> localAliasToJoinTableInfo = new HashMap<>(aliasToJoinTableInfo);
-        buildJoinTableInfos(tableInfo, propertyInfo, joinRelations, localAliasToJoinTableInfo);
-        checkJoinTableInfos(localAliasToJoinTableInfo);
+        Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
+        buildJoinTableInfos(tableInfo, currentClass, propertyInfo, joinRelations, aliasToJoinTableInfo);
+        checkJoinTableInfos(aliasToJoinTableInfo);
         mergeJoinTableInfos(tableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
     }
 
-    private static void buildJoinTableInfos(TableInfo rootTableInfo, PropertyInfo propertyInfo, JoinRelation[] joinRelations, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
+    private static void buildJoinTableInfos(TableInfo rootTableInfo, Class<?> currentClass, PropertyInfo propertyInfo, JoinRelation[] joinRelations, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
         JoinTableInfo lastJoinTableInfo = rootTableInfo.getJoinTableInfo();
+        JoinTableInfo parentJoinTableInfo = lastJoinTableInfo;
+        Class<?> tableClass = rootTableInfo.getTableClass();
+
+        for (Class<?> c = tableClass; currentClass.isAssignableFrom(c) && c != Object.class; c = c.getSuperclass()) {
+            if (c.isAnnotationPresent(EmbedParent.class)) {
+                continue;
+            }
+            if (!c.isAnnotationPresent(JoinParent.class)) {
+                break;
+            }
+            JoinParent joinParent = c.getAnnotation(JoinParent.class);
+            TableInfo tableInfo = getTableInfo(c.getSuperclass());
+            lastJoinTableInfo = parentJoinTableInfo;
+            parentJoinTableInfo = new JoinTableInfo();
+            parentJoinTableInfo.setTableInfo(tableInfo);
+            parentJoinTableInfo.setAlias(joinParent.alias());
+
+            for (JoinColumn joinColumn : joinParent.joinColumn()) {
+                JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
+                joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
+                joinColumnInfo.setRightColumn(joinColumn.rightColumn());
+                lastJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, parentJoinTableInfo);
+                parentJoinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, lastJoinTableInfo);
+            }
+        }
+
+        if (StringUtils.isNotBlank(lastJoinTableInfo.getAlias())) {
+            aliasToJoinTableInfo.put(lastJoinTableInfo.getAlias(), lastJoinTableInfo);
+        }
+        if (parentJoinTableInfo != lastJoinTableInfo && StringUtils.isNotBlank(parentJoinTableInfo.getAlias())) {
+            if (aliasToJoinTableInfo.containsKey(parentJoinTableInfo.getAlias())) {
+                throw new MybatisExtException("Duplicate table alias: " + parentJoinTableInfo.getAlias());
+            }
+            aliasToJoinTableInfo.put(parentJoinTableInfo.getAlias(), parentJoinTableInfo);
+        }
+
+        if (joinRelations.length > 0) {
+            processJoinRelations(lastJoinTableInfo, propertyInfo, joinRelations, aliasToJoinTableInfo);
+        } else {
+            propertyInfo.setJoinTableInfo(parentJoinTableInfo);
+        }
+    }
+
+    private static void processJoinRelations(JoinTableInfo lastJoinTableInfo, PropertyInfo propertyInfo, JoinRelation[] joinRelations, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
         for (JoinRelation joinRelation : joinRelations) {
             JoinTableInfo joinTableInfo;
             TableInfo tableInfo = resolveTableInfoFromJoinRelation(propertyInfo, joinRelation);
@@ -349,14 +327,14 @@ public class TableInfoFactory {
                 if (!queue.contains(joinTableInfo) && joinTableInfo.getLeftJoinTableInfos().values().stream().map(v -> queue.contains(v)).reduce((a, b) -> a && b).get()) {
                     queue.add(joinTableInfo);
                 }
-                if (joinTableInfo.isMerged()) {
-                    continue;
-                }
 
                 Set<JoinColumnFeature> joinColumnFeatures = joinTableInfo.getLeftJoinTableInfos().entrySet().stream().map(v -> buildJoinColumnFeature(v.getKey(), v.getValue(), joinTableInfo)).collect(Collectors.toSet());
                 JoinTableInfo existedJoinTableInfo = featureToJoinTableInfo.get(joinColumnFeatures);
 
                 if (existedJoinTableInfo != null) {
+                    if (existedJoinTableInfo == joinTableInfo) {
+                        continue;
+                    }
                     joinTableInfo.getLeftJoinTableInfos().forEach((leftJoinColumnInfo, leftJoinTableInfo) -> {
                         leftJoinTableInfo.getRightJoinTableInfos().remove(leftJoinColumnInfo);
                     });
