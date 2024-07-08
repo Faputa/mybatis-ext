@@ -1,7 +1,10 @@
 package io.github.mybatisext.metadata;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+
+import io.github.mybatisext.util.StringUtils;
 
 public class JoinTableInfo {
 
@@ -9,7 +12,6 @@ public class JoinTableInfo {
     private final Map<JoinColumnInfo, JoinTableInfo> leftJoinTableInfos = new HashMap<>();
     private final Map<JoinColumnInfo, JoinTableInfo> rightJoinTableInfos = new HashMap<>();
     private String alias;
-    private boolean merged;
 
     public TableInfo getTableInfo() {
         return tableInfo;
@@ -36,11 +38,16 @@ public class JoinTableInfo {
     }
 
     public boolean isMerged() {
-        return merged;
+        return StringUtils.isNotBlank(alias);
     }
 
-    public void setMerged(boolean merged) {
-        this.merged = merged;
+    public LinkedHashSet<String> getTableAliases() {
+        LinkedHashSet<String> tableAliases = new LinkedHashSet<>();
+        leftJoinTableInfos.forEach((leftJoinColumn, leftJoinTable) -> {
+            tableAliases.addAll(leftJoinTable.getTableAliases());
+        });
+        tableAliases.add(alias);
+        return tableAliases;
     }
 
     @Override

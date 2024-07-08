@@ -1,7 +1,5 @@
 package io.github.mybatisext.metadata;
 
-import java.util.LinkedHashSet;
-
 import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.idgenerator.IdGenerator;
@@ -26,8 +24,7 @@ public class PropertyInfo {
 
     // resultType=ASSOCIATION,COLLECTION
     private LoadType loadType;
-    // 依赖的其他表的别名
-    final private LinkedHashSet<String> tableAliases = new LinkedHashSet<>();
+    private JoinTableInfo joinTableInfo;
     private String columnName;
 
     public String getName() {
@@ -102,8 +99,12 @@ public class PropertyInfo {
         this.loadType = loadType;
     }
 
-    public LinkedHashSet<String> getTableAliases() {
-        return tableAliases;
+    public JoinTableInfo getJoinTableInfo() {
+        return joinTableInfo;
+    }
+
+    public void setJoinTableInfo(JoinTableInfo joinTableInfo) {
+        this.joinTableInfo = joinTableInfo;
     }
 
     public String getColumnName() {

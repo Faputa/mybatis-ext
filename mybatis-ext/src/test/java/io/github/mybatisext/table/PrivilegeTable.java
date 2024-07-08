@@ -10,8 +10,8 @@ import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.JoinRelations;
 import io.github.mybatisext.annotation.Table;
 
-@Table
-@JoinParent(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"))
+@Table(alias = "pt")
+@JoinParent(alias = "mt", joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"))
 public class PrivilegeTable extends MetadataTable {
 
     @Id
@@ -48,12 +48,15 @@ public class PrivilegeTable extends MetadataTable {
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "connection_id", rightColumn = "id"), table = MetadataConnection.class, column = "name")
     private String dbName;
 
+    @JoinRelation(joinColumn = @JoinColumn(leftTableAlias = "mt", leftColumn = "connection_id", rightColumn = "id"), table = MetadataConnection.class, column = "name")
+    private String dbName2;
+
     @JoinRelations({
             @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class, column = "name")
     })
     private String tableName;
 
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftTableAlias = "pt", leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class)
     private String connectionId;
 
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class)
