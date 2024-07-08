@@ -284,7 +284,7 @@ public class TableInfoFactory {
     }
 
     private static void buildJoinTableInfos(TableInfo rootTableInfo, PropertyInfo propertyInfo, JoinRelation[] joinRelations, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
-        JoinTableInfo lastJoinTableInfo = null;
+        JoinTableInfo lastJoinTableInfo = rootTableInfo.getJoinTableInfo();
         for (JoinRelation joinRelation : joinRelations) {
             JoinTableInfo joinTableInfo;
             TableInfo tableInfo = resolveTableInfoFromJoinRelation(propertyInfo, joinRelation);
@@ -322,13 +322,8 @@ public class TableInfoFactory {
                         aliasToJoinTableInfo.put(joinColumn.leftTableAlias(), leftJoinTableInfo);
                     }
                 } else {
-                    if (lastJoinTableInfo != null) {
-                        lastJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
-                        joinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, lastJoinTableInfo);
-                    } else {
-                        rootTableInfo.getJoinTableInfo().getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
-                        joinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, rootTableInfo.getJoinTableInfo());
-                    }
+                    lastJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
+                    joinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, lastJoinTableInfo);
                 }
             }
             lastJoinTableInfo = joinTableInfo;
