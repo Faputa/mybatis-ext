@@ -37,10 +37,6 @@ public class JoinTableInfo {
         return rightJoinTableInfos;
     }
 
-    public boolean isMerged() {
-        return StringUtils.isNotBlank(alias);
-    }
-
     public LinkedHashSet<String> getTableAliases() {
         LinkedHashSet<String> tableAliases = new LinkedHashSet<>();
         leftJoinTableInfos.forEach((leftJoinColumn, leftJoinTable) -> {
@@ -52,6 +48,6 @@ public class JoinTableInfo {
 
     @Override
     public String toString() {
-        return tableInfo.getName() + " AS " + alias;
+        return (tableInfo != null ? tableInfo.getName() : "") + " AS " + alias;
     }
 }

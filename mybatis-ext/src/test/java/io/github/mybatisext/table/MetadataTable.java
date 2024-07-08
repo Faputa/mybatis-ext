@@ -3,13 +3,13 @@ package io.github.mybatisext.table;
 import java.sql.Timestamp;
 
 import io.github.mybatisext.annotation.Column;
+import io.github.mybatisext.annotation.EmbedParent;
 import io.github.mybatisext.annotation.Id;
-import io.github.mybatisext.annotation.JoinColumn;
-import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.Table;
 
 @Table
-@JoinParent(joinColumn = @JoinColumn(leftColumn = "connection_id", rightColumn = "id"))
+// @JoinParent(joinColumn = @JoinColumn(leftColumn = "connection_id", rightColumn = "id"))
+@EmbedParent
 public class MetadataTable extends MetadataConnection {
 
     @Id
