@@ -48,7 +48,6 @@ public class TableInfoFactory {
         tableInfoCache.put(tableClass, tableInfo);
         JoinTableInfo joinTableInfo = new JoinTableInfo();
         joinTableInfo.setTableInfo(tableInfo);
-        joinTableInfo.setMerged(true);
         tableInfo.setJoinTableInfo(joinTableInfo);
         tableInfo.setTableClass(tableClass);
 
@@ -78,7 +77,7 @@ public class TableInfoFactory {
         List<PropertyInfo> parentPropertyInfos = new ArrayList<>();
         JoinParent joinParent = tableClass.getAnnotation(JoinParent.class);
         if (joinParent != null) {
-            processJoinParent(tableClass, joinParent, tableInfo, parentPropertyInfos, featureToJoinTableInfo);
+            processJoinParent(tableClass, joinParent, tableInfo, parentPropertyInfos, featureToJoinTableInfo, aliasToJoinTableInfo);
         }
 
         for (Class<?> c = tableClass; c != null && c != Object.class; c = c.getSuperclass()) {
@@ -146,12 +145,13 @@ public class TableInfoFactory {
         }
     }
 
-    private static void processJoinParent(Class<?> tableClass, JoinParent joinParent, TableInfo tableInfo, List<PropertyInfo> parentPropertyInfos, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
+    private static void processJoinParent(Class<?> tableClass, JoinParent joinParent, TableInfo tableInfo, List<PropertyInfo> parentPropertyInfos, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
         Class<?> superclass = tableClass.getSuperclass();
         if (superclass == null || superclass == Object.class) {
             throw new MybatisExtException("Illegal parent class: " + superclass);
         }
         TableInfo parentTableInfo = getTableInfo(superclass);
+        JoinTableInfo parentJoinTableInfo = null;
 
         // 收集别名，拷贝关联关系图
         List<JoinTableInfo> queue = new ArrayList<>();
@@ -162,9 +162,9 @@ public class TableInfoFactory {
             JoinTableInfo newJoinTableInfo = new JoinTableInfo();
             newJoinTableInfo.setAlias(joinTableInfo.getAlias());
             newJoinTableInfo.setTableInfo(joinTableInfo.getTableInfo());
-            newJoinTableInfo.setMerged(true);
             oldToNewJoinTableInfo.put(joinTableInfo, newJoinTableInfo);
             if (parentTableInfo.getJoinTableInfo() == joinTableInfo) {
+                parentJoinTableInfo = newJoinTableInfo;
                 // 处理关联信息
                 for (JoinColumn joinColumn : joinParent.joinColumn()) {
                     JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
@@ -172,6 +172,13 @@ public class TableInfoFactory {
                     joinColumnInfo.setRightColumn(joinColumn.rightColumn());
                     tableInfo.getJoinTableInfo().getRightJoinTableInfos().put(joinColumnInfo, newJoinTableInfo);
                     newJoinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, tableInfo.getJoinTableInfo());
+                }
+                if (StringUtils.isNotBlank(joinParent.alias())) {
+                    if (tableInfo.getAliasToJoinTableInfo().containsKey(joinParent.alias())) {
+                        throw new MybatisExtException("Duplicate table alias: " + joinParent.alias());
+                    }
+                    newJoinTableInfo.setAlias(joinParent.alias());
+                    aliasToJoinTableInfo.put(joinParent.alias(), newJoinTableInfo);
                 }
             }
             joinTableInfo.getRightJoinTableInfos().forEach((joinColumnInfo, rightJoinTable) -> {
@@ -181,6 +188,7 @@ public class TableInfoFactory {
             });
             joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTable) -> {
                 JoinTableInfo newLeftJoinTableInfo = oldToNewJoinTableInfo.get(leftJoinTable);
+                assert newLeftJoinTableInfo != null;
                 newLeftJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, newJoinTableInfo);
                 newJoinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, newLeftJoinTableInfo);
             });
@@ -190,6 +198,7 @@ public class TableInfoFactory {
         }
 
         // 处理属性信息
+        JoinTableInfo finalParentJoinTableInfo = parentJoinTableInfo;
         parentTableInfo.getNameToPropertyInfo().forEach((name, propertyInfo) -> {
             PropertyInfo newPropertyInfo = new PropertyInfo();
             newPropertyInfo.setName(propertyInfo.getName());
@@ -198,8 +207,7 @@ public class TableInfoFactory {
             newPropertyInfo.setResultType(propertyInfo.getResultType());
             newPropertyInfo.setOfType(propertyInfo.getOfType());
             newPropertyInfo.setLoadType(joinParent.loadType());
-            newPropertyInfo.getTableAliases().add(parentTableInfo.getJoinTableInfo().getAlias());
-            newPropertyInfo.getTableAliases().addAll(propertyInfo.getTableAliases());
+            newPropertyInfo.setJoinTableInfo(finalParentJoinTableInfo);
             newPropertyInfo.setColumnName(propertyInfo.getColumnInfo() != null ? propertyInfo.getColumnInfo().getName() : propertyInfo.getColumnName());
             parentPropertyInfos.add(newPropertyInfo);
         });
@@ -325,6 +333,7 @@ public class TableInfoFactory {
             }
             lastJoinTableInfo = joinTableInfo;
         }
+        propertyInfo.setJoinTableInfo(lastJoinTableInfo);
     }
 
     private static void checkJoinTableInfos(Map<String, JoinTableInfo> aliasToJoinTableInfo) {
@@ -342,10 +351,10 @@ public class TableInfoFactory {
         for (int i = 0; i < queue.size(); i++) {
             Set<JoinTableInfo> joinTableInfos = queue.get(i).getRightJoinTableInfos().values().stream().collect(Collectors.toSet());
             for (JoinTableInfo joinTableInfo : joinTableInfos) {
-                if (joinTableInfo.isMerged()) {
-                    continue;
+                if (!queue.contains(joinTableInfo) && joinTableInfo.getLeftJoinTableInfos().values().stream().map(v -> queue.contains(v)).reduce((a, b) -> a && b).get()) {
+                    queue.add(joinTableInfo);
                 }
-                if (!joinTableInfo.getLeftJoinTableInfos().values().stream().map(v -> v.isMerged()).reduce((a, b) -> a && b).get()) {
+                if (joinTableInfo.isMerged()) {
                     continue;
                 }
 
@@ -362,22 +371,20 @@ public class TableInfoFactory {
                     });
                     joinTableInfo.getLeftJoinTableInfos().clear();
                     joinTableInfo.getRightJoinTableInfos().clear();
-                    queue.add(existedJoinTableInfo);
-                    propertyInfo.getTableAliases().add(existedJoinTableInfo.getAlias());
+                    if (propertyInfo.getJoinTableInfo() == joinTableInfo) {
+                        propertyInfo.setJoinTableInfo(existedJoinTableInfo);
+                    }
                     continue;
                 }
 
-                queue.add(joinTableInfo);
                 featureToJoinTableInfo.put(joinColumnFeatures, joinTableInfo);
 
-                joinTableInfo.setMerged(true);
                 String alias = joinTableInfo.getAlias();
                 while (StringUtils.isBlank(alias) || rootTableInfo.getAliasToJoinTableInfo().containsKey(alias)) {
                     alias = "t" + aliasCount.getAndIncrement();
                 }
                 joinTableInfo.setAlias(alias);
                 rootTableInfo.getAliasToJoinTableInfo().put(alias, joinTableInfo);
-                propertyInfo.getTableAliases().add(alias);
             }
         }
     }

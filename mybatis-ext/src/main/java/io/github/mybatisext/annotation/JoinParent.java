@@ -9,6 +9,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface JoinParent {
 
+    /** 别名 */
+    String alias() default "";
+
     JoinColumn[] joinColumn();
 
     LoadType loadType() default LoadType.JOIN;
