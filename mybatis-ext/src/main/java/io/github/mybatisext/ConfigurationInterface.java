@@ -48,8 +48,7 @@ import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
- * 此接口的方法应与 @see {@link org.apache.ibatis.session.Configuration}
- * 中所有的public方法保持同步
+ * 此接口的方法应与 {@link org.apache.ibatis.session.Configuration} 中所有的public方法保持同步
  */
 public interface ConfigurationInterface {
 

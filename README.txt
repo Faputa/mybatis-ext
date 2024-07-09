@@ -26,7 +26,7 @@ extends Configuration
 call MapperRegistry.getMappers()
 
 https://www.cnblogs.com/roytian/p/12762218.html
-https://mybatis.org/mybatis-3/zh/configuration.html#plugins
+https://mybatis.org/mybatis-3/zh_CN/configuration.html#plugins
 https://mybatis.org/spring-boot-starter/mybatis-spring-boot-autoconfigure/zh/index.html
 
 吐槽mybatisplus，侵入性强+乱用分层模型+弱鸡JPA+代码实现脏
@@ -46,19 +46,20 @@ TODO
     deleteBatch
     get
     list
+        定义where对象（核心）
     count
     exists
     ——————
     实现方案
         SqlProvider 问题：无法重写
         buildMappedStatement
-方法名定义查询
+方法名定义查询（核心）
     find|select|list|get...By...
     update...By...
     delete|remove...By...
     count...By...
     exists...By...
-维表字段
+关联关系（核心）
     一对一
     多对一
     一对多
@@ -68,6 +69,17 @@ TODO
         懒加载
         即时加载
 queryDSL
+    构建出来的SQL和不涉及关联关系查询
+    暂时不重要，通用方法和方法名查询不基于queryDSL
+    设计
+        参考mybatis-flex的QueryWrapper
+    如何执行？
+        使用@SelectProvider
+            如何获取datasource以选择方言？
+                getMappedStatement时将Configuration放到线程变量中，供SqlProvider从线程变量中获取
+                或者通过拦截器设置线程变量
+            返回类型怎么转换？
+                字段名按照mybatis规则对应，下划线命名对应驼峰
 代码生成器
 逆向生成表
     更新
@@ -212,44 +224,15 @@ resultmap嵌套select命名自动生成规则
             嵌合
         父类的表是子类表的关联表（右表）
 
-queryDSL
-    select ? from ? where ?
-    select ? from ? left join ? on ? where ?
-    select ? from ? order by ?
-    select ? from ? group by ?
-    select ? from ? group by ? having ?
-    insert into ? values (?)
-    insert into ? (?) values (?)
-    update ? set ? where ?
-    update ? left join ? on ? set ? where ?
-    delete from ? where ?
-    delete from ? left join ? on ? where ?
-
-dsl设计思路
-    dsl=ast+astBuilder
-
-select(...)
-selectAll(A.class)
-selectProperty(P.class)
-
-ast设计，参考jsqlparser
-    Select
-        List<SelectItem> selectItems
-        FromItem fromItem
-        List<Join> joins
-        Expression where
-        List<Expression> groupBy
-        Expression having
-        Limit limit
-    Update
-    Insert
-    Delete
-
-考虑优化冗余join表
-    因为selectAll的时候可能已经存在join表，如果在此基础上增加join表，可能存在冗余
-    是，对selectAll优化
-    否，对selectProperty优化
-
 考虑方法重载
     确定参数类型
     确定参数数量
+
+如何根据实际数据库类型生成sql？
+    生成MappedStatement根据datasource选择方言
+如何兼容动态数据源？
+    只有实际执行的时候才注册MappedStatement，校验mapper方法的时候不能注册MappedStatement
+        动态数据源顾名思义，datasource获取的实际数据源是动态的，实际执行时候和校验时候获取的实际数据源可能不一致，实际执行时候获取到数据源才是真实的数据源
+        校验的时候不需要使用真正的datasource，默认即可，以提升性能
+    或者考虑databaseId？
+        不可，databaseId的原理是在启动时根据datasource选择匹配的databaseId的语句作为statement，原理和根据datasource选择方言的做法一样，所以不能解决问题。注：mybatis-plus的dynamic-datasource所以不支持databaseId
