@@ -18,8 +18,12 @@ public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
         this.extContext = extContext;
     }
 
+    @Override
     protected SqlSessionFactory buildSqlSessionFactory() throws Exception {
-        SqlSessionFactory sqlSessionFactory = super.buildSqlSessionFactory();
+        return buildSqlSessionFactory(super.buildSqlSessionFactory());
+    }
+
+    public SqlSessionFactory buildSqlSessionFactory(SqlSessionFactory sqlSessionFactory) throws Exception {
         Configuration configuration = sqlSessionFactory.getConfiguration();
         if (configuration instanceof ExtConfiguration) {
             return sqlSessionFactory;
