@@ -18,7 +18,7 @@ public class OrgRelationCameraTest {
         List<Org> orgs2 = orgMapper.selectOrgLazy();
         List<Org> orgs3 = orgMapper.selectOrgJoin();
         System.out.println(orgs.size());
-        System.out.println(orgs2.size());
         System.out.println(orgs3.size());
+        System.out.println(orgs2.size());
     }
 }
