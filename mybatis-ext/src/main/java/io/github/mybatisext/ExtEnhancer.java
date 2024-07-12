@@ -26,7 +26,13 @@ public class ExtEnhancer {
 
     private final Configuration originConfiguration;
     private final MappedStatementBuilder statementBuilder;
-    private final Set<String> builtStatementId = ConcurrentHashMap.newKeySet();;
+    private final Set<String> builtStatementId = ConcurrentHashMap.newKeySet();
+
+    private static ThreadLocal<ExtEnhancer> instance = new ThreadLocal<>();
+
+    public static ExtEnhancer getInstance() {
+        return instance.get();
+    }
 
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
 
@@ -36,6 +42,7 @@ public class ExtEnhancer {
     }
 
     public MappedStatement getMappedStatement(String id) {
+        instance.set(this);
         MappedStatement mappedStatement = this.originConfiguration.getMappedStatement(id);
         if (mappedStatement != null) {
             return mappedStatement;
@@ -80,6 +87,10 @@ public class ExtEnhancer {
                 }
             }
         }
+    }
+
+    public Configuration getOriginConfiguration() {
+        return originConfiguration;
     }
 
     private MappedStatement resolveMappedStatement(String id) {
