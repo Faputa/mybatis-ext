@@ -294,3 +294,35 @@ resultmap嵌套select命名自动生成规则
         校验的时候不需要使用真正的datasource，默认即可，以提升性能
     或者考虑databaseId？
         不可，databaseId的原理是在启动时根据datasource选择匹配的databaseId的语句作为statement，原理和根据datasource选择方言的做法一样，所以不能解决问题。注：mybatis-plus的dynamic-datasource所以不支持databaseId
+
+方法名定义CRUD歧义
+    出现歧义怎么办？
+        选择第一条正确的含义返回
+        √报错，抛出最开始的歧义项
+        报错，抛出最后面的歧义项
+    属性和关键字歧义
+        问题
+            如果类存在列属性order，则listOrderByName()存在歧义
+        解决
+            定义转义字符$表示后续单词一定是关键字，转义字符本身也是关键字，$$表示$
+                listOrder$ByName()表示order为属性，by为关键字
+                list$OrderByName()表示orderBy为关键字
+    属性和属性歧义
+        问题
+            如果类存在同时存在这三个属性addressZipCode、addressZip、address之二，则addressZipCode存在歧义
+            addressZipCode
+            addressZip.code
+            address.zipCode
+            address.zip.code
+        解决
+            必须使用关键字Dot表示对子属性的引用
+                address.zipCode必须表示为
+                addressDotZipCode或者
+                address$DotZipCode
+    谓词连接词And和Or
+        问题
+            如果谓词中同时存在连接词And和Or，那么And和Or的关系是什么
+        解决
+            √不管
+            参考JPA，And的优先级大于Or
+            引入括号关键字
