@@ -5,7 +5,7 @@
 需求
     基于mybatis，且遵守开闭原则，基于mybatis官方提供的增强方式实现。
     基于mapper方法名自动生成符合含义的CRUD语句。
-    可以将任意结构的Java对象映射到数据库中的表结构，可以表达任意层次结构、关联关系、加载方式。
+    可以将任意结构的Java对象映射到数据库中的表结构，可以表达任意层次结构、关联关系、查询方式。
     不侵入项目，只需补全xml映射文件之后即可移除本框架，且本框架只作用于dao层，不侵入service层。
     自动支持其他mybatis增强框架，本框架不支持的功能可以结合其他框架实现。
 思路
@@ -35,8 +35,8 @@
         支持批量查询
         支持级联查询
             连接查询
-            分开查询
-            懒加载查询
+            嵌套查询
+            懒加载嵌套查询
         支持新增
         支持批量新增
         考虑支持级联新增
@@ -59,7 +59,7 @@
 基于mybatis实现
     类似jpa根据函数名自动生成对应的语句
 静态生成statement
-    类似Lombok，编译时生成xml文件
+    类似Lombok，编译时生成xml文件（APT）
 动态生成statement
     1.参考mybatis plus
     2.@SelectProvider，参考mybatis-mapper，侵入性太强且不灵活，考虑废弃
@@ -125,7 +125,7 @@ TODO
     ——————
     支持场景
         懒加载
-        即时加载
+        即时查询
 queryDSL
     构建出来的SQL和不涉及关联关系查询
     暂时不重要，通用方法和方法名查询不基于queryDSL
@@ -326,3 +326,79 @@ resultmap嵌套select命名自动生成规则
             √不管
             参考JPA，And的优先级大于Or
             引入括号关键字
+
+考虑重构PropertyInfo类型
+    PropertyInfoId
+    PropertyInfoResult
+    PropertyInfoAssociation
+        表示当前表的多个字段
+        表示关联表的多个字段
+            连接查询
+            嵌套查询（包括懒加载查询）
+    PropertyInfoCollection
+        表示当前表的多个字段
+        表示关联表的多个字段
+            连接查询
+            嵌套查询（包括懒加载查询）
+
+一阶段计划
+    不支持嵌套查询
+    不支持列表属性列
+    不支持级联查询
+    不支持级联DML
+    不支持代码生成器
+    不支持逆向生成器
+    不支持queryDSL
+
+一阶段技术拼图
+    Java类生成元数据
+    元数据生成resultMap
+    方法名生成SQL
+    条件对象生成script
+
+二阶段计划
+    支持嵌套查询
+    支持级联查询
+
+三阶段计划
+    支持代码生成器
+    支持逆向生成器
+    支持queryDSL
+
+Id|Result
+    property
+    javaType
+    jdbcType
+    typeHandler
+    column
+
+association
+    property
+    javaType
+    jdbcType
+    typeHandler
+    ————NestedSelect————
+    column
+    select
+    fetchType
+    ————NestedResultMap————
+    resultMap
+    columnPrefix
+    notNullColumn
+    autoMapping
+
+collection
+    property
+    javaType
+    jdbcType
+    typeHandler
+    ofType
+    ————NestedSelect————
+    column
+    select
+    fetchType
+    ————NestedResultMap————
+    resultMap
+    columnPrefix
+    notNullColumn
+    autoMapping
