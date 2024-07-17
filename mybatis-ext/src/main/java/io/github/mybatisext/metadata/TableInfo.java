@@ -17,11 +17,11 @@ public class TableInfo {
     /** 连接图 */
     private JoinTableInfo joinTableInfo;
     /** 别名到关联表的映射 */
-    final private Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
+    private final Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
     /** 名字到属性的映射 */
-    final private Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
+    private final Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
     /** 名字到列的映射 */
-    final private Map<String, ColumnInfo> nameToColumnInfo = new LinkedHashMap<>();
+    private final Map<String, ColumnInfo> nameToColumnInfo = new LinkedHashMap<>();
 
     public String getName() {
         return name;

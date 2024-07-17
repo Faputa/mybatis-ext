@@ -38,7 +38,7 @@
 		<!-- https://github.com/mybatis/mybatis-3/issues/364 -->
 		<!-- https://github.com/mybatis/mybatis-3/wiki/FAQ#how-do-i-map-a-list-of-simple-type-objects-string-integer-etc-to-a-bean-or-map- -->
 		<collection property="cameraNames" ofType="java.lang.String" javaType="list">
-			<result column="camera_name" />
+			<result column="camera_name" javaType="java.lang.String" />
 		</collection>
 	</resultMap>
 
