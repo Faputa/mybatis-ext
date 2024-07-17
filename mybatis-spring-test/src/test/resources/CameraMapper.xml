@@ -77,8 +77,8 @@
 		<association property="org" resultMap="Org" />
 		<!-- https://github.com/mybatis/mybatis-3/issues/364 -->
 		<!-- https://github.com/mybatis/mybatis-3/wiki/FAQ#how-do-i-map-a-list-of-simple-type-objects-string-integer-etc-to-a-bean-or-map- -->
-		<association property="orgName">
-			<result column="org_name" />
+		<association property="orgName" javaType="java.lang.String">
+			<result column="org_name" javaType="java.lang.String" />
 		</association>
 	</resultMap>
 

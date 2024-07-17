@@ -1,6 +1,6 @@
 package io.github.mybatisext.metadata;
 
-import org.apache.ibatis.type.JdbcType;
+import java.util.Objects;
 
 public class ColumnInfo {
 
@@ -18,8 +18,6 @@ public class ColumnInfo {
     private int precision;
     /** 标度 */
     private int scale;
-    /** JDBC类型 */
-    private JdbcType jdbcType;
 
     public String getName() {
         return name;
@@ -77,11 +75,26 @@ public class ColumnInfo {
         this.scale = scale;
     }
 
-    public JdbcType getJdbcType() {
-        return jdbcType;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ColumnInfo that = (ColumnInfo) o;
+        return nullable == that.nullable
+                && length == that.length
+                && precision == that.precision
+                && scale == that.scale
+                && Objects.equals(name, that.name)
+                && Objects.equals(comment, that.comment)
+                && Objects.equals(columnDefinition, that.columnDefinition);
     }
 
-    public void setJdbcType(JdbcType jdbcType) {
-        this.jdbcType = jdbcType;
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, comment, nullable, columnDefinition, length, precision, scale);
     }
 }
