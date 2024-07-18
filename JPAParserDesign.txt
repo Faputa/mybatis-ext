@@ -1,0 +1,145 @@
+解析过程
+    词法分析
+    语法分析
+    语义生成
+
+单词类型
+    关键词 keyword
+    名词 noun
+        来源元数据属性
+    数字 num
+    变量 variable
+        来源参数
+        可能存在歧义
+
+句子成分
+    动词 verb
+    主语 subject
+    谓词 predicate
+    修饰词 qualifier
+
+查询语义
+    查询项
+    目标表
+    关联表
+    条件
+    分组
+    排序
+    范围
+修改语义
+    修改列
+    目标表
+    关联表
+    条件
+创建语义
+    插入列
+    插入值
+删除语义
+    目标表
+    关联表
+    条件
+
+sentence=
+    <verb>[<subject>][<predicate>][<qualifier>]
+
+verb=
+    (find|select|list|get
+    |update|updateBatch|modify|modifyBatch
+    |delete|deleteBatch|remove|removeBatch
+    |exists
+    |count
+    |save<end>|saveBatch<end>|insert<end>|insertBatch<end>
+    |sum|avg|max|min)
+    [All|One|(Top(<num>|<variable>))]
+
+subject=
+    <noun>
+    |<noun>And<subject>
+
+predicate=
+    (By|Where)
+    (<noun>
+    |<noun>[Not]Is[<variable>]
+    |<noun>[Not]Equals[<variable>]
+    |<noun>[Not]Between[<variable>To<variable>]
+    |<noun>[Not]In[<variable>]
+    |<noun>[Not]IsNull
+    |<noun>[Not]IsTrue
+    |<noun>[Not]IsFalse
+    |<noun>[Not]StartWith[<variable>]
+    |<noun>[Not]EndWith[<variable>]
+    |<noun>Lowercase
+    |<noun>Uppercase
+    |<noun>Ignorecase
+    |<predicate>And<predicate>
+    |<predicate>Or<predicate>)
+
+qualifier=
+    OrderBy<noun>
+    |GroupBy<noun>
+    |Limit<num>[To<num>]
+    |Limit<variable>[To<variable>]
+    |<qualifier><qualifier>
+
+问题
+    怎么确定jpa单词和参数之间的对应关系
+回答
+    同时支持基于位置和基于名字
+
+问题
+    如何让其他人只需要简单阅读程序就能够明白文法
+回答
+    通过类似定义文法的方式组织程序
+
+方案
+×考虑布尔表达式
+    返回bool的函数表示符号
+    返回true表示匹配成功
+    返回false表示匹配失败
+    ||表示选择
+    &&表示连接
+    &&true表示可选
+问题
+    无法设置状态还原点
+
+√考虑lambda表达式
+    返回bool的lambda表达式表示符号
+    返回lambda表达式的函数表示元符号
+
+程序包含两部分
+    通用解析器框架
+        元符号
+            choice表示选择
+            join表示连接
+            optional表示可选
+            star表示任意次匹配
+            plus表示至少一次匹配
+            count表示匹配指定次数
+            word表示单词
+            assign表示赋值
+        上下文接口
+            save保存状态
+            restore还原状态
+            next读取单词
+                考虑歧义
+            <T>set设置变量
+            <T>get获取变量
+    JPA解析器
+        元符号
+            keyword表示关键字
+            <action>执行代码
+        符号
+            sentence表示语句
+            noun表示名词
+            num表示数字
+            end表示结束
+            variable表示变量
+            verb表示动词
+            subject表示主语
+            predicate表示谓词
+            qualifier表示修饰词
+        上下文实现
+
+
+
+

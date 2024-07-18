@@ -329,14 +329,14 @@ resultmap嵌套select命名自动生成规则
 
 考虑重构PropertyInfo类型
     PropertyInfo不依赖ColumnInfo
-    PropertyInfoId
-    PropertyInfoResult
-    PropertyInfoAssociation
+    resultType=id
+    resultType=result
+    resultType=association
         表示当前表的多个字段
         表示关联表的多个字段
             连接查询
             嵌套查询（包括懒加载查询）
-    PropertyInfoCollection
+    resultType=collection
         表示当前表的多个字段
         表示关联表的多个字段
             连接查询
