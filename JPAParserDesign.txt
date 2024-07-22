@@ -115,11 +115,11 @@ qualifier=
             star表示任意次匹配
             plus表示至少一次匹配
             count表示匹配指定次数
-            word表示单词
             assign表示赋值
         上下文接口
             save保存状态
             restore还原状态
+                考虑通过传参的方式保存和还原状态
             next读取单词
                 考虑歧义
             <T>set设置变量
@@ -139,6 +139,18 @@ qualifier=
             predicate表示谓词
             qualifier表示修饰词
         上下文实现
+
+歧义处理算法
+    将歧义项压栈
+    如果存在歧义则再次分析
+    如果存在多个合法的语义则报错
+
+四则运算文法
+    <expr> ::= <term> | <expr> "+" <term> | <expr> "-" <term>
+    <term> ::= <factor> | <term> "*" <factor> | <term> "/" <factor>
+    <factor> ::= <integer> | "(" <expr> ")"
+    <integer> ::= <digit> | <digit> <integer>
+    <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 
 
 
