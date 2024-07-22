@@ -13,6 +13,4 @@ public @interface JoinParent {
     String alias() default "";
 
     JoinColumn[] joinColumn();
-
-    LoadType loadType() default LoadType.JOIN;
 }
