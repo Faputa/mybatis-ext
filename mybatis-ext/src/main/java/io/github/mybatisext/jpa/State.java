@@ -17,20 +17,21 @@ public class State {
     }
 
     public State(Symbol symbol, @Nullable State parent, int cursor) {
-        this.symbol = symbol;
+        this.symbol = symbol.getSymbol();
         this.parent = parent;
         this.cursor = cursor;
     }
 
     @SuppressWarnings("null")
-    public boolean hasLeftRecursion(Symbol symbol) {
+    public boolean hasLeftRecursion(Symbol symbol, int cursor) {
         if (parent == null) {
             return false;
         }
         if (parent.symbol == symbol && parent.cursor == cursor) {
+            // 左递归
             return true;
         }
-        return parent.hasLeftRecursion(symbol);
+        return parent.hasLeftRecursion(symbol, cursor);
     }
 
     public @Nullable State getParent() {

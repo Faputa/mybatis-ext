@@ -14,10 +14,10 @@ public class MathTokenizer implements Tokenizer {
     }
 
     public String next() {
-        for (; cursor < text.length(); cursor++) {
-            String c = String.valueOf(text.charAt(cursor));
-            if (keywords.contains(c)) {
-                return c;
+        while (cursor < text.length()) {
+            char c = text.charAt(cursor++);
+            if (!Character.isWhitespace(c)) {
+                return String.valueOf(c);
             }
         }
         return "";

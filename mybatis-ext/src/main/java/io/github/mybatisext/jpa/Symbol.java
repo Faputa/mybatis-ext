@@ -4,4 +4,8 @@ package io.github.mybatisext.jpa;
 public interface Symbol {
 
     boolean match(State state);
+
+    default Symbol getSymbol() {
+        return this;
+    }
 }
