@@ -14,7 +14,7 @@ public abstract class BaseParser<T extends Tokenizer> {
         return new Symbol() {
             @Override
             public boolean match(State state) {
-                if (state.hasLeftRecursion(this)) {
+                if (state.hasLeftRecursion(this, tokenizer.getCursor())) {
                     return false;
                 }
                 int cursor = tokenizer.getCursor();
@@ -22,8 +22,8 @@ public abstract class BaseParser<T extends Tokenizer> {
                     if (symbol.match(new State(symbol, state, tokenizer.getCursor()))) {
                         return true;
                     }
+                    tokenizer.setCursor(cursor);
                 }
-                tokenizer.setCursor(cursor);
                 return false;
             }
         };
@@ -33,7 +33,7 @@ public abstract class BaseParser<T extends Tokenizer> {
         return new Symbol() {
             @Override
             public boolean match(State state) {
-                if (state.hasLeftRecursion(this)) {
+                if (state.hasLeftRecursion(this, tokenizer.getCursor())) {
                     return false;
                 }
                 int cursor = tokenizer.getCursor();
@@ -52,7 +52,7 @@ public abstract class BaseParser<T extends Tokenizer> {
         return new Symbol() {
             @Override
             public boolean match(State state) {
-                if (state.hasLeftRecursion(this)) {
+                if (state.hasLeftRecursion(this, tokenizer.getCursor())) {
                     return false;
                 }
                 symbol.match(new State(symbol, state, tokenizer.getCursor()));
@@ -65,7 +65,7 @@ public abstract class BaseParser<T extends Tokenizer> {
         return new Symbol() {
             @Override
             public boolean match(State state) {
-                if (state.hasLeftRecursion(this)) {
+                if (state.hasLeftRecursion(this, tokenizer.getCursor())) {
                     return false;
                 }
                 while (symbol.match(new State(symbol, state, tokenizer.getCursor()))) {
@@ -79,7 +79,7 @@ public abstract class BaseParser<T extends Tokenizer> {
         return new Symbol() {
             @Override
             public boolean match(State state) {
-                if (state.hasLeftRecursion(this)) {
+                if (state.hasLeftRecursion(this, tokenizer.getCursor())) {
                     return false;
                 }
                 int cursor = tokenizer.getCursor();
@@ -100,7 +100,7 @@ public abstract class BaseParser<T extends Tokenizer> {
         return new Symbol() {
             @Override
             public boolean match(State state) {
-                if (state.hasLeftRecursion(this)) {
+                if (state.hasLeftRecursion(this, tokenizer.getCursor())) {
                     return false;
                 }
                 int cursor = tokenizer.getCursor();
@@ -121,7 +121,7 @@ public abstract class BaseParser<T extends Tokenizer> {
         return new Symbol() {
             @Override
             public boolean match(State state) {
-                if (state.hasLeftRecursion(this)) {
+                if (state.hasLeftRecursion(this, tokenizer.getCursor())) {
                     return false;
                 }
                 int begin = tokenizer.getCursor();
