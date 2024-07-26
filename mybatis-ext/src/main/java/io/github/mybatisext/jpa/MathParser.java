@@ -3,9 +3,9 @@ package io.github.mybatisext.jpa;
 public class MathParser extends BaseParser<MathTokenizer> {
 
     // <end>=$
-    protected Nonterminal end = new Nonterminal("end").set(state -> tokenizer.next().isEmpty());
+    protected Symbol end = new Symbol("end").setMatch(state -> tokenizer.next().isEmpty());
     // <digit>:="0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"
-    protected Nonterminal digit = new Nonterminal("digit").set(choice(
+    protected Symbol digit = new Symbol("digit").set(choice(
             keyword("0"),
             keyword("1"),
             keyword("2"),
@@ -17,15 +17,15 @@ public class MathParser extends BaseParser<MathTokenizer> {
             keyword("8"),
             keyword("9")));
     // <expr>:=<term>{("+"|"-")<expr>}<end>
-    protected Nonterminal expr = new Nonterminal("expr");
+    protected Symbol expr = new Symbol("expr");
     // <term>:=<factor>{("*"|"/")<term>}
-    protected Nonterminal term = new Nonterminal("term");
+    protected Symbol term = new Symbol("term");
     // <factor>:=<integer>|"("<expr>")"
-    protected Nonterminal factor = new Nonterminal("factor");
+    protected Symbol factor = new Symbol("factor");
     // <integer>:=<digit><integer>|<digit>
-    protected Nonterminal integer = new Nonterminal("integer");
+    protected Symbol integer = new Symbol("integer");
     // <all>:=<expr><end>
-    protected Nonterminal all = new Nonterminal("all").set(join(expr, end));
+    protected Symbol all = new Symbol("all").set(join(expr, end));
 
     {
         expr.set(join(term, optional(join(choice(keyword("+"), keyword("-")), expr))));
@@ -40,7 +40,7 @@ public class MathParser extends BaseParser<MathTokenizer> {
 
     protected Symbol keyword(String s) {
         tokenizer.getKeywords().add(s);
-        return state -> tokenizer.next().equals(s);
+        return new Symbol("keyword").setMatch(state -> tokenizer.next().equals(s));
     }
 
     public boolean perse() {
