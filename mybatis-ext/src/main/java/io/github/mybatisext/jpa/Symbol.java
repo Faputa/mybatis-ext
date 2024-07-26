@@ -1,28 +1,36 @@
 package io.github.mybatisext.jpa;
 
-import java.util.function.Predicate;
+@FunctionalInterface
+interface Continuation {
+    boolean test(State state);
+}
+
+@FunctionalInterface
+interface Match {
+    boolean test(State state, Continuation continuation);
+}
 
 public final class Symbol {
 
     private final String name;
-    private Predicate<State> match;
+    private Match match;
 
     public Symbol(String name) {
         this.name = name;
     }
 
-    public Symbol setMatch(Predicate<State> match) {
+    public Symbol setMatch(Match match) {
         this.match = match;
         return this;
     }
 
     public Symbol set(Symbol symbol) {
-        this.match = state -> symbol.match(state);
+        this.match = symbol::match;
         return this;
     }
 
-    public boolean match(State state) {
-        return match.test(state);
+    public boolean match(State state, Continuation continuation) {
+        return match.test(state, continuation);
     }
 
     @Override
