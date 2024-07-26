@@ -3,7 +3,7 @@ package io.github.mybatisext.jpa;
 public class MathParser extends BaseParser<MathTokenizer> {
 
     // <end>=$
-    protected Symbol end = new Symbol("end").setMatch(state -> tokenizer.next().isEmpty());
+    protected Symbol end = new Symbol("end").setMatch((state, continuation) -> tokenizer.next().isEmpty() && continuation.test(state));
     // <digit>:="0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"
     protected Symbol digit = new Symbol("digit").set(choice(
             keyword("0"),
@@ -40,13 +40,13 @@ public class MathParser extends BaseParser<MathTokenizer> {
 
     protected Symbol keyword(String s) {
         tokenizer.getKeywords().add(s);
-        return new Symbol("keyword").setMatch(state -> tokenizer.next().equals(s));
+        return new Symbol("keyword(" + s + ")").setMatch((state, continuation) -> tokenizer.next().equals(s) && continuation.test(state));
     }
 
-    public boolean perse() {
-        return all.match(new State(all));
-        // return expr.match(new State(expr));
-        // return integer.match(new State(integer));
+    public boolean parse() {
+        return all.match(new State(all), state -> true);
+        // return expr.match(new State(expr), state -> true);
+        // return integer.match(new State(integer), state -> true);
     }
 
     public static void main(String[] args) {
@@ -55,7 +55,7 @@ public class MathParser extends BaseParser<MathTokenizer> {
         // TODO 状态和值的传递
         MathTokenizer mathTokenizer = new MathTokenizer("1+2*34-(100+3) ");
         MathParser mathParser = new MathParser(mathTokenizer);
-        System.out.println(mathParser.perse());
+        System.out.println(mathParser.parse());
         System.out.println(mathTokenizer.substring(0, mathTokenizer.getCursor()));
     }
 }

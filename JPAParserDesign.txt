@@ -146,12 +146,86 @@ qualifier=
     如果存在多个合法的语义则报错
 
 四则运算文法
-    <expr> ::= <term> { ( "+" | "-" ) <term> }
-    <term> ::= <factor> { ( "*" | "/" ) <factor> }
-    <factor> ::= <integer> | "(" <expr> ")"
-    <integer> ::= <digit> <integer> | <digit>
-    <digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+    <expr>::=<term>{("+"|"-")<term>}
+    <term>::=<factor>{("*"|"/")<factor>}
+    <factor>::=<integer>|"("<expr>")"
+    <integer>::=<digit><integer>|<digit>
+    <digit>::="0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"
 
 
 
+CPS风格的Symbol的结构
+    支持先初始化后设置continuation
+        基于状态的方式实现，设置对象的continuation
+        或者基于函数的方式实现，调用match的时候传入continuation
+    考虑join(choice(A,B),C)
+        符号的continuation只能由符号自己调用
+        continuation是调用后续符号的函数
+    考虑match和continuation的关系
+        continuation，必须支持赋值
+        match，默认调用matchSelf和continuation
+        matchSelf，考虑支持赋值
+
+基于状态的方法实现CPS
+choice
+    创建一个新符号
+        遍历参数，任意匹配成功返回true，否则返回false
+    将每个参数的continuation设置为对新符号continuation的调用
+    返回新符号
+join
+    创建一个新符号
+        匹配第一个参数，返回结果
+    将每个参数的continuation设置为对后面参数的调用
+    将最后参数的continuation设置为对新符号continuation的调用
+    返回新符号
+optional
+    创建一个新符号
+        匹配参数，成功返回true，否则返回调用continuation的结果
+    将参数的continuation设置为对新符号continuation的调用
+    返回新符号
+star
+    创建一个新符号
+        匹配参数，成功返回true，否则返回调用continuation的结果
+    将参数的continuation设置为对参数的调用和对新符号continuation的调用
+        先调用参数，如果返回false则调用新符号continuation
+    返回新符号
+plus
+    创建一个新符号
+        匹配参数，返回结果
+    将参数的continuation设置为对参数的调用和对新符号continuation的调用
+        先调用参数，如果返回false则调用新符号continuation
+count
+    创建一个新符号
+        匹配符号参数，检查计数器和参数结果，如果计数器+参数结果等于给定值则返回true，否则返回false
+    将参数的continuation设置为对参数的调用和对新符号continuation的调用
+        如果计数器小于给定值则调用参数，否则调用新符号continuation
+    返回新符号
+assign
+    创建一个新符号
+        匹配参数，返回结果
+    将参数的continuation设置为赋值和对新符号continuation的调用
+        先赋值，然后调用新符号continuation
+    返回新符号
+
+基于函数的方式实现CPS
+    match形式为boolean match(state, continuation)
+choice
+    choice(a,b)%=a%|b%
+join
+    join(a)%=a%
+    join(a,b)%=a(b%)
+    join(a,b,c)%=a(join(b,c)%)
+optional
+    optional(a)%=a%|%
+star
+    star(a)%=a(star(a)%)|%
+plus
+    plus(a)%=a(star(a)%)
+    或者
+    plus(a)%=a(plus(a)%|%)
+count
+    count(a,1)%=a%
+    count(a,n)%=a(count(a,n-1)%)
+assign
+    assign(a)%=a%
 
