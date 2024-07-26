@@ -17,7 +17,7 @@ public class State {
     }
 
     public State(Symbol symbol, @Nullable State parent, int cursor) {
-        this.symbol = symbol.getSymbol();
+        this.symbol = symbol;
         this.parent = parent;
         this.cursor = cursor;
     }
@@ -28,7 +28,7 @@ public class State {
             return false;
         }
         if (parent.symbol == symbol && parent.cursor == cursor) {
-            // 左递归
+            // 左递归，考虑抛出异常？
             return true;
         }
         return parent.hasLeftRecursion(symbol, cursor);
