@@ -1,19 +1,14 @@
 package io.github.mybatisext.jpa;
 
-@FunctionalInterface
-interface Continuation {
-    boolean test(State state);
-}
-
-@FunctionalInterface
-interface Match {
-    boolean test(State state, Continuation continuation);
-}
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class Symbol {
 
     private final String name;
-    private Match match;
+    private final Set<Symbol> leftSymbols = new HashSet<>();
+    private Match match = (state, continuation) -> continuation.test(state);
 
     public Symbol(String name) {
         this.name = name;
@@ -24,9 +19,30 @@ public final class Symbol {
         return this;
     }
 
-    public Symbol set(Symbol symbol) {
-        this.match = symbol::match;
+    public Symbol setLeftSymbols(Symbol... symbols) {
+        leftSymbols.clear();
+        leftSymbols.addAll(Arrays.asList(symbols));
         return this;
+    }
+
+    public Symbol set(Symbol symbol) {
+        if (symbol.hasLeftRecursion(this)) {
+            throw new ParserException("Left recursion detected in " + name);
+        }
+        this.match = symbol::match;
+        return setLeftSymbols(symbol);
+    }
+
+    public boolean hasLeftRecursion(Symbol symbol) {
+        if (leftSymbols.contains(symbol)) {
+            return true;
+        }
+        for (Symbol leftSymbol : leftSymbols) {
+            if (leftSymbol.hasLeftRecursion(symbol)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean match(State state, Continuation continuation) {

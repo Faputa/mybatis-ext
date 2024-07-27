@@ -31,7 +31,8 @@ public class MathParser extends BaseParser<MathTokenizer> {
         expr.set(join(term, optional(join(choice(keyword("+"), keyword("-")), expr))));
         term.set(join(factor, optional(join(choice(keyword("*"), keyword("/")), term))));
         factor.set(choice(integer, join(keyword("("), expr, keyword(")"))));
-        integer.set(choice(join(digit, integer), digit));
+        // integer.set(choice(join(digit, integer), digit));
+        integer.set(choice(join(integer, digit), digit));
     }
 
     public MathParser(MathTokenizer tokenizer) {
@@ -44,14 +45,12 @@ public class MathParser extends BaseParser<MathTokenizer> {
     }
 
     public boolean parse() {
-        return all.match(new State(all), state -> true);
+        return all.match(new State(), state -> true);
         // return expr.match(new State(expr), state -> true);
         // return integer.match(new State(integer), state -> true);
     }
 
     public static void main(String[] args) {
-        // TODO 左递归文法
-        // TODO 选择结构顺序
         // TODO 状态和值的传递
         MathTokenizer mathTokenizer = new MathTokenizer("1+2*34-(100+3) ");
         MathParser mathParser = new MathParser(mathTokenizer);
