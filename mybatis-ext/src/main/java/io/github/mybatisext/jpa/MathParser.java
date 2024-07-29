@@ -28,11 +28,16 @@ public class MathParser extends BaseParser<MathTokenizer> {
     protected Symbol all = new Symbol("all").set(join(expr, end));
 
     {
-        expr.set(join(term, optional(join(choice(keyword("+"), keyword("-")), expr))));
-        term.set(join(factor, optional(join(choice(keyword("*"), keyword("/")), term))));
+        // 语法一
+        // expr.set(join(term, optional(join(choice(keyword("+"), keyword("-")), expr))));
+        // term.set(join(factor, optional(join(choice(keyword("*"), keyword("/")), term))));
+        // factor.set(choice(integer, join(keyword("("), expr, keyword(")"))));
+        // integer.set(choice(digit, join(digit, integer)));
+        // 语法二
+        expr.set(choice(term, join(term, keyword("+"), expr), join(term, keyword("-"), expr)));
+        term.set(choice(factor, join(factor, keyword("*"), term), join(factor, keyword("/"), term)));
         factor.set(choice(integer, join(keyword("("), expr, keyword(")"))));
-        // integer.set(choice(join(digit, integer), digit));
-        integer.set(choice(join(integer, digit), digit));
+        integer.set(choice(digit, join(digit, integer)));
     }
 
     public MathParser(MathTokenizer tokenizer) {
@@ -46,12 +51,13 @@ public class MathParser extends BaseParser<MathTokenizer> {
 
     public boolean parse() {
         return all.match(new State(), state -> true);
-        // return expr.match(new State(expr), state -> true);
-        // return integer.match(new State(integer), state -> true);
+        // return expr.match(new State(), state -> true);
+        // return integer.match(new State(), state -> true);
     }
 
     public static void main(String[] args) {
-        // TODO 状态和值的传递
+        // TODO 考虑状态和值的传递
+        // TODO 考虑用状态构建抽象语法树
         MathTokenizer mathTokenizer = new MathTokenizer("1+2*34-(100+3) ");
         MathParser mathParser = new MathParser(mathTokenizer);
         System.out.println(mathParser.parse());
