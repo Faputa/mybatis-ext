@@ -1,6 +1,10 @@
 package io.github.mybatisext.jpa;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -8,18 +12,18 @@ public class State {
 
     private final @Nullable State parent;
     private final @Nullable Scope scope;
-    private final int cursor;
+    private final Tokenizer tokenizer;
     private final Map<Scope, Map<String, MatchResult>> scopeToNameToMatchResult = new HashMap<>();
     private final List<MatchResult> matchResults = new ArrayList<>();
 
-    public State() {
-        this(null, null, 0);
+    public State(Tokenizer tokenizer) {
+        this(null, null, tokenizer);
     }
 
-    public State(@Nullable State parent, @Nullable Scope scope, int cursor) {
+    public State(@Nullable State parent, @Nullable Scope scope, Tokenizer tokenizer) {
         this.parent = parent;
         this.scope = scope;
-        this.cursor = cursor;
+        this.tokenizer = tokenizer;
     }
 
     public @Nullable State getParent() {
@@ -30,21 +34,21 @@ public class State {
         return scope;
     }
 
-    public int getCursor() {
-        return cursor;
+    public Tokenizer getTokenizer() {
+        return tokenizer;
     }
 
     public MatchResult getMatch(Symbol symbol, Scope scope, int index) {
         List<MatchResult> foundMatchResults = new ArrayList<>();
         for (State state = this; state != null; state = state.parent) {
+            int i = 0;
             for (MatchResult matchResult : state.matchResults) {
                 if (matchResult.getScope() == scope && matchResult.getSymbol() == symbol) {
-                    foundMatchResults.add(matchResult);
+                    foundMatchResults.add(i++, matchResult);
                 }
             }
         }
         if (foundMatchResults.size() > index) {
-            Collections.reverse(foundMatchResults);
             return foundMatchResults.get(index);
         }
         return null;
