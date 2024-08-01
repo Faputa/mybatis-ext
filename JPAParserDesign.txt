@@ -290,9 +290,9 @@ assign
     join
         值为最后一个符号的值
     optional
-        值为参数匹配到的值或空
+        值为参数匹配到的值或默认值
     star
-        值为参数最后一次匹配的值或空
+        值为参数最后一次匹配的值或默认值
     plus
         值为参数最后一次匹配的值
     count
@@ -303,7 +303,7 @@ assign
 
 
 match
-    (state, continuation) -> boolean
+    (state, result, continuation) -> boolean
 
 continuation
     (state, result) -> boolean

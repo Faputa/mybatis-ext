@@ -8,7 +8,7 @@ public final class Symbol {
 
     private final String name;
     private final Set<Symbol> leftSymbols = new HashSet<>();
-    private Match match = (state, continuation) -> continuation.test(state, null);
+    private Match match = (state, result, continuation) -> continuation.test(state, result);
 
     public Symbol(String name) {
         this.name = name;
@@ -29,15 +29,15 @@ public final class Symbol {
         if (symbol.hasLeftRecursion(this)) {
             throw new ParserException("Left recursion detected in " + name);
         }
-        this.match = (state, continuation) -> {
+        this.match = (state, result, continuation) -> {
             Scope scope = new Scope(name);
-            return symbol.match(new State(state, scope, state.getCursor()), (s2, result) -> {
-                Symbol symbol1 = symbol;
-                String name1 = name;
-                Object value = scope.getReturnValue() != null ? scope.getReturnValue() : result;
-                // TODO 稍后重构state和tokenizer，设置text
-                s2.addMatch(this, state.getScope(), "", value);
-                return continuation.test(s2, result);
+            Tokenizer tokenizer = state.getTokenizer();
+            int begin = tokenizer.getCursor();
+            return symbol.match(new State(state, scope, tokenizer), result, (s2, r2) -> {
+                int end = tokenizer.getCursor();
+                Object value = scope.getReturnValue() != null ? scope.getReturnValue() : r2;
+                s2.addMatch(this, state.getScope(), tokenizer.substring(begin, end), value);
+                return continuation.test(s2, value);
             });
         };
         return setLeftSymbols(symbol);
@@ -55,8 +55,8 @@ public final class Symbol {
         return false;
     }
 
-    public boolean match(State state, Continuation continuation) {
-        return match.test(state, continuation);
+    public boolean match(State state, Object result, Continuation continuation) {
+        return match.test(state, result, continuation);
     }
 
     @Override

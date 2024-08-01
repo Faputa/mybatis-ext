@@ -2,9 +2,9 @@ package io.github.mybatisext.jpa;
 
 public class MathParser extends BaseParser<MathTokenizer> {
 
-    protected Symbol end = new Symbol("end").setMatch((state, continuation) -> {
+    protected Symbol end = new Symbol("end").setMatch((state, result, continuation) -> {
         String next = tokenizer.next();
-        return next.isEmpty() && continuation.test(state, next);
+        return next.isEmpty() && continuation.test(state, result);
     });
 
     protected Symbol digit = new Symbol("digit").set(choice(keyword("0"), keyword("1"), keyword("2"), keyword("3"), keyword("4"), keyword("5"), keyword("6"), keyword("7"), keyword("8"), keyword("9")));
@@ -15,7 +15,7 @@ public class MathParser extends BaseParser<MathTokenizer> {
 
     protected Symbol keyword(String s) {
         tokenizer.getKeywords().add(s);
-        return new Symbol("keyword(" + s + ")").setMatch((state, continuation) -> {
+        return new Symbol("keyword(" + s + ")").setMatch((state, result, continuation) -> {
             String next = tokenizer.next();
             if (!next.equals(s)) {
                 // System.out.println(tokenizer.getCursor() + "，期望：" + s);
@@ -31,29 +31,26 @@ public class MathParser extends BaseParser<MathTokenizer> {
         Symbol factor = new Symbol("factor");
         Symbol integer = new Symbol("integer");
         Symbol all = new Symbol("all").set(join(expr, end));
-        expr.set(join(term, optional(choice(
-                join(keyword("+"), expr, action(state -> {
-                    int a = state.getMatch(term).val();
-                    int b = state.getMatch(expr).val();
-                    state.setReturn(a + b);
-                })),
-                join(keyword("-"), expr, action(state -> {
-                    int a = state.getMatch(term).val();
-                    int b = state.getMatch(expr).val();
-                    state.setReturn(a - b);
-                }))))));
 
-        term.set(join(factor, optional(choice(
-                join(keyword("*"), term, action(state -> {
-                    int a = state.getMatch(factor).val();
-                    int b = state.getMatch(term).val();
-                    state.setReturn(a * b);
-                })),
-                join(keyword("/"), term, action(state -> {
-                    int a = state.getMatch(factor).val();
-                    int b = state.getMatch(term).val();
-                    state.setReturn(a / b);
-                }))))));
+        expr.set(join(term, optional(choice(join(keyword("+"), expr, action(state -> {
+            int a = state.getMatch(term).val();
+            int b = state.getMatch(expr).val();
+            state.setReturn(a + b);
+        })), join(keyword("-"), expr, action(state -> {
+            int a = state.getMatch(term).val();
+            int b = state.getMatch(expr).val();
+            state.setReturn(a - b);
+        }))))));
+
+        term.set(join(factor, optional(choice(join(keyword("*"), term, action(state -> {
+            int a = state.getMatch(factor).val();
+            int b = state.getMatch(term).val();
+            state.setReturn(a * b);
+        })), join(keyword("/"), term, action(state -> {
+            int a = state.getMatch(factor).val();
+            int b = state.getMatch(term).val();
+            state.setReturn(a / b);
+        }))))));
 
         factor.set(choice(integer, join(keyword("("), expr, keyword(")"), action(state -> {
             state.setReturn(state.getMatch(expr).val());
@@ -64,12 +61,10 @@ public class MathParser extends BaseParser<MathTokenizer> {
             state.setReturn(Integer.parseInt(temp));
         })));
 
-        return all.match(new State(), (state, result) -> {
+        return all.match(new State(tokenizer), null, (state, result) -> {
             System.out.println(result);
             return true;
         });
-        // return expr.match(new State(), (state, result) -> true);
-        // return integer.match(new State(), (state, result) -> true);
     }
 
     public boolean parse2() {
@@ -78,16 +73,40 @@ public class MathParser extends BaseParser<MathTokenizer> {
         Symbol factor = new Symbol("factor");
         Symbol integer = new Symbol("integer");
         Symbol all = new Symbol("all").set(join(expr, end));
-        expr.set(choice(term, join(term, keyword("+"), expr), join(term, keyword("-"), expr)));
-        term.set(choice(factor, join(factor, keyword("*"), term), join(factor, keyword("/"), term)));
-        factor.set(choice(integer, join(keyword("("), expr, keyword(")"))));
-        integer.set(choice(digit, join(digit, integer)));
-        return all.match(new State(), (state, result) -> {
+
+        expr.set(choice(term, join(term, keyword("+"), expr, action(state -> {
+            int a = state.getMatch(term).val();
+            int b = state.getMatch(expr).val();
+            state.setReturn(a + b);
+        })), join(term, keyword("-"), expr, action(state -> {
+            int a = state.getMatch(term).val();
+            int b = state.getMatch(expr).val();
+            state.setReturn(a - b);
+        }))));
+
+        term.set(choice(factor, join(factor, keyword("*"), term, action(state -> {
+            int a = state.getMatch(factor).val();
+            int b = state.getMatch(term).val();
+            state.setReturn(a * b);
+        })), join(factor, keyword("/"), term, action(state -> {
+            int a = state.getMatch(factor).val();
+            int b = state.getMatch(term).val();
+            state.setReturn(a / b);
+        }))));
+
+        factor.set(choice(integer, join(keyword("("), expr, keyword(")"), action(state -> {
+            state.setReturn(state.getMatch(expr).val());
+        }))));
+
+        integer.set(join(assign("temp", join(choice(digit, join(digit, integer)))), action(state -> {
+            String temp = state.getMatch("temp").text();
+            state.setReturn(Integer.parseInt(temp));
+        })));
+
+        return all.match(new State(tokenizer), 100, (state, result) -> {
             System.out.println(result);
             return true;
         });
-        // return expr.match(new State(), (state, result) -> true);
-        // return integer.match(new State(), (state, result) -> true);
     }
 
     public static void main(String[] args) {

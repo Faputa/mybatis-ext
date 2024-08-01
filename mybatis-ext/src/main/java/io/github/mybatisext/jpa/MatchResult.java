@@ -18,7 +18,6 @@ public class MatchResult {
 
     public Scope getScope() {
         return scope;
-
     }
 
     public Symbol getSymbol() {
