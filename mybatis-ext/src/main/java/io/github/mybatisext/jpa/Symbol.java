@@ -8,7 +8,7 @@ public final class Symbol {
 
     private final String name;
     private final Set<Symbol> leftSymbols = new HashSet<>();
-    private Match match = (state, continuation) -> continuation.test(state);
+    private Match match = (state, continuation) -> continuation.test(state, null);
 
     public Symbol(String name) {
         this.name = name;
@@ -29,7 +29,17 @@ public final class Symbol {
         if (symbol.hasLeftRecursion(this)) {
             throw new ParserException("Left recursion detected in " + name);
         }
-        this.match = symbol::match;
+        this.match = (state, continuation) -> {
+            Scope scope = new Scope(name);
+            return symbol.match(new State(state, scope, state.getCursor()), (s2, result) -> {
+                Symbol symbol1 = symbol;
+                String name1 = name;
+                Object value = scope.getReturnValue() != null ? scope.getReturnValue() : result;
+                // TODO 稍后重构state和tokenizer，设置text
+                s2.addMatch(this, state.getScope(), "", value);
+                return continuation.test(s2, result);
+            });
+        };
         return setLeftSymbols(symbol);
     }
 
