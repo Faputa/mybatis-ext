@@ -8,7 +8,7 @@ public final class Symbol {
 
     private final String name;
     private final Set<Symbol> leftSymbols = new HashSet<>();
-    private Match match = (state, result, continuation) -> continuation.test(state, result);
+    private Match match = (state, tokenizer, continuation) -> continuation.test(state);
 
     public Symbol(String name) {
         this.name = name;
@@ -29,15 +29,15 @@ public final class Symbol {
         if (symbol.hasLeftRecursion(this)) {
             throw new ParserException("Left recursion detected in " + name);
         }
-        this.match = (state, result, continuation) -> {
-            Scope scope = new Scope(name);
-            Tokenizer tokenizer = state.getTokenizer();
+        this.match = (state, tokenizer, continuation) -> {
+            Scope scope = new Scope(name, state);
             int begin = tokenizer.getCursor();
-            return symbol.match(new State(state, scope, tokenizer), result, (s2, r2) -> {
+            return symbol.match(new State(state, scope), tokenizer, s2 -> {
                 int end = tokenizer.getCursor();
-                Object value = scope.getReturnValue() != null ? scope.getReturnValue() : r2;
+                Object value = scope.getReturnValue() != null ? scope.getReturnValue() : s2.getResult();
                 s2.addMatch(this, state.getScope(), tokenizer.substring(begin, end), value);
-                return continuation.test(s2, value);
+                s2.setResult(value);
+                return continuation.test(s2);
             });
         };
         return setLeftSymbols(symbol);
@@ -55,8 +55,12 @@ public final class Symbol {
         return false;
     }
 
-    public boolean match(State state, Object result, Continuation continuation) {
-        return match.test(state, result, continuation);
+    public boolean match(Tokenizer tokenizer, Continuation continuation) {
+        return match.test(new State(), tokenizer, continuation);
+    }
+
+    public boolean match(State state, Tokenizer tokenizer, Continuation continuation) {
+        return match.test(state, tokenizer, continuation);
     }
 
     @Override
