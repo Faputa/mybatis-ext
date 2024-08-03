@@ -3,10 +3,17 @@ package io.github.mybatisext.jpa;
 public class Scope {
 
     private final String name;
+    private final State guard;
+    // TODO returnValue应该定义在state中
     private Object returnValue;
 
-    public Scope(String name) {
+    public Scope(String name, State guard) {
         this.name = name;
+        this.guard = guard;
+    }
+
+    public State getGuard() {
+        return guard;
     }
 
     @Override

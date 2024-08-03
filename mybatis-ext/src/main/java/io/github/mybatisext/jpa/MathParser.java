@@ -1,31 +1,28 @@
 package io.github.mybatisext.jpa;
 
-public class MathParser extends BaseParser<MathTokenizer> {
+import java.util.HashSet;
+import java.util.Set;
 
-    protected Symbol end = new Symbol("end").setMatch((state, result, continuation) -> {
-        String next = tokenizer.next();
-        return next.isEmpty() && continuation.test(state, result);
+public class MathParser extends BaseParser {
+
+    private final Set<String> keywords = new HashSet<>();
+
+    protected Symbol end = new Symbol("end").setMatch((state, tokenizer, continuation) -> {
+        MathTokenizer mathTokenizer = (MathTokenizer) tokenizer;
+        return mathTokenizer.next().isEmpty() && continuation.test(state);
     });
 
     protected Symbol digit = new Symbol("digit").set(choice(keyword("0"), keyword("1"), keyword("2"), keyword("3"), keyword("4"), keyword("5"), keyword("6"), keyword("7"), keyword("8"), keyword("9")));
 
-    public MathParser(MathTokenizer tokenizer) {
-        super(tokenizer);
-    }
-
     protected Symbol keyword(String s) {
-        tokenizer.getKeywords().add(s);
-        return new Symbol("keyword(" + s + ")").setMatch((state, result, continuation) -> {
-            String next = tokenizer.next();
-            if (!next.equals(s)) {
-                // System.out.println(tokenizer.getCursor() + "，期望：" + s);
-                return false;
-            }
-            return continuation.test(state, next);
+        keywords.add(s);
+        return new Symbol("keyword(" + s + ")").setMatch((state, tokenizer, continuation) -> {
+            MathTokenizer mathTokenizer = (MathTokenizer) tokenizer;
+            return mathTokenizer.next().equals(s) && state.setResult(s) && continuation.test(state);
         });
     }
 
-    public boolean parse() {
+    public boolean parse(MathTokenizer tokenizer) {
         Symbol expr = new Symbol("expr");
         Symbol term = new Symbol("term");
         Symbol factor = new Symbol("factor");
@@ -61,13 +58,13 @@ public class MathParser extends BaseParser<MathTokenizer> {
             state.setReturn(Integer.parseInt(temp));
         })));
 
-        return all.match(new State(tokenizer), null, (state, result) -> {
-            System.out.println(result);
+        return all.match(tokenizer, state -> {
+            System.out.println(state.getResult());
             return true;
         });
     }
 
-    public boolean parse2() {
+    public boolean parse2(MathTokenizer tokenizer) {
         Symbol expr = new Symbol("expr");
         Symbol term = new Symbol("term");
         Symbol factor = new Symbol("factor");
@@ -103,24 +100,42 @@ public class MathParser extends BaseParser<MathTokenizer> {
             state.setReturn(Integer.parseInt(temp));
         })));
 
-        return all.match(new State(tokenizer), 100, (state, result) -> {
-            System.out.println(result);
+        return all.match(tokenizer, state -> {
+            System.out.println(state.getResult());
+            return true;
+        });
+    }
+
+    public boolean parseStar(MathTokenizer tokenizer) {
+        Symbol integer = new Symbol("integer").set(join(star(keyword("1")), star(keyword("2"))));
+        return integer.match(tokenizer, state -> {
+            System.out.println(state.getResult());
+            return true;
+        });
+    }
+
+    public boolean parsePlus(MathTokenizer tokenizer) {
+        Symbol integer = new Symbol("integer").set(plus(digit));
+        return integer.match(tokenizer, state -> {
+            System.out.println(state.getResult());
+            return true;
+        });
+    }
+
+    public boolean parseCount(MathTokenizer tokenizer) {
+        Symbol integer = new Symbol("integer").set(join(count(keyword("1"), 2), count(keyword("2"), 2)));
+        return integer.match(tokenizer, state -> {
+            System.out.println(state.getResult());
             return true;
         });
     }
 
     public static void main(String[] args) {
-        {
-            MathTokenizer mathTokenizer = new MathTokenizer("1+2*34-(100+3) ");
-            MathParser mathParser = new MathParser(mathTokenizer);
-            System.out.println(mathParser.parse());
-            System.out.println(mathTokenizer.substring(0, mathTokenizer.getCursor()));
-        }
-        {
-            MathTokenizer mathTokenizer = new MathTokenizer("1+2*34-(100+3) ");
-            MathParser mathParser = new MathParser(mathTokenizer);
-            System.out.println(mathParser.parse2());
-            System.out.println(mathTokenizer.substring(0, mathTokenizer.getCursor()));
-        }
+        MathParser mathParser = new MathParser();
+        System.out.println(mathParser.parse(new MathTokenizer("1+2*34-(100+3) ")));
+        System.out.println(mathParser.parse2(new MathTokenizer("1+2*34-(100+3) ")));
+        System.out.println(mathParser.parseStar(new MathTokenizer("1111 ")));
+        System.out.println(mathParser.parsePlus(new MathTokenizer("1122 ")));
+        System.out.println(mathParser.parseCount(new MathTokenizer("1122 ")));
     }
 }

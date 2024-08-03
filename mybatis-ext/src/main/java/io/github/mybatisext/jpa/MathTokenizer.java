@@ -1,13 +1,9 @@
 package io.github.mybatisext.jpa;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class MathTokenizer implements Tokenizer {
 
     private final String text;
     private int cursor = 0;
-    private final Set<String> keywords = new HashSet<>();
 
     public MathTokenizer(String text) {
         this.text = text;
@@ -21,10 +17,6 @@ public class MathTokenizer implements Tokenizer {
             }
         }
         return "";
-    }
-
-    public Set<String> getKeywords() {
-        return keywords;
     }
 
     @Override
