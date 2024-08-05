@@ -59,6 +59,7 @@ public class State {
     }
 
     public MatchResult getMatch(Symbol symbol, int index) {
+        assert scope != null;
         return getMatch(symbol, scope, index);
     }
 

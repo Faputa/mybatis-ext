@@ -56,7 +56,7 @@ public final class Symbol {
     }
 
     public boolean match(Tokenizer tokenizer, Continuation continuation) {
-        return match.test(new State(), tokenizer, continuation);
+        return match(new State(), tokenizer, continuation);
     }
 
     public boolean match(State state, Tokenizer tokenizer, Continuation continuation) {
