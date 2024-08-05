@@ -53,7 +53,7 @@ public class MathParser extends BaseParser {
             state.setReturn(state.getMatchResult(expr).val());
         }))));
 
-        integer.set(join(assign("temp", join(choice(digit, join(digit, integer)))), action(state -> {
+        integer.set(join(assign("temp", join(plus(digit))), action(state -> {
             String temp = state.getMatchResult("temp").text();
             state.setReturn(Integer.parseInt(temp));
         })));

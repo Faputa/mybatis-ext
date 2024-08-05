@@ -39,47 +39,66 @@
     关联表
     条件
 
-sentence=
-    <verb>[<subject>][<predicate>][<qualifier>]
+语法
+<all>=
+    <动词>[<主语>][(By|Where)<谓语>][<修饰词>]
 
-verb=
-    (find|select|list|get
-    |update|updateBatch|modify|modifyBatch
-    |delete|deleteBatch|remove|removeBatch
+<动词>=
+    <动作>[<动作修饰>]
+
+<动作>=
+    find|select|list|get
     |exists
-    |count
-    |save<end>|saveBatch<end>|insert<end>|insertBatch<end>
-    |sum|avg|max|min)
-    [All|One|(Top(<num>|<variable>))]
+    |count|sum|avg|max|min
+    |update|modify
+    |delete|remove
+    |save|insert
 
-subject=
-    <noun>
-    |<noun>And<subject>
+<动作修饰>=
+    Batch
+    |All
+    |One
+    |Top(<整数>|<变量>)
+    |Distinct
 
-predicate=
-    (By|Where)
-    (<noun>
-    |<noun>[Not]Is[<variable>]
-    |<noun>[Not]Equals[<variable>]
-    |<noun>[Not]Between[<variable>To<variable>]
-    |<noun>[Not]In[<variable>]
-    |<noun>[Not]IsNull
-    |<noun>[Not]IsTrue
-    |<noun>[Not]IsFalse
-    |<noun>[Not]StartWith[<variable>]
-    |<noun>[Not]EndWith[<variable>]
-    |<noun>Lowercase
-    |<noun>Uppercase
-    |<noun>Ignorecase
-    |<predicate>And<predicate>
-    |<predicate>Or<predicate>)
+<主语>=
+    <名词>
+    |<名词>And<主语>
 
-qualifier=
-    OrderBy<noun>
-    |GroupBy<noun>
-    |Limit<num>[To<num>]
-    |Limit<variable>[To<variable>]
-    |<qualifier><qualifier>
+<谓语>=
+    <谓语项>
+    |<谓语项>And<谓语>
+    |<谓语项>Or<谓语>
+
+<谓语项>=
+    <名词>[Ignorecase]
+    |<名词>[Ignorecase][Not]Is[<变量>]
+    |<名词>[Ignorecase][Not]Equals[<变量>]
+    |<名词>[Ignorecase][Not]LessThan[<变量>]
+    |<名词>[Ignorecase][Not]LessThanEqual[<变量>]
+    |<名词>[Ignorecase][Not]GreaterThan[<变量>]
+    |<名词>[Ignorecase][Not]GreaterThanEqual[<变量>]
+    |<名词>[Ignorecase][Not]Like[<变量>]
+    |<名词>[Ignorecase][Not]StartWith[<变量>]
+    |<名词>[Ignorecase][Not]EndWith[<变量>]
+    |<名词>[Ignorecase][Not]Between[<变量>To<变量>]
+    |<名词>[Ignorecase][Not]In[<变量>]
+    |<名词>[Not]IsNull
+    |<名词>[Not]IsNotNull
+    |<名词>[Not]IsTrue
+    |<名词>[Not]IsFalse
+
+<修饰词>=
+    <修饰词项>
+    |<修饰词><修饰词项>
+
+<修饰词项>=
+    OrderBy<主语>
+    |OrderBy<主语>Asc
+    |OrderBy<主语>Desc
+    |GroupBy<主语>
+    |Limit<整数>[To<整数>]
+    |Limit<变量>[To<变量>]
 
 问题
     怎么确定jpa单词和参数之间的对应关系
@@ -141,6 +160,7 @@ qualifier=
         上下文实现
 
 歧义处理算法
+    tokenizer负责记录单词序列
     将歧义项压栈
     如果存在歧义则再次分析
     如果存在多个合法的语义则报错
