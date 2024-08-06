@@ -5,32 +5,42 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 
 public class State {
 
-    private final @Nullable State prev;
-    private final @Nullable Scope scope;
+    private final State prevState;
+    private final Scope scope;
+    private final Tokenizer tokenizer;
     private Object result;
     private final Map<Scope, Map<String, MatchResult>> scopeToNameToMatchResult = new HashMap<>();
     private final List<MatchResult> matchResults = new ArrayList<>();
+    private final Map<String, Object> nameToGlobal = new HashMap<>();
 
-    public State() {
-        this(null, null);
+    public State(Tokenizer tokenizer) {
+        this.prevState = null;
+        this.scope = null;
+        this.tokenizer = tokenizer;
     }
 
-    public State(@Nullable State prev, @Nullable Scope scope) {
-        this.prev = prev;
+    public State(@Nonnull State prevState, Scope scope) {
+        this.prevState = prevState;
         this.scope = scope;
-        this.result = prev != null ? prev.result : null;
+        this.tokenizer = prevState.tokenizer;
+        this.result = prevState.result;
     }
 
-    public @Nullable State getPrev() {
-        return prev;
+    public State getPrevState() {
+        return prevState;
     }
 
-    public @Nullable Scope getScope() {
+    public Scope getScope() {
         return scope;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends Tokenizer> T getTokenizer() {
+        return (T) tokenizer;
     }
 
     public Object getResult() {
@@ -44,7 +54,7 @@ public class State {
 
     public MatchResult getMatch(Symbol symbol, Scope scope, int index) {
         List<MatchResult> foundMatchResults = new ArrayList<>();
-        for (State state = this; state != scope.getGuard() && state != null; state = state.prev) {
+        for (State state = this; state != scope.getGuard() && state != null; state = state.prevState) {
             int i = 0;
             for (MatchResult matchResult : state.matchResults) {
                 if (matchResult.getScope() == scope && matchResult.getSymbol() == symbol) {
@@ -84,8 +94,8 @@ public class State {
                 return matchResult;
             }
         }
-        if (prev != scope.getGuard() && prev != null) {
-            return prev.getMatch(name, scope);
+        if (prevState != scope.getGuard() && prevState != null) {
+            return prevState.getMatch(name, scope);
         }
         return null;
     }
@@ -109,6 +119,23 @@ public class State {
         if (this.scope != null) {
             this.scope.setReturnValue(value);
         }
+        return true;
+    }
+
+    public <T> T getGlobal(String name) {
+        @SuppressWarnings("unchecked")
+        T t = (T) nameToGlobal.get(name);
+        if (t != null) {
+            return t;
+        }
+        if (prevState != null) {
+            return prevState.getGlobal(name);
+        }
+        return null;
+    }
+
+    public <T> boolean setGlobal(String name, T value) {
+        nameToGlobal.put(name, value);
         return true;
     }
 }

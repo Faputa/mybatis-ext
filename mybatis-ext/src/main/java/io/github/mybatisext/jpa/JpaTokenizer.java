@@ -1,23 +1,48 @@
 package io.github.mybatisext.jpa;
 
+import java.util.List;
+
 public class JpaTokenizer implements Tokenizer {
+
+    private final String text;
+    private int cursor = 0;
+
+    public JpaTokenizer(String text) {
+        this.text = text;
+    }
+
+    public String keyword(String expect) {
+        return "";
+    }
+
+    public List<String> property() {
+        return null;
+    }
+
+    public String variable() {
+        return "";
+    }
+
+    public int integer() {
+        return -1;
+    }
+
+    public String getText() {
+        return text;
+    }
 
     @Override
     public int getCursor() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getCursor'");
+        return cursor;
     }
 
     @Override
     public void setCursor(int cursor) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'setCursor'");
+        this.cursor = cursor;
     }
 
     @Override
     public String substring(int begin, int end) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'substring'");
+        return text.substring(begin, end).trim();
     }
-    
 }

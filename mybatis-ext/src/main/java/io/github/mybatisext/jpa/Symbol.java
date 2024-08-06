@@ -8,7 +8,7 @@ public final class Symbol {
 
     private final String name;
     private final Set<Symbol> leftSymbols = new HashSet<>();
-    private Match match = (state, tokenizer, continuation) -> continuation.test(state);
+    private Match match = (state, continuation) -> continuation.test(state);
 
     public Symbol(String name) {
         this.name = name;
@@ -29,10 +29,11 @@ public final class Symbol {
         if (symbol.hasLeftRecursion(this)) {
             throw new ParserException("Left recursion detected in " + name);
         }
-        this.match = (state, tokenizer, continuation) -> {
+        this.match = (state, continuation) -> {
             Scope scope = new Scope(name, state);
+            Tokenizer tokenizer = state.getTokenizer();
             int begin = tokenizer.getCursor();
-            return symbol.match(new State(state, scope), tokenizer, s2 -> {
+            return symbol.match(new State(state, scope), s2 -> {
                 int end = tokenizer.getCursor();
                 Object value = scope.getReturnValue() != null ? scope.getReturnValue() : s2.getResult();
                 s2.addMatch(this, state.getScope(), tokenizer.substring(begin, end), value);
@@ -56,11 +57,11 @@ public final class Symbol {
     }
 
     public boolean match(Tokenizer tokenizer, Continuation continuation) {
-        return match(new State(), tokenizer, continuation);
+        return match(new State(tokenizer), continuation);
     }
 
-    public boolean match(State state, Tokenizer tokenizer, Continuation continuation) {
-        return match.test(state, tokenizer, continuation);
+    public boolean match(State state, Continuation continuation) {
+        return match.test(state, continuation);
     }
 
     @Override
