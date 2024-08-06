@@ -8,5 +8,9 @@ public enum SemanticType {
 
     SELECT,
 
-    DELETE
+    DELETE,
+
+    EXISTS,
+
+    COUNT,
 }

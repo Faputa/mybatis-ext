@@ -39,66 +39,48 @@
     关联表
     条件
 
-语法
-<all>=
-    <动词>[<主语>][(By|Where)<谓语>][<修饰词>]
+<grammar>=
+    (find|select|list|get)[Distinct][All|One|Top(<integer>|<variable>)][(By|Where)<conditionList>](<modifier>)*
+    |exists[(By|Where)<conditionList>](<modifier>)*
+    |count[(By|Where)<conditionList>](<modifier>)*
+    |(update|modify)[Batch][IgnoreNull][(By|Where)<conditionList>]
+    |(delete|remove)[Batch][(By|Where)<conditionList>]
+    |(save|insert)[Batch]
 
-<动词>=
-    <动作>[<动作修饰>]
+<conditionList>=
+    <condition>And<conditionList>
+    |<condition>Or<conditionList>
+    |<condition>
 
-<动作>=
-    find|select|list|get
-    |exists
-    |count|sum|avg|max|min
-    |update|modify
-    |delete|remove
-    |save|insert
+<condition>=
+    <property>[Ignorecase][Not]Is[<variable>]
+    |<property>[Ignorecase][Not]Equals[<variable>]
+    |<property>[Ignorecase][Not]LessThan[<variable>]
+    |<property>[Ignorecase][Not]LessThanEqual[<variable>]
+    |<property>[Ignorecase][Not]GreaterThan[<variable>]
+    |<property>[Ignorecase][Not]GreaterThanEqual[<variable>]
+    |<property>[Ignorecase][Not]Like[<variable>]
+    |<property>[Ignorecase][Not]StartWith[<variable>]
+    |<property>[Ignorecase][Not]EndWith[<variable>]
+    |<property>[Ignorecase][Not]Between[<variable>To<variable>]
+    |<property>[Ignorecase][Not]In[<variable>]
+    |<property>[Ignorecase][Not]
+    |<property>[Not]IsNull
+    |<property>[Not]IsNotNull
+    |<property>[Not]IsTrue
+    |<property>[Not]IsFalse
 
-<动作修饰>=
-    Batch
-    |All
-    |One
-    |Top(<整数>|<变量>)
-    |Distinct
+<modifier>=
+    OrderBy<propertyList>Asc
+    |OrderBy<propertyList>Desc
+    |OrderBy<propertyList>
+    |GroupBy<propertyList>
+    |Limit(<integer>|<variable>)To(<integer>|<variable>)
+    |Limit(<integer>|<variable>)
 
-<主语>=
-    <名词>
-    |<名词>And<主语>
-
-<谓语>=
-    <谓语项>
-    |<谓语项>And<谓语>
-    |<谓语项>Or<谓语>
-
-<谓语项>=
-    <名词>[Ignorecase]
-    |<名词>[Ignorecase][Not]Is[<变量>]
-    |<名词>[Ignorecase][Not]Equals[<变量>]
-    |<名词>[Ignorecase][Not]LessThan[<变量>]
-    |<名词>[Ignorecase][Not]LessThanEqual[<变量>]
-    |<名词>[Ignorecase][Not]GreaterThan[<变量>]
-    |<名词>[Ignorecase][Not]GreaterThanEqual[<变量>]
-    |<名词>[Ignorecase][Not]Like[<变量>]
-    |<名词>[Ignorecase][Not]StartWith[<变量>]
-    |<名词>[Ignorecase][Not]EndWith[<变量>]
-    |<名词>[Ignorecase][Not]Between[<变量>To<变量>]
-    |<名词>[Ignorecase][Not]In[<变量>]
-    |<名词>[Not]IsNull
-    |<名词>[Not]IsNotNull
-    |<名词>[Not]IsTrue
-    |<名词>[Not]IsFalse
-
-<修饰词>=
-    <修饰词项>
-    |<修饰词><修饰词项>
-
-<修饰词项>=
-    OrderBy<主语>
-    |OrderBy<主语>Asc
-    |OrderBy<主语>Desc
-    |GroupBy<主语>
-    |Limit<整数>[To<整数>]
-    |Limit<变量>[To<变量>]
+<propertyList>=
+    <property>And<propertyList>
+    |<property>
 
 问题
     怎么确定jpa单词和参数之间的对应关系
