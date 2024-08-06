@@ -7,17 +7,17 @@ public class MathParser extends BaseParser {
 
     private final Set<String> keywords = new HashSet<>();
 
-    protected Symbol end = new Symbol("end").setMatch((state, tokenizer, continuation) -> {
-        MathTokenizer mathTokenizer = (MathTokenizer) tokenizer;
+    Symbol end = new Symbol("end").setMatch((state, continuation) -> {
+        MathTokenizer mathTokenizer = state.getTokenizer();
         return mathTokenizer.next().isEmpty() && continuation.test(state);
     });
 
-    protected Symbol digit = new Symbol("digit").set(choice(keyword("0"), keyword("1"), keyword("2"), keyword("3"), keyword("4"), keyword("5"), keyword("6"), keyword("7"), keyword("8"), keyword("9")));
+    Symbol digit = new Symbol("digit").set(choice(keyword("0"), keyword("1"), keyword("2"), keyword("3"), keyword("4"), keyword("5"), keyword("6"), keyword("7"), keyword("8"), keyword("9")));
 
-    protected Symbol keyword(String s) {
+    Symbol keyword(String s) {
         keywords.add(s);
-        return new Symbol("keyword(" + s + ")").setMatch((state, tokenizer, continuation) -> {
-            MathTokenizer mathTokenizer = (MathTokenizer) tokenizer;
+        return new Symbol("keyword(" + s + ")").setMatch((state, continuation) -> {
+            MathTokenizer mathTokenizer = state.getTokenizer();
             return mathTokenizer.next().equals(s) && state.setResult(s) && continuation.test(state);
         });
     }
