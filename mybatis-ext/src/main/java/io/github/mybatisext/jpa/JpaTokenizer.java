@@ -1,30 +1,149 @@
 package io.github.mybatisext.jpa;
 
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.List;
+
+import io.github.mybatisext.metadata.PropertyInfo;
+import org.apache.ibatis.annotations.Param;
+
+import io.github.mybatisext.metadata.TableInfo;
 
 public class JpaTokenizer implements Tokenizer {
 
+    private final TableInfo tableInfo;
     private final String text;
+    private final Parameter[] parameters;
+    private final List<String> variables;
     private int cursor = 0;
 
-    public JpaTokenizer(String text) {
+    public JpaTokenizer(TableInfo tableInfo, String text, Parameter[] parameters) {
+        this.tableInfo = tableInfo;
         this.text = text;
+        this.parameters = parameters;
+        this.variables = buildVariables(parameters);
+    }
+
+    private List<String> buildVariables(Parameter[] parameters2) {
+        List<String> variables = new ArrayList<>();
+        for (Parameter parameter : parameters2) {
+            Param param = parameter.getAnnotation(Param.class);
+            if (param != null) {
+                variables.add(param.value());
+            }
+        }
+        return variables;
+    }
+
+    private String next() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = cursor; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (Character.isUpperCase(c)) {
+                if (i > cursor && (Character.isLowerCase(text.charAt(i - 1))
+                        || (i < text.length() - 1 && Character.isLowerCase(text.charAt(i + 1))))) {
+                    cursor += sb.length();
+                    return sb.toString();
+                }
+            }
+            sb.append(c);
+        }
+        cursor += sb.length();
+        return sb.toString();
     }
 
     public String keyword(String expect) {
-        return "";
+        String s = "";
+        int _cursor = cursor;
+        if (expect.startsWith("$")) {
+            cursor++;
+        }
+        if (text.substring(cursor).startsWith(expect)) {
+            while (s.length() < expect.length()) {
+                s += next();
+                if (s.equals(expect)) {
+                    return s;
+                }
+            }
+        }
+        cursor = _cursor;
+        return s;
     }
 
-    public List<String> property() {
-        return null;
+    public List<PropertyInfo> property() {
+        List<PropertyInfo> propertyInfos = new ArrayList<>();
+        int _cursor = cursor;
+        for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
+            String expect = propertyInfo.getName().substring(0, 1).toUpperCase() + propertyInfo.getName().substring(1);
+            if (text.substring(cursor).startsWith(expect)) {
+                String s = "";
+                while (s.length() < expect.length()) {
+                    s += next();
+                    if (s.equals(expect)) {
+                        propertyInfos.add(propertyInfo);
+                    }
+                }
+            }
+            cursor = _cursor;
+        }
+        return propertyInfos;
     }
 
-    public String variable() {
-        return "";
+    public List<PropertyInfo> property(PropertyInfo prevPropertyInfo) {
+        List<PropertyInfo> propertyInfos = new ArrayList<>();
+        int _cursor = cursor;
+        for (PropertyInfo propertyInfo : prevPropertyInfo.getSubPropertyInfos()) {
+            String expect = propertyInfo.getName().substring(0, 1).toUpperCase() + propertyInfo.getName().substring(1);
+            if (text.substring(cursor).startsWith(expect)) {
+                String s = "";
+                while (s.length() < expect.length()) {
+                    s += next();
+                    if (s.equals(expect)) {
+                        propertyInfos.add(propertyInfo);
+                    }
+                }
+            }
+            cursor = _cursor;
+        }
+        return propertyInfos;
+    }
+
+    public List<String> variable() {
+        List<String> ss = new ArrayList<>();
+        int _cursor = cursor;
+        for (String variable : variables) {
+            String expect = variable.substring(0, 1).toUpperCase() + variable.substring(1);
+            if (text.substring(cursor).startsWith(expect)) {
+                String s = "";
+                while (s.length() < expect.length()) {
+                    s += next();
+                    if (s.equals(expect)) {
+                        ss.add(s);
+                    }
+                }
+            }
+            cursor = _cursor;
+        }
+        return ss;
+    }
+
+    public Parameter[] getParameters() {
+        return parameters;
     }
 
     public int integer() {
-        return -1;
+        String s = "";
+        for (; cursor < text.length(); cursor++) {
+            char c = text.charAt(cursor);
+            if (!Character.isDigit(c)) {
+                break;
+            }
+            s += c;
+        }
+        if (s.isEmpty()) {
+            return -1;
+        }
+        return Integer.parseInt(s);
     }
 
     public String getText() {
@@ -43,6 +162,6 @@ public class JpaTokenizer implements Tokenizer {
 
     @Override
     public String substring(int begin, int end) {
-        return text.substring(begin, end).trim();
+        return text.substring(begin, end);
     }
 }

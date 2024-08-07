@@ -105,14 +105,14 @@ public abstract class BaseParser {
     }
 
     protected Symbol action(Predicate<State> predicate) {
-        Symbol action = new Symbol("action(" + predicate + ")");
+        Symbol action = new Symbol("action(" + predicate.hashCode() + ")");
         return action.setMatch((state, continuation) -> {
             return predicate.test(state) && continuation.test(state);
         });
     }
 
     protected Symbol action(Consumer<State> consumer) {
-        Symbol action = new Symbol("action(" + consumer + ")");
+        Symbol action = new Symbol("action(" + consumer.hashCode() + ")");
         return action.setMatch((state, continuation) -> {
             consumer.accept(state);
             return continuation.test(state);
