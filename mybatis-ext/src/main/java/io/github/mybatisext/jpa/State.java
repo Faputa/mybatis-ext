@@ -60,6 +60,9 @@ public class State {
                 }
             }
         }
+        if (index < 0) {
+            index += foundMatchResults.size();
+        }
         if (foundMatchResults.size() > index) {
             return foundMatchResults.get(index);
         }

@@ -48,39 +48,36 @@
     |(save|insert)[Batch]
 
 <conditionList>=
-    <condition>And<conditionList>
-    |<condition>Or<conditionList>
-    |<condition>
+    <condition>[(And<conditionList>)|(Or<conditionList>)]
 
 <condition>=
-    <property>[Ignorecase][Not]Is[<variable>]
-    |<property>[Ignorecase][Not]Equals[<variable>]
-    |<property>[Ignorecase][Not]LessThan[<variable>]
-    |<property>[Ignorecase][Not]LessThanEqual[<variable>]
-    |<property>[Ignorecase][Not]GreaterThan[<variable>]
-    |<property>[Ignorecase][Not]GreaterThanEqual[<variable>]
-    |<property>[Ignorecase][Not]Like[<variable>]
-    |<property>[Ignorecase][Not]StartWith[<variable>]
-    |<property>[Ignorecase][Not]EndWith[<variable>]
-    |<property>[Ignorecase][Not]Between[<variable>To<variable>]
-    |<property>[Ignorecase][Not]In[<variable>]
-    |<property>[Ignorecase][Not]
-    |<property>[Not]IsNull
-    |<property>[Not]IsNotNull
-    |<property>[Not]IsTrue
-    |<property>[Not]IsFalse
+    <property>[Ignorecase][Not][(Is[<variable>])
+        |(Equals[<variable>])
+        |(LessThan[<variable>])
+        |(LessThanEqual[<variable>])
+        |(GreaterThan[<variable>])
+        |(GreaterThanEqual[<variable>])
+        |(Like[<variable>])
+        |(StartWith[<variable>])
+        |(EndWith[<variable>])
+        |(Between[<variable>To<variable>])
+        |(In[<variable>])]
+    |<property>[Not](IsNull
+        |IsNotNull
+        |IsTrue
+        |IsFalse)
 
 <modifier>=
-    OrderBy<propertyList>Asc
-    |OrderBy<propertyList>Desc
-    |OrderBy<propertyList>
+    OrderBy<propertyList>[Asc|Desc]
     |GroupBy<propertyList>
     |Limit(<integer>|<variable>)To(<integer>|<variable>)
     |Limit(<integer>|<variable>)
 
 <propertyList>=
-    <property>And<propertyList>
-    |<property>
+    <property>[And<propertyList>]
+
+<property>=
+    <propertyName>(Dot<propertyName>)*
 
 问题
     怎么确定jpa单词和参数之间的对应关系

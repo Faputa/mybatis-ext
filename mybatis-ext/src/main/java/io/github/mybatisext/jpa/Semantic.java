@@ -4,11 +4,16 @@ public class Semantic {
 
     private final Semantic prevSemantic;
     private SemanticType type;
-    private Boolean distinct = false;
+    private Boolean distinct;
+    private Boolean ignoreNull;
     private Limit limit;
     private ConditionList conditionList;
     private OrderBy orderBy;
     private GroupBy groupBy;
+
+    public Semantic() {
+        this(null);
+    }
 
     public Semantic(Semantic prevSemantic) {
         this.prevSemantic = prevSemantic;
@@ -45,6 +50,21 @@ public class Semantic {
 
     public Semantic setDistinct(Boolean distinct) {
         this.distinct = distinct;
+        return this;
+    }
+
+    public Boolean isIgnoreNull() {
+        if (ignoreNull != null) {
+            return ignoreNull;
+        }
+        if (prevSemantic != null) {
+            return prevSemantic.isIgnoreNull();
+        }
+        return false;
+    }
+
+    public Semantic setIgnoreNull(Boolean ignoreNull) {
+        this.ignoreNull = ignoreNull;
         return this;
     }
 
