@@ -25,17 +25,32 @@ public final class Symbol {
         return this;
     }
 
+    public Symbol set(Match match) {
+        this.match = (state, continuation) -> {
+            Tokenizer tokenizer = state.getTokenizer();
+            int begin = tokenizer.getCursor();
+            return match.test(state, s2 -> {
+                int end = tokenizer.getCursor();
+                s2.addMatch(this, state.getScope(), tokenizer.substring(begin, end), s2.getResult());
+                return continuation.test(state);
+            });
+        };
+        return this;
+    }
+
     public Symbol set(Symbol symbol) {
         if (symbol.hasLeftRecursion(this)) {
             throw new ParserException("Left recursion detected in " + name);
         }
         this.match = (state, continuation) -> {
-            Scope scope = new Scope(name, state);
             Tokenizer tokenizer = state.getTokenizer();
             int begin = tokenizer.getCursor();
-            return symbol.match(new State(state, scope), s2 -> {
+            return symbol.match(new State(state, new Scope(name, state)), s2 -> {
                 int end = tokenizer.getCursor();
-                Object value = scope.getReturnValue() != null ? scope.getReturnValue() : s2.getResult();
+                Object value = s2.getReturn();
+                if (value == null) {
+                    value = s2.getResult();
+                }
                 s2.addMatch(this, state.getScope(), tokenizer.substring(begin, end), value);
                 s2.setResult(value);
                 return continuation.test(s2);

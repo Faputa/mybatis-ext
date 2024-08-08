@@ -13,14 +13,12 @@ public class JpaTokenizer implements Tokenizer {
 
     private final TableInfo tableInfo;
     private final String text;
-    private final Parameter[] parameters;
     private final List<String> variables;
     private int cursor = 0;
 
     public JpaTokenizer(TableInfo tableInfo, String text, Parameter[] parameters) {
         this.tableInfo = tableInfo;
         this.text = text;
-        this.parameters = parameters;
         this.variables = buildVariables(parameters);
     }
 
@@ -45,6 +43,16 @@ public class JpaTokenizer implements Tokenizer {
                     cursor += sb.length();
                     return sb.toString();
                 }
+            } else if (Character.isDigit(c)) {
+                if (i > cursor && !Character.isDigit(text.charAt(i - 1))) {
+                    cursor += sb.length();
+                    return sb.toString();
+                }
+            } else if (c == '$') {
+                if (i > cursor) {
+                    cursor += sb.length();
+                    return sb.toString();
+                }
             }
             sb.append(c);
         }
@@ -53,12 +61,11 @@ public class JpaTokenizer implements Tokenizer {
     }
 
     public String keyword(String expect) {
-        String s = "";
-        int _cursor = cursor;
-        if (expect.startsWith("$")) {
+        if (cursor < text.length() && text.charAt(cursor) == '$') {
             cursor++;
         }
         if (text.substring(cursor).startsWith(expect)) {
+            String s = "";
             while (s.length() < expect.length()) {
                 s += next();
                 if (s.equals(expect)) {
@@ -66,8 +73,7 @@ public class JpaTokenizer implements Tokenizer {
                 }
             }
         }
-        cursor = _cursor;
-        return s;
+        return "";
     }
 
     public List<PropertyInfo> property() {
@@ -127,21 +133,15 @@ public class JpaTokenizer implements Tokenizer {
         return ss;
     }
 
-    public Parameter[] getParameters() {
-        return parameters;
-    }
-
     public int integer() {
-        String s = "";
-        for (; cursor < text.length(); cursor++) {
-            char c = text.charAt(cursor);
-            if (!Character.isDigit(c)) {
-                break;
-            }
-            s += c;
-        }
+        String s = next();
         if (s.isEmpty()) {
             return -1;
+        }
+        for (int i = 0; i < s.length(); i++) {
+            if (!Character.isDigit(s.charAt(i))) {
+                return -1;
+            }
         }
         return Integer.parseInt(s);
     }

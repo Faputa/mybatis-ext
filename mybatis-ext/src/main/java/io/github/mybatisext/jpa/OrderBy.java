@@ -1,16 +1,20 @@
 package io.github.mybatisext.jpa;
 
-public class OrderBy {
+import java.util.List;
 
-    private final PropertyList propertyList;
+import io.github.mybatisext.metadata.PropertyInfo;
+
+public class OrderBy implements Modifier {
+
+    private List<PropertyInfo> propertyInfos;
     private OrderByType type;
 
-    public OrderBy(PropertyList propertyList) {
-        this.propertyList = propertyList;
+    public List<PropertyInfo> getPropertyInfos() {
+        return propertyInfos;
     }
 
-    public PropertyList getPropertyList() {
-        return propertyList;
+    public void setPropertyInfos(List<PropertyInfo> propertyInfos) {
+        this.propertyInfos = propertyInfos;
     }
 
     public OrderByType getType() {
@@ -19,5 +23,10 @@ public class OrderBy {
 
     public void setType(OrderByType type) {
         this.type = type;
+    }
+
+    @Override
+    public void accept(Semantic semantic) {
+        semantic.setOrderBy(this);
     }
 }

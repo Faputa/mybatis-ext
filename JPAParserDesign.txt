@@ -40,32 +40,37 @@
     条件
 
 <grammar>=
-    (find|select|list|get)[Distinct][All|One|Top(<integer>|<variable>)][(By|Where)<conditionList>](<modifier>)*
-    |exists[(By|Where)<conditionList>](<modifier>)*
-    |count[(By|Where)<conditionList>](<modifier>)*
+    (find|select|list|get)[Distinct][All|One|Top(<integer>|<variable>)][(By|Where)<conditionList>][<modifierList>]
+    |exists[(By|Where)<conditionList>][<modifierList>]
+    |count[(By|Where)<conditionList>][<modifierList>]
     |(update|modify)[Batch][IgnoreNull][(By|Where)<conditionList>]
     |(delete|remove)[Batch][(By|Where)<conditionList>]
     |(save|insert)[Batch]
 
 <conditionList>=
-    <condition>[(And<conditionList>)|(Or<conditionList>)]
+    <condition>[(And|Or)<conditionList>)]
 
 <condition>=
-    <property>[Ignorecase][Not][(Is[<variable>])
-        |(Equals[<variable>])
-        |(LessThan[<variable>])
-        |(LessThanEqual[<variable>])
-        |(GreaterThan[<variable>])
-        |(GreaterThanEqual[<variable>])
-        |(Like[<variable>])
-        |(StartWith[<variable>])
-        |(EndWith[<variable>])
-        |(Between[<variable>To<variable>])
-        |(In[<variable>])]
-    |<property>[Not](IsNull
-        |IsNotNull
-        |IsTrue
-        |IsFalse)
+    <property>
+        [Ignorecase][Not][(Is[<variable>])
+            |(Equals[<variable>])
+            |(LessThan[<variable>])
+            |(LessThanEqual[<variable>])
+            |(GreaterThan[<variable>])
+            |(GreaterThanEqual[<variable>])
+            |(Like[<variable>])
+            |(StartWith[<variable>])
+            |(EndWith[<variable>])
+            |(Between[<variable>To<variable>])
+            |(In[<variable>])]
+        |[Not]
+            IsNull
+            |IsNotNull
+            |IsTrue
+            |IsFalse
+
+<modifierList>=
+    <modifier>[<modifierList>]
 
 <modifier>=
     OrderBy<propertyList>[Asc|Desc]
