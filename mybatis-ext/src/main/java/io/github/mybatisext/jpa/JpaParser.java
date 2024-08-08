@@ -1,6 +1,7 @@
 package io.github.mybatisext.jpa;
 
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -9,18 +10,15 @@ import io.github.mybatisext.metadata.TableInfo;
 
 public class JpaParser extends BaseParser {
 
-    private static final String SEMANTIC = "semantic";
-    private static final String CONDITION = "condition";
-    private static final String MODIFIER = "modifier";
-
     Symbol grammar = new Symbol("grammar");
     Symbol conditionList = new Symbol("conditionList");
     Symbol condition = new Symbol("condition");
+    Symbol modifierList = new Symbol("modifierList");
     Symbol modifier = new Symbol("modifier");
     Symbol propertyList = new Symbol("propertyList");
     Symbol property = new Symbol("property");
 
-    Symbol propertyName = new Symbol("propertyName").setMatch((state, continuation) -> {
+    Symbol propertyName = new Symbol("propertyName").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         int cursor = jpaTokenizer.getCursor();
         Object result = state.getResult();
@@ -40,12 +38,13 @@ public class JpaParser extends BaseParser {
         return false;
     });
 
-    Symbol integer = new Symbol("integer").setMatch((state, continuation) -> {
+    Symbol integer = new Symbol("integer").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
-        return jpaTokenizer.integer() > -1 && continuation.test(state);
+        int i = jpaTokenizer.integer();
+        return i > -1 && state.setResult(i) && continuation.test(state);
     });
 
-    Symbol variable = new Symbol("variable").setMatch((state, continuation) -> {
+    Symbol variable = new Symbol("variable").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         int cursor = jpaTokenizer.getCursor();
         for (String s : jpaTokenizer.variable()) {
@@ -58,295 +57,232 @@ public class JpaParser extends BaseParser {
         return false;
     });
 
-    Symbol end = new Symbol("end").setMatch((state, continuation) -> {
+    Symbol end = new Symbol("end").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         return jpaTokenizer.getCursor() == jpaTokenizer.getText().length() && continuation.test(state);
     });
 
     Symbol keyword(String s) {
-        return new Symbol("keyword(" + s + ")").setMatch((state, continuation) -> {
+        return assign(s, new Symbol("keyword(" + s + ")").set((state, continuation) -> {
             JpaTokenizer jpaTokenizer = state.getTokenizer();
-            return jpaTokenizer.keyword(s).equals(s) && continuation.test(state);
-        });
+            return !jpaTokenizer.keyword(s).isEmpty() && continuation.test(state);
+        }));
     }
 
     public JpaParser() {
-        grammar.set(join(choice(join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), action(state -> {
-            Semantic semantic = new Semantic();
-            semantic.setType(SemanticType.SELECT);
-            state.setGlobal(SEMANTIC, semantic);
-        }), optional(join(keyword("Distinct"), action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            semantic.setDistinct(true);
-            state.setGlobal(SEMANTIC, semantic);
-        }))), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(join(integer, action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            Limit limit = new Limit();
-            limit.setRowCount(state.getMatchResult(integer).val());
-            semantic.setLimit(limit);
-            state.setGlobal(SEMANTIC, semantic);
-        })), join(variable, action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            Limit limit = new Limit();
-            limit.setRowCountVariable(state.getMatchResult(variable).val());
-            semantic.setLimit(limit);
-            state.setGlobal(SEMANTIC, semantic);
-        })))))), optional(join(choice(keyword("By"), keyword("Where")), conditionList, action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            semantic.setConditionList(state.getMatchResult(conditionList).val());
-            state.setGlobal(SEMANTIC, semantic);
-        }))), star(modifier)), join(keyword("exists"), action(state -> {
-            Semantic semantic = new Semantic();
-            semantic.setType(SemanticType.EXISTS);
-            state.setGlobal(SEMANTIC, semantic);
-        }), optional(join(choice(keyword("By"), keyword("Where")), conditionList, action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            semantic.setConditionList(state.getMatchResult(conditionList).val());
-            state.setGlobal(SEMANTIC, semantic);
-        }))), star(modifier)), join(keyword("count"), action(state -> {
-            Semantic semantic = new Semantic();
-            semantic.setType(SemanticType.COUNT);
-            state.setGlobal(SEMANTIC, semantic);
-        }), optional(join(choice(keyword("By"), keyword("Where")), conditionList, action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            semantic.setConditionList(state.getMatchResult(conditionList).val());
-            state.setGlobal(SEMANTIC, semantic);
-        }))), star(modifier)), join(choice(keyword("update"), keyword("modify")), action(state -> {
-            Semantic semantic = new Semantic();
-            semantic.setType(SemanticType.UPDATE);
-            state.setGlobal(SEMANTIC, semantic);
-        }), optional(keyword("Batch")), optional(join(keyword("IgnoreNull"), action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            semantic.setIgnoreNull(true);
-            state.setGlobal(SEMANTIC, semantic);
-        }))), optional(join(choice(keyword("By"), keyword("Where")), conditionList, action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            semantic.setConditionList(state.getMatchResult(conditionList).val());
-            state.setGlobal(SEMANTIC, semantic);
-        })))), join(choice(keyword("delete"), keyword("remove")), action(state -> {
-            Semantic semantic = new Semantic();
-            semantic.setType(SemanticType.DELETE);
-            state.setGlobal(SEMANTIC, semantic);
-        }), optional(keyword("Batch")), optional(join(choice(keyword("By"), keyword("Where")), conditionList, action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            semantic.setConditionList(state.getMatchResult(conditionList).val());
-            state.setGlobal(SEMANTIC, semantic);
-        })))), join(choice(keyword("save"), keyword("remove")), action(state -> {
-            Semantic semantic = new Semantic();
-            semantic.setType(SemanticType.INSERT);
-            state.setGlobal(SEMANTIC, semantic);
-        }), optional(keyword("Batch")))), end));
+        grammar.set(choice(
+                join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(modifierList), end, action(state -> {
+                    Semantic semantic = new Semantic();
+                    semantic.setType(SemanticType.SELECT);
+                    if (state.getMatchResult("Distinct") != null) {
+                        semantic.setDistinct(true);
+                    }
+                    if (state.getMatchResult("Top") != null) {
+                        Limit limit = new Limit();
+                        MatchResult _integer = state.getMatchResult(integer);
+                        if (_integer != null) {
+                            limit.setRowCount(_integer.val());
+                        } else {
+                            limit.setRowCountVariable(state.getMatchResult(variable).val());
+                        }
+                        semantic.setLimit(limit);
+                    } else if (state.getMatchResult("One") != null) {
+                        Limit limit = new Limit();
+                        limit.setRowCount(1);
+                        semantic.setLimit(limit);
+                    }
+                    MatchResult _conditionList = state.getMatchResult(conditionList);
+                    if (_conditionList != null) {
+                        semantic.setConditionList(_conditionList.val());
+                    }
+                    MatchResult _modifierList = state.getMatchResult(modifierList);
+                    if (_modifierList != null) {
+                        semantic.setModifierList(_modifierList.val());
+                    }
+                    state.setReturn(semantic);
+                })),
+                join(keyword("exists"), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(modifierList), end, action(state -> {
+                    Semantic semantic = new Semantic();
+                    semantic.setType(SemanticType.EXISTS);
+                    MatchResult _conditionList = state.getMatchResult(conditionList);
+                    if (_conditionList != null) {
+                        semantic.setConditionList(_conditionList.val());
+                    }
+                    MatchResult _modifierList = state.getMatchResult(modifierList);
+                    if (_modifierList != null) {
+                        semantic.setModifierList(_modifierList.val());
+                    }
+                    state.setReturn(semantic);
+                })),
+                join(keyword("count"), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(modifierList), end, action(state -> {
+                    Semantic semantic = new Semantic();
+                    semantic.setType(SemanticType.COUNT);
+                    MatchResult _conditionList = state.getMatchResult(conditionList);
+                    if (_conditionList != null) {
+                        semantic.setConditionList(_conditionList.val());
+                    }
+                    MatchResult _modifierList = state.getMatchResult(modifierList);
+                    if (_modifierList != null) {
+                        semantic.setModifierList(_modifierList.val());
+                    }
+                    state.setReturn(semantic);
+                })),
+                join(choice(keyword("update"), keyword("modify")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
+                    Semantic semantic = new Semantic();
+                    semantic.setType(SemanticType.UPDATE);
+                    if (state.getMatchResult("IgnoreNull") != null) {
+                        semantic.setIgnoreNull(true);
+                    }
+                    MatchResult _conditionList = state.getMatchResult(conditionList);
+                    if (_conditionList != null) {
+                        semantic.setConditionList(_conditionList.val());
+                    }
+                    state.setReturn(semantic);
+                })),
+                join(choice(keyword("delete"), keyword("remove")), optional(keyword("Batch")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
+                    Semantic semantic = new Semantic();
+                    semantic.setType(SemanticType.DELETE);
+                    MatchResult _conditionList = state.getMatchResult(conditionList);
+                    if (_conditionList != null) {
+                        semantic.setConditionList(_conditionList.val());
+                    }
+                    state.setReturn(semantic);
+                })),
+                join(choice(keyword("save"), keyword("insert")), optional(keyword("Batch")), end, action(state -> {
+                    Semantic semantic = new Semantic();
+                    semantic.setType(SemanticType.INSERT);
+                    state.setReturn(semantic);
+                }))));
 
-        conditionList.set(choice(join(condition, action(state -> {
-            Condition c = state.getMatchResult(condition).val();
-            state.setReturn(new ConditionList(c));
-        }), optional(choice(join(keyword("And"), conditionList, action(state -> {
-            Condition c = state.getMatchResult(condition).val();
-            ConditionList list = state.getMatchResult(conditionList).val();
-            state.setReturn(new ConditionList(c, list, ConditionListRel.And));
-        })), join(keyword("Or"), conditionList, action(state -> {
-            Condition c = state.getMatchResult(condition).val();
-            ConditionList list = state.getMatchResult(conditionList).val();
-            state.setReturn(new ConditionList(c, list, ConditionListRel.Or));
-        })))))));
+        conditionList.set(
+                join(condition, optional(join(choice(keyword("And"), keyword("Or")), conditionList)), action(state -> {
+                    Condition c = state.getMatchResult(condition).val();
+                    MatchResult _conditionList = state.getMatchResult(conditionList);
+                    if (_conditionList != null) {
+                        if (state.getMatchResult("And") != null) {
+                            state.setReturn(new ConditionList(c, _conditionList.val(), ConditionListRel.And));
+                        } else {
+                            state.setReturn(new ConditionList(c, _conditionList.val(), ConditionListRel.Or));
+                        }
+                    } else {
+                        state.setReturn(new ConditionList(c));
+                    }
+                })));
 
-        condition.set(choice(join(property, action(state -> {
-            Condition c = new Condition();
-            c.setPropertyInfo(state.getMatchResult(property).val());
-            state.setGlobal(CONDITION, c);
-        }), optional(join(keyword("Ignorecase"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setIgnorecase(true);
-            state.setGlobal(CONDITION, c);
-        }))), optional(join(keyword("Not"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setNot(true);
-            state.setGlobal(CONDITION, c);
-        }))), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.Equals);
-            state.setGlobal(CONDITION, c);
-        }), optional(choice(join(keyword("Is"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.Equals);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))), join(keyword("Equals"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.Equals);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))), join(keyword("LessThan"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.LessThan);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))), join(keyword("LessThanEqual"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.LessThanEqual);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))), join(keyword("GreaterThan"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.GreaterThan);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))), join(keyword("GreaterThanEqual"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.GreaterThanEqual);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))), join(keyword("Like"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.Like);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))), join(keyword("StartWith"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.StartWith);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))), join(keyword("EndWith"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.EndWith);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))), join(keyword("Between"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.Between);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })), keyword("To"), join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableB(state.getMatchResult(variable, -1).text());
-            state.setGlobal(CONDITION, c);
-        }))))), join(keyword("In"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.In);
-            state.setGlobal(CONDITION, c);
-        }), optional(join(variable, action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setVariableA(state.getMatchResult(variable).val());
-            state.setGlobal(CONDITION, c);
-        })))))), action(state -> {
-            Condition c = state.getGlobal(CONDITION);
-            state.setReturn(c);
-        })), join(property, action(state -> {
-            Condition c = new Condition();
-            c.setPropertyInfo(state.getMatchResult(property).val());
-            state.setGlobal(CONDITION, c);
-        }), optional(join(keyword("Not"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setNot(true);
-            state.setGlobal(CONDITION, c);
-        }))), optional(choice(join(keyword("IsNull"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.IsNull);
-            state.setGlobal(CONDITION, c);
-        })), join(keyword("IsNotNull"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.IsNotNull);
-            state.setGlobal(CONDITION, c);
-        })), join(keyword("IsTrue"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.IsTrue);
-            state.setGlobal(CONDITION, c);
-        })), join(keyword("IsFalse"), action(state -> {
-            Condition c = new Condition(state.getGlobal(CONDITION));
-            c.setRel(ConditionRel.IsFalse);
-            state.setGlobal(CONDITION, c);
-        })))), action(state -> {
-            Condition c = state.getGlobal(CONDITION);
-            state.setReturn(c);
-        }))));
+        Symbol integerB = new Symbol("integerB").set(integer);
+        Symbol variableB = new Symbol("variableB").set(variable);
+        condition.set(join(property, choice(
+                join(optional(keyword("Ignorecase")), optional(keyword("Not")), optional(choice(
+                        join(keyword("Is"), optional(variable)),
+                        join(keyword("Equals"), optional(variable)),
+                        join(keyword("LessThan"), optional(variable)),
+                        join(keyword("LessThanEqual"), optional(variable)),
+                        join(keyword("GreaterThan"), optional(variable)),
+                        join(keyword("GreaterThanEqual"), optional(variable)),
+                        join(keyword("Like"), optional(variable)),
+                        join(keyword("StartWith"), optional(variable)),
+                        join(keyword("EndWith"), optional(variable)),
+                        join(keyword("Between"), optional(join(variable, keyword("To"), variableB))),
+                        join(keyword("In"), optional(variable))))),
+                join(optional(keyword("Not")), choice(
+                        keyword("IsNull"),
+                        keyword("IsNotNull"),
+                        keyword("IsTrue"),
+                        keyword("IsFalse")))),
+                action(state -> {
+                    Condition condition = new Condition();
+                    condition.setPropertyInfo(state.getMatchResult(property).val());
+                    for (ConditionRel rel : ConditionRel.values()) {
+                        if (state.getMatchResult(rel.name()) != null) {
+                            condition.setRel(rel);
+                            break;
+                        }
+                    }
+                    if (condition.getRel() == null) {
+                        condition.setRel(ConditionRel.Equals);
+                    }
+                    if (state.getMatchResult("Ignorecase") != null) {
+                        condition.setIgnorecase(true);
+                    }
+                    if (state.getMatchResult("Not") != null) {
+                        condition.setNot(true);
+                    }
+                    MatchResult _variable = state.getMatchResult(variable);
+                    if (_variable != null) {
+                        condition.setVariableA(_variable.val());
+                        if (ConditionRel.Between == condition.getRel()) {
+                            condition.setVariableB(state.getMatchResult(variableB).val());
+                        }
+                    }
+                    state.setReturn(condition);
+                })));
 
-        modifier.set(choice(join(keyword("OrderBy"), propertyList, action(state -> {
-            OrderBy by = new OrderBy(state.getMatchResult(propertyList).val());
-            state.setGlobal(MODIFIER, by);
-        }), optional(choice(join(keyword("Asc"), action(state -> {
-            OrderBy by = state.getGlobal(MODIFIER);
-            by.setType(OrderByType.ASC);
-        })), join(keyword("Desc"), action(state -> {
-            OrderBy by = state.getGlobal(MODIFIER);
-            by.setType(OrderByType.ASC);
-        })))), action(state -> {
-            Semantic semantic = new Semantic(state.getGlobal(SEMANTIC));
-            OrderBy by = state.getGlobal(MODIFIER);
-            semantic.setOrderBy(by);
-            state.setGlobal(SEMANTIC, semantic);
-        })), join(keyword("GroupBy"), propertyList, action(state -> {
-            GroupBy by = new GroupBy(state.getMatchResult(propertyList).val());
-            state.setGlobal(MODIFIER, by);
-        })), join(keyword("Limit"), action(state -> {
-            Limit limit = new Limit();
-            state.setGlobal(MODIFIER, limit);
-        }), choice(join(integer, action(state -> {
-            Limit limit = state.getGlobal(MODIFIER);
-            limit.setOffset(state.getMatchResult(integer).val());
-            state.setGlobal(MODIFIER, limit);
-        })), join(variable, action(state -> {
-            Limit limit = state.getGlobal(MODIFIER);
-            limit.setOffsetVariable(state.getMatchResult(variable).val());
-            state.setGlobal(MODIFIER, limit);
-        }))), keyword("To"), choice(join(integer, action(state -> {
-            Limit limit = state.getGlobal(MODIFIER);
-            limit.setRowCount(state.getMatchResult(integer).val());
-            state.setGlobal(MODIFIER, limit);
-        })), join(variable, action(state -> {
-            Limit limit = state.getGlobal(MODIFIER);
-            limit.setRowCountVariable(state.getMatchResult(variable).val());
-            state.setGlobal(MODIFIER, limit);
-        })))), join(keyword("Limit"), action(state -> {
-            Limit limit = new Limit();
-            state.setGlobal(MODIFIER, limit);
-        }), choice(join(integer, action(state -> {
-            Limit limit = state.getGlobal(MODIFIER);
-            limit.setRowCount(state.getMatchResult(integer).val());
-            state.setGlobal(MODIFIER, limit);
-        })), join(variable, action(state -> {
-            Limit limit = state.getGlobal(MODIFIER);
-            limit.setRowCountVariable(state.getMatchResult(variable).val());
-            state.setGlobal(MODIFIER, limit);
-        }))))));
+        modifierList.set(
+                join(modifier, optional(modifierList), action(state -> {
+                    List<Modifier> list = new ArrayList<>();
+                    Modifier _modifier = state.getMatchResult(modifier).val();
+                    list.add(_modifier);
+                    MatchResult _modifierList = state.getMatchResult(modifierList);
+                    if (_modifierList != null) {
+                        list.addAll(_modifierList.val());
+                    }
+                    state.setReturn(list);
+                })));
 
-        propertyList.set(join(property, action(state -> {
-            PropertyInfo info = state.getMatchResult(property).val();
-            state.setReturn(new PropertyList(info));
-        }), optional(join(keyword("And"), propertyList, action(state -> {
-            PropertyInfo info = state.getMatchResult(property).val();
-            PropertyList list = state.getMatchResult(propertyList).val();
-            state.setReturn(new PropertyList(info, list));
-        })))));
+        modifier.set(choice(
+                join(keyword("OrderBy"), propertyList, optional(choice(keyword("Asc"), keyword("Desc"))), action(state -> {
+                    OrderBy orderBy = new OrderBy();
+                    orderBy.setPropertyInfos(state.getMatchResult(propertyList).val());
+                    if (state.getMatchResult("Asc") != null) {
+                        orderBy.setType(OrderByType.ASC);
+                    } else if (state.getMatchResult("Desc") != null) {
+                        orderBy.setType(OrderByType.DESC);
+                    }
+                    state.setReturn(orderBy);
+                })),
+                join(keyword("GroupBy"), propertyList, action(state -> {
+                    GroupBy groupBy = new GroupBy();
+                    groupBy.setPropertyInfos(state.getMatchResult(propertyList).val());
+                    state.setReturn(groupBy);
+                })),
+                join(keyword("Limit"), choice(integer, variable), keyword("To"), choice(integerB, join(variableB)), action(state -> {
+                    Limit limit = new Limit();
+                    MatchResult _integer = state.getMatchResult(integer);
+                    if (_integer != null) {
+                        limit.setOffset(_integer.val());
+                    } else {
+                        limit.setOffsetVariable(state.getMatchResult(variable).val());
+                    }
+                    MatchResult _integerB = state.getMatchResult(integerB);
+                    if (_integerB != null) {
+                        limit.setRowCount(_integerB.val());
+                    } else {
+                        limit.setRowCountVariable(state.getMatchResult(variableB).val());
+                    }
+                    state.setReturn(limit);
+                })),
+                join(keyword("Limit"), choice(integer, variable), action(state -> {
+                    Limit limit = new Limit();
+                    state.setReturn(limit);
+                    MatchResult _integer = state.getMatchResult(integer);
+                    if (_integer != null) {
+                        limit.setRowCount(_integer.val());
+                    } else {
+                        limit.setRowCountVariable(state.getMatchResult(variable).val());
+                    }
+                }))));
+
+        propertyList.set(
+                join(property, optional(join(keyword("And"), propertyList)), action(state -> {
+                    List<PropertyInfo> list = new ArrayList<>();
+                    PropertyInfo propertyInfo = state.getMatchResult(property).val();
+                    list.add(propertyInfo);
+                    MatchResult _propertyList = state.getMatchResult(propertyList);
+                    if (_propertyList != null) {
+                        list.addAll(_propertyList.val());
+                    }
+                    state.setReturn(list);
+                })));
 
         property.set(join(propertyName, star(join(keyword("Dot"), propertyName))));
     }
@@ -355,7 +291,7 @@ public class JpaParser extends BaseParser {
         AtomicReference<Semantic> reference = new AtomicReference<>();
         JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, parameters);
         grammar.match(jpaTokenizer, state -> {
-            Semantic semantic = state.getGlobal(SEMANTIC);
+            Semantic semantic = (Semantic) state.getResult();
             reference.set(semantic);
             return true;
         });
