@@ -35,13 +35,19 @@ public class JpaParser extends BaseParser {
             }
             jpaTokenizer.setCursor(cursor);
         }
+        jpaTokenizer.getCheckpoint().update(cursor, "propertyName");
         return false;
     });
 
     Symbol integer = new Symbol("integer").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
+        int cursor = jpaTokenizer.getCursor();
         int i = jpaTokenizer.integer();
-        return i > -1 && state.setResult(i) && continuation.test(state);
+        if (i < 0) {
+            jpaTokenizer.getCheckpoint().update(cursor, "integer");
+            return false;
+        }
+        return state.setResult(i) && continuation.test(state);
     });
 
     Symbol variable = new Symbol("variable").set((state, continuation) -> {
@@ -54,18 +60,28 @@ public class JpaParser extends BaseParser {
             }
             jpaTokenizer.setCursor(cursor);
         }
+        jpaTokenizer.getCheckpoint().update(cursor, "variable");
         return false;
     });
 
     Symbol end = new Symbol("end").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
-        return jpaTokenizer.getCursor() == jpaTokenizer.getText().length() && continuation.test(state);
+        if (jpaTokenizer.getCursor() != jpaTokenizer.getText().length()) {
+            jpaTokenizer.getCheckpoint().update(jpaTokenizer.getCursor(), "end");
+            return false;
+        }
+        return continuation.test(state);
     });
 
     Symbol keyword(String s) {
         return assign(s, new Symbol("keyword(" + s + ")").set((state, continuation) -> {
             JpaTokenizer jpaTokenizer = state.getTokenizer();
-            return !jpaTokenizer.keyword(s).isEmpty() && continuation.test(state);
+            int cursor = jpaTokenizer.getCursor();
+            if (jpaTokenizer.keyword(s).isEmpty()) {
+                jpaTokenizer.getCheckpoint().update(cursor, "'" + s + "'");
+                return false;
+            }
+            return continuation.test(state);
         }));
     }
 
@@ -295,6 +311,10 @@ public class JpaParser extends BaseParser {
             reference.set(semantic);
             return true;
         });
+        if (reference.get() == null) {
+            jpaTokenizer.getCheckpoint().printMessage(System.err);
+            throw new ParserException(jpaTokenizer.getCheckpoint().toString());
+        }
         return reference.get();
     }
 }
