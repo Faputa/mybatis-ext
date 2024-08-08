@@ -1,14 +1,23 @@
 package io.github.mybatisext.jpa;
 
-public class GroupBy {
+import java.util.List;
 
-    private final PropertyList propertyList;
+import io.github.mybatisext.metadata.PropertyInfo;
 
-    public GroupBy(PropertyList propertyList) {
-        this.propertyList = propertyList;
+public class GroupBy implements Modifier {
+
+    private List<PropertyInfo> propertyInfos;
+
+    public List<PropertyInfo> getPropertyInfos() {
+        return propertyInfos;
     }
 
-    public PropertyList getPropertyList() {
-        return propertyList;
+    public void setPropertyInfos(List<PropertyInfo> propertyInfos) {
+        this.propertyInfos = propertyInfos;
+    }
+
+    @Override
+    public void accept(Semantic semantic) {
+        semantic.setGroupBy(this);
     }
 }

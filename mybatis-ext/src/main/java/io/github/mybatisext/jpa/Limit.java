@@ -1,6 +1,6 @@
 package io.github.mybatisext.jpa;
 
-public class Limit {
+public class Limit implements Modifier {
 
     private Integer offset;
     private Integer rowCount;
@@ -37,5 +37,10 @@ public class Limit {
 
     public void setRowCountVariable(String rowCountVariable) {
         this.rowCountVariable = rowCountVariable;
+    }
+
+    @Override
+    public void accept(Semantic semantic) {
+        semantic.setLimit(this);
     }
 }

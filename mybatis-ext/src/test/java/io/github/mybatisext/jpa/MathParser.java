@@ -1,13 +1,8 @@
 package io.github.mybatisext.jpa;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class MathParser extends BaseParser {
 
-    private final Set<String> keywords = new HashSet<>();
-
-    Symbol end = new Symbol("end").setMatch((state, continuation) -> {
+    Symbol end = new Symbol("end").set((state, continuation) -> {
         MathTokenizer mathTokenizer = state.getTokenizer();
         return mathTokenizer.next().isEmpty() && continuation.test(state);
     });
@@ -15,8 +10,7 @@ public class MathParser extends BaseParser {
     Symbol digit = new Symbol("digit").set(choice(keyword("0"), keyword("1"), keyword("2"), keyword("3"), keyword("4"), keyword("5"), keyword("6"), keyword("7"), keyword("8"), keyword("9")));
 
     Symbol keyword(String s) {
-        keywords.add(s);
-        return new Symbol("keyword(" + s + ")").setMatch((state, continuation) -> {
+        return new Symbol("keyword(" + s + ")").set((state, continuation) -> {
             MathTokenizer mathTokenizer = state.getTokenizer();
             return mathTokenizer.next().equals(s) && state.setResult(s) && continuation.test(state);
         });

@@ -11,9 +11,9 @@ public class State {
     private final Scope scope;
     private final Tokenizer tokenizer;
     private Object result;
+    private Object returnValue;
     private final Map<Scope, Map<String, MatchResult>> scopeToNameToMatchResult = new HashMap<>();
     private final List<MatchResult> matchResults = new ArrayList<>();
-    private final Map<String, Object> nameToGlobal = new HashMap<>();
 
     public State(Tokenizer tokenizer) {
         this.prevState = null;
@@ -47,6 +47,21 @@ public class State {
 
     public boolean setResult(Object result) {
         this.result = result;
+        return true;
+    }
+
+    public Object getReturn() {
+        assert scope != null;
+        for (State state = this; state != scope.getOutside() && state != null; state = state.prevState) {
+            if (state.getScope() == scope && state.returnValue != null) {
+                return state.returnValue;
+            }
+        }
+        return null;
+    }
+
+    public boolean setReturn(Object value) {
+        this.returnValue = value;
         return true;
     }
 
@@ -88,20 +103,20 @@ public class State {
     }
 
     public MatchResult getMatch(String name, Scope scope) {
-        Map<String, MatchResult> nameToMatchResult = scopeToNameToMatchResult.get(scope);
-        if (nameToMatchResult != null) {
-            MatchResult matchResult = nameToMatchResult.get(name);
-            if (matchResult != null) {
-                return matchResult;
+        for (State state = this; state != scope.getOutside() && state != null; state = state.prevState) {
+            Map<String, MatchResult> nameToMatchResult = state.scopeToNameToMatchResult.get(scope);
+            if (nameToMatchResult != null) {
+                MatchResult matchResult = nameToMatchResult.get(name);
+                if (matchResult != null) {
+                    return matchResult;
+                }
             }
-        }
-        if (prevState != scope.getOutside() && prevState != null) {
-            return prevState.getMatch(name, scope);
         }
         return null;
     }
 
     public MatchResult getMatch(String name) {
+        assert scope != null;
         return getMatch(name, scope);
     }
 
@@ -113,30 +128,7 @@ public class State {
     }
 
     public boolean addMatch(String name, Symbol symbol, String text, Object value) {
+        assert scope != null;
         return addMatch(name, symbol, scope, text, value);
-    }
-
-    public boolean setReturn(Object value) {
-        if (this.scope != null) {
-            this.scope.setReturnValue(value);
-        }
-        return true;
-    }
-
-    public <T> T getGlobal(String name) {
-        @SuppressWarnings("unchecked")
-        T t = (T) nameToGlobal.get(name);
-        if (t != null) {
-            return t;
-        }
-        if (prevState != null) {
-            return prevState.getGlobal(name);
-        }
-        return null;
-    }
-
-    public <T> boolean setGlobal(String name, T value) {
-        nameToGlobal.put(name, value);
-        return true;
     }
 }

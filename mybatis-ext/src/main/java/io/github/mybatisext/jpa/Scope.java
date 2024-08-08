@@ -4,12 +4,10 @@ public class Scope {
 
     private final Symbol owner;
     private final State outside;
-    // TODO returnValue应该定义在state中
-    private Object returnValue;
 
-    public Scope(Symbol owner, State guard) {
+    public Scope(Symbol owner, State outside) {
         this.owner = owner;
-        this.outside = guard;
+        this.outside = outside;
     }
 
     public State getOutside() {
@@ -19,13 +17,5 @@ public class Scope {
     @Override
     public String toString() {
         return String.valueOf(owner);
-    }
-
-    public Object getReturnValue() {
-        return returnValue;
-    }
-
-    public void setReturnValue(Object returnValue) {
-        this.returnValue = returnValue;
     }
 }
