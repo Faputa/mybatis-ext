@@ -14,12 +14,14 @@ public class JpaTokenizer implements Tokenizer {
     private final TableInfo tableInfo;
     private final String text;
     private final List<String> variables;
+    private final Checkpoint checkpoint;
     private int cursor = 0;
 
     public JpaTokenizer(TableInfo tableInfo, String text, Parameter[] parameters) {
         this.tableInfo = tableInfo;
         this.text = text;
         this.variables = buildVariables(parameters);
+        this.checkpoint = new Checkpoint(text);
     }
 
     private List<String> buildVariables(Parameter[] parameters2) {
@@ -148,6 +150,10 @@ public class JpaTokenizer implements Tokenizer {
 
     public String getText() {
         return text;
+    }
+
+    public Checkpoint getCheckpoint() {
+        return checkpoint;
     }
 
     @Override
