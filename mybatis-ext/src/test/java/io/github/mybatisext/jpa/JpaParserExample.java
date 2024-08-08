@@ -4,5 +4,5 @@ public interface JpaParserExample {
 
     void select();
 
-    void getTop10ByUserIdAndTableIdAndRowPrivilegeFieldsDotFieldOrderByCreateTime();
+    void getDistinctTop10ByUserIdAndTableIdAndRowPrivilegeFieldsDotFieldOrderByCreateTie();
 }
