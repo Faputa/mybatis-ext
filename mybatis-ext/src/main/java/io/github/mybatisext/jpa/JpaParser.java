@@ -2,8 +2,11 @@ package io.github.mybatisext.jpa;
 
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.ibatis.annotations.Param;
 
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
@@ -114,6 +117,8 @@ public class JpaParser extends BaseParser {
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
+                    } else {
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     MatchResult _modifierList = state.getMatch(modifierList);
                     if (_modifierList != null) {
@@ -127,6 +132,8 @@ public class JpaParser extends BaseParser {
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
+                    } else {
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     MatchResult _modifierList = state.getMatch(modifierList);
                     if (_modifierList != null) {
@@ -140,6 +147,8 @@ public class JpaParser extends BaseParser {
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
+                    } else {
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     MatchResult _modifierList = state.getMatch(modifierList);
                     if (_modifierList != null) {
@@ -156,6 +165,8 @@ public class JpaParser extends BaseParser {
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
+                    } else {
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     state.setReturn(semantic);
                 })),
@@ -165,6 +176,8 @@ public class JpaParser extends BaseParser {
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
+                    } else {
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     state.setReturn(semantic);
                 })),
@@ -307,10 +320,62 @@ public class JpaParser extends BaseParser {
         property.set(join(propertyName, star(join(keyword("Dot"), propertyName))));
     }
 
+    private ConditionList getParamConditionList(State state) {
+        ConditionList conditionList = null;
+        JpaTokenizer jpaTokenizer = state.getTokenizer();
+        for (String param : jpaTokenizer.getVariables()) {
+            PropertyInfo propertyInfo = parseProperty(jpaTokenizer.getTableInfo(), param);
+            Condition condition = new Condition();
+            condition.setPropertyInfo(propertyInfo);
+            condition.setRel(ConditionRel.Equals);
+            condition.setVariableA(param);
+            if (conditionList == null) {
+                conditionList = new ConditionList(condition);
+            } else {
+                conditionList = new ConditionList(condition, conditionList, ConditionListRel.And);
+            }
+        }
+        return conditionList;
+    }
+
+    private List<String> buildVariables(Parameter[] parameters) {
+        List<String> variables = new ArrayList<>();
+        for (Parameter parameter : parameters) {
+            Param param = parameter.getAnnotation(Param.class);
+            if (param != null) {
+                variables.add(param.value());
+            }
+        }
+        return variables;
+    }
+
+    private final Symbol propertyEnd = join(property, end);
+
+    private PropertyInfo parseProperty(TableInfo tableInfo, String param) {
+        AtomicReference<PropertyInfo> reference = new AtomicReference<>();
+        List<TokenMarker> tokenMarkers = new ArrayList<>();
+        JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, param.substring(0, 1).toUpperCase() + param.substring(1), Collections.emptyList());
+        propertyEnd.match(jpaTokenizer, state -> {
+            PropertyInfo propertyInfo = (PropertyInfo) state.getResult();
+            reference.set(propertyInfo);
+            tokenMarkers.add(new TokenMarker(jpaTokenizer.getTokenMarker()));
+            return false;
+        });
+        if (reference.get() == null) {
+            jpaTokenizer.getExpectedTokens().printMessage(System.err);
+            throw new ParserException(jpaTokenizer.getExpectedTokens().toString());
+        }
+        if (tokenMarkers.size() > 1) {
+            tokenMarkers.get(0).printDiff(tokenMarkers.get(tokenMarkers.size() - 1), System.err);
+            throw new ParserException("Conflict detected at column " + tokenMarkers.get(0).getDiffBegin(tokenMarkers.get(tokenMarkers.size() - 1)));
+        }
+        return reference.get();
+    }
+
     public Semantic parse(TableInfo tableInfo, String methodName, Parameter[] parameters) {
         AtomicReference<Semantic> reference = new AtomicReference<>();
         List<TokenMarker> tokenMarkers = new ArrayList<>();
-        JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, parameters);
+        JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, buildVariables(parameters));
         grammar.match(jpaTokenizer, state -> {
             Semantic semantic = (Semantic) state.getResult();
             reference.set(semantic);
