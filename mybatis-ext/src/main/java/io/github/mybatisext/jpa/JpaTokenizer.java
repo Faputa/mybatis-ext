@@ -1,12 +1,9 @@
 package io.github.mybatisext.jpa;
 
-import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 
 import io.github.mybatisext.metadata.PropertyInfo;
-import org.apache.ibatis.annotations.Param;
-
 import io.github.mybatisext.metadata.TableInfo;
 
 public class JpaTokenizer implements Tokenizer {
@@ -18,23 +15,12 @@ public class JpaTokenizer implements Tokenizer {
     private final TokenMarker tokenMarker;
     private int cursor = 0;
 
-    public JpaTokenizer(TableInfo tableInfo, String text, Parameter[] parameters) {
+    public JpaTokenizer(TableInfo tableInfo, String text, List<String> variables) {
         this.tableInfo = tableInfo;
         this.text = text;
-        this.variables = buildVariables(parameters);
+        this.variables = variables;
         this.expectedTokens = new ExpectedTokens(text);
         this.tokenMarker = new TokenMarker(text);
-    }
-
-    private List<String> buildVariables(Parameter[] parameters) {
-        List<String> variables = new ArrayList<>();
-        for (Parameter parameter : parameters) {
-            Param param = parameter.getAnnotation(Param.class);
-            if (param != null) {
-                variables.add(param.value());
-            }
-        }
-        return variables;
     }
 
     private String next() {
