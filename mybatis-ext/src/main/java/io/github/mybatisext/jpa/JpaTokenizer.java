@@ -14,19 +14,21 @@ public class JpaTokenizer implements Tokenizer {
     private final TableInfo tableInfo;
     private final String text;
     private final List<String> variables;
-    private final Checkpoint checkpoint;
+    private final ExpectedTokens expectedTokens;
+    private final TokenMarker tokenMarker;
     private int cursor = 0;
 
     public JpaTokenizer(TableInfo tableInfo, String text, Parameter[] parameters) {
         this.tableInfo = tableInfo;
         this.text = text;
         this.variables = buildVariables(parameters);
-        this.checkpoint = new Checkpoint(text);
+        this.expectedTokens = new ExpectedTokens(text);
+        this.tokenMarker = new TokenMarker(text);
     }
 
-    private List<String> buildVariables(Parameter[] parameters2) {
+    private List<String> buildVariables(Parameter[] parameters) {
         List<String> variables = new ArrayList<>();
-        for (Parameter parameter : parameters2) {
+        for (Parameter parameter : parameters) {
             Param param = parameter.getAnnotation(Param.class);
             if (param != null) {
                 variables.add(param.value());
@@ -126,7 +128,7 @@ public class JpaTokenizer implements Tokenizer {
                 while (s.length() < expect.length()) {
                     s += next();
                     if (s.equals(expect)) {
-                        ss.add(s);
+                        ss.add(variable);
                     }
                 }
             }
@@ -148,12 +150,24 @@ public class JpaTokenizer implements Tokenizer {
         return Integer.parseInt(s);
     }
 
+    public TableInfo getTableInfo() {
+        return tableInfo;
+    }
+
     public String getText() {
         return text;
     }
 
-    public Checkpoint getCheckpoint() {
-        return checkpoint;
+    public List<String> getVariables() {
+        return variables;
+    }
+
+    public ExpectedTokens getExpectedTokens() {
+        return expectedTokens;
+    }
+
+    public TokenMarker getTokenMarker() {
+        return tokenMarker;
     }
 
     @Override
