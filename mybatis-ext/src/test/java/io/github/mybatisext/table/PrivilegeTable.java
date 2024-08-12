@@ -21,6 +21,8 @@ public class PrivilegeTable extends MetadataTable {
     @Column
     private String userId;
     @Column
+    private String userIdAndTableId;
+    @Column
     private Boolean rowPrivilegeEnabled;
     @Column
     private Boolean colPrivilegeEnabled;

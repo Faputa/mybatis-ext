@@ -30,12 +30,13 @@ public class JpaParser extends BaseParser {
         }
         for (PropertyInfo propertyInfo : propertyInfos) {
             jpaTokenizer.setCursor(cursor + propertyInfo.getName().length());
+            jpaTokenizer.getTokenMarker().record(jpaTokenizer.getCursor());
             if (state.setResult(propertyInfo) && continuation.test(state)) {
                 return true;
             }
             jpaTokenizer.setCursor(cursor);
         }
-        jpaTokenizer.getCheckpoint().update(cursor, "propertyName");
+        jpaTokenizer.getExpectedTokens().record(cursor, "propertyName");
         return false;
     });
 
@@ -44,9 +45,10 @@ public class JpaParser extends BaseParser {
         int cursor = jpaTokenizer.getCursor();
         int i = jpaTokenizer.integer();
         if (i < 0) {
-            jpaTokenizer.getCheckpoint().update(cursor, "integer");
+            jpaTokenizer.getExpectedTokens().record(cursor, "integer");
             return false;
         }
+        jpaTokenizer.getTokenMarker().record(jpaTokenizer.getCursor());
         return state.setResult(i) && continuation.test(state);
     });
 
@@ -55,19 +57,20 @@ public class JpaParser extends BaseParser {
         int cursor = jpaTokenizer.getCursor();
         for (String s : jpaTokenizer.variable()) {
             jpaTokenizer.setCursor(cursor + s.length());
+            jpaTokenizer.getTokenMarker().record(jpaTokenizer.getCursor());
             if (state.setResult(s) && continuation.test(state)) {
                 return true;
             }
             jpaTokenizer.setCursor(cursor);
         }
-        jpaTokenizer.getCheckpoint().update(cursor, "variable");
+        jpaTokenizer.getExpectedTokens().record(cursor, "variable");
         return false;
     });
 
     Symbol end = new Symbol("end").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         if (jpaTokenizer.getCursor() != jpaTokenizer.getText().length()) {
-            jpaTokenizer.getCheckpoint().update(jpaTokenizer.getCursor(), "end");
+            jpaTokenizer.getExpectedTokens().record(jpaTokenizer.getCursor(), "end");
             return false;
         }
         return continuation.test(state);
@@ -78,9 +81,10 @@ public class JpaParser extends BaseParser {
             JpaTokenizer jpaTokenizer = state.getTokenizer();
             int cursor = jpaTokenizer.getCursor();
             if (jpaTokenizer.keyword(s).isEmpty()) {
-                jpaTokenizer.getCheckpoint().update(cursor, "'" + s + "'");
+                jpaTokenizer.getExpectedTokens().record(cursor, "'" + s + "'");
                 return false;
             }
+            jpaTokenizer.getTokenMarker().record(jpaTokenizer.getCursor());
             return continuation.test(state);
         }));
     }
@@ -305,15 +309,21 @@ public class JpaParser extends BaseParser {
 
     public Semantic parse(TableInfo tableInfo, String methodName, Parameter[] parameters) {
         AtomicReference<Semantic> reference = new AtomicReference<>();
+        List<TokenMarker> tokenMarkers = new ArrayList<>();
         JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, parameters);
         grammar.match(jpaTokenizer, state -> {
             Semantic semantic = (Semantic) state.getResult();
             reference.set(semantic);
-            return true;
+            tokenMarkers.add(new TokenMarker(jpaTokenizer.getTokenMarker()));
+            return false;
         });
         if (reference.get() == null) {
-            jpaTokenizer.getCheckpoint().printMessage(System.err);
-            throw new ParserException(jpaTokenizer.getCheckpoint().toString());
+            jpaTokenizer.getExpectedTokens().printMessage(System.err);
+            throw new ParserException(jpaTokenizer.getExpectedTokens().toString());
+        }
+        if (tokenMarkers.size() > 1) {
+            tokenMarkers.get(0).printDiff(tokenMarkers.get(tokenMarkers.size() - 1), System.err);
+            throw new ParserException("Conflict detected at column " + tokenMarkers.get(0).getDiffBegin(tokenMarkers.get(tokenMarkers.size() - 1)));
         }
         return reference.get();
     }
