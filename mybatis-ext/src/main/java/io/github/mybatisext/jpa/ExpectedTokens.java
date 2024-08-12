@@ -4,17 +4,17 @@ import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Checkpoint {
+public class ExpectedTokens {
 
     private final String text;
     private final Set<String> expects = new HashSet<>();
     private int cursor = 0;
 
-    public Checkpoint(String text) {
+    public ExpectedTokens(String text) {
         this.text = text;
     }
 
-    public void update(int cur, String expect) {
+    public void record(int cur, String expect) {
         if (cur == cursor) {
             expects.add(expect);
             return;
@@ -44,15 +44,14 @@ public class Checkpoint {
     }
 
     public void printMessage(PrintStream printStream) {
-        StringBuilder sb = new StringBuilder();
+        printStream.println(text);
         for (int i = 0; i < cursor; i++) {
-            sb.append(" ");
+            printStream.print(' ');
         }
         for (int i = cursor; i < text.length(); i++) {
-            sb.append("~");
+            printStream.print('~');
         }
-        printStream.println(text);
-        printStream.println(sb);
+        printStream.println();
         printStream.println(this);
     }
 }
