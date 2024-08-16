@@ -1,6 +1,8 @@
 package io.github.mybatisext.jpa;
 
-public class MathParser extends BaseParser {
+import org.junit.jupiter.api.Test;
+
+public class MathParserTest extends BaseParser {
 
     Symbol end = new Symbol("end").set((state, continuation) -> {
         MathTokenizer mathTokenizer = state.getTokenizer();
@@ -16,7 +18,8 @@ public class MathParser extends BaseParser {
         });
     }
 
-    public boolean parse(MathTokenizer tokenizer) {
+    @Test
+    public void parse() {
         Symbol expr = new Symbol("expr");
         Symbol term = new Symbol("term");
         Symbol factor = new Symbol("factor");
@@ -52,13 +55,15 @@ public class MathParser extends BaseParser {
             state.setReturn(Integer.parseInt(temp));
         })));
 
-        return all.match(tokenizer, state -> {
+        boolean match = all.match(new MathTokenizer("1+2*34-(100+3) "), state -> {
             System.out.println(state.getResult());
             return true;
         });
+        System.out.println(match);
     }
 
-    public boolean parse2(MathTokenizer tokenizer) {
+    @Test
+    public void parse2() {
         Symbol expr = new Symbol("expr");
         Symbol term = new Symbol("term");
         Symbol factor = new Symbol("factor");
@@ -94,42 +99,40 @@ public class MathParser extends BaseParser {
             state.setReturn(Integer.parseInt(temp));
         })));
 
-        return all.match(tokenizer, state -> {
+        boolean match = all.match(new MathTokenizer("1+2*34-(100+3) "), state -> {
             System.out.println(state.getResult());
             return true;
         });
+        System.out.println(match);
     }
 
-    public boolean parseStar(MathTokenizer tokenizer) {
+    @Test
+    public void parseStar() {
         Symbol integer = new Symbol("integer").set(join(star(keyword("1")), star(keyword("2"))));
-        return integer.match(tokenizer, state -> {
+        boolean match = integer.match(new MathTokenizer("1111 "), state -> {
             System.out.println(state.getResult());
             return true;
         });
+        System.out.println(match);
     }
 
-    public boolean parsePlus(MathTokenizer tokenizer) {
+    @Test
+    public void parsePlus() {
         Symbol integer = new Symbol("integer").set(plus(digit));
-        return integer.match(tokenizer, state -> {
+        boolean match = integer.match(new MathTokenizer("1122 "), state -> {
             System.out.println(state.getResult());
             return true;
         });
+        System.out.println(match);
     }
 
-    public boolean parseCount(MathTokenizer tokenizer) {
+    @Test
+    public void parseCount() {
         Symbol integer = new Symbol("integer").set(join(count(keyword("1"), 2), count(keyword("2"), 2)));
-        return integer.match(tokenizer, state -> {
+        boolean match = integer.match(new MathTokenizer("1122 "), state -> {
             System.out.println(state.getResult());
             return true;
         });
-    }
-
-    public static void main(String[] args) {
-        MathParser mathParser = new MathParser();
-        System.out.println(mathParser.parse(new MathTokenizer("1+2*34-(100+3) ")));
-        System.out.println(mathParser.parse2(new MathTokenizer("1+2*34-(100+3) ")));
-        System.out.println(mathParser.parseStar(new MathTokenizer("1111 ")));
-        System.out.println(mathParser.parsePlus(new MathTokenizer("1122 ")));
-        System.out.println(mathParser.parseCount(new MathTokenizer("1122 ")));
+        System.out.println(match);
     }
 }

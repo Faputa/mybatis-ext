@@ -1,0 +1,52 @@
+条件的参数来源
+    普通参数
+    元数据参数
+    条件对象参数
+
+update(User user)
+    元数据参数
+
+update(User user, Example example)
+    元数据参数
+    条件对象参数
+
+updateByName(User user)
+    元数据参数
+
+updateByName(User user, String name)
+    元数据参数
+    普通参数
+
+updateByName(User user, Example example)
+    元数据参数
+    条件对象参数
+
+条件对象
+where语句块变量
+    字段名
+    关系
+    变量名
+    变量值
+
+如何确定字段名
+    元数据
+    元数据属性名
+        默认为字段名
+        通过name指定
+
+如何确定变量名
+    对象属性名
+
+如何确定变量值
+    对象属性值
+
+考虑嵌套条件对象的情况
+    父子对象的元数据是否必须是同一个？
+
+如果父子对象的元数据不是同一个
+    意味着子对象的元数据对应着父对象属性
+
+属性名的层次不对应条件对象的层次！！
+
+
+
