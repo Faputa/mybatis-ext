@@ -3,15 +3,21 @@ package io.github.mybatisext.table;
 import java.util.List;
 
 import io.github.mybatisext.annotation.Column;
+import io.github.mybatisext.annotation.Criteria;
+import io.github.mybatisext.annotation.Criterion;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.JoinRelations;
 import io.github.mybatisext.annotation.Table;
+import io.github.mybatisext.jpa.ConditionListRel;
+import io.github.mybatisext.jpa.ConditionRel;
+import io.github.mybatisext.jpa.ConditionTest;
 
 @Table(alias = "pt")
 @JoinParent(alias = "mt", joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"))
+@Criteria(rel = ConditionListRel.And)
 public class PrivilegeTable extends MetadataTable {
 
     @Id
@@ -39,6 +45,7 @@ public class PrivilegeTable extends MetadataTable {
     @Column
     private String updateUser;
     @Column
+    @Criterion(test = ConditionTest.NotNull, rel = ConditionRel.Between, secondVariable = "updateTime")
     private java.sql.Timestamp createTime;
     @Column
     private java.sql.Timestamp updateTime;

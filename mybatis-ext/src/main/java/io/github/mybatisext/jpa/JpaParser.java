@@ -8,8 +8,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.ibatis.annotations.Param;
 
+import io.github.mybatisext.annotation.Criteria;
+import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.util.StringUtils;
 
 public class JpaParser extends BaseParser {
 
@@ -242,9 +245,9 @@ public class JpaParser extends BaseParser {
                     }
                     MatchResult _variable = state.getMatch(variable);
                     if (_variable != null) {
-                        condition.setVariableA(_variable.val());
+                        condition.setVariable(_variable.val());
                         if (ConditionRel.Between == condition.getRel()) {
-                            condition.setVariableB(state.getMatch(variableB).val());
+                            condition.setSecondVariable(state.getMatch(variableB).val());
                         }
                     }
                     state.setReturn(condition);
@@ -328,7 +331,7 @@ public class JpaParser extends BaseParser {
             Condition condition = new Condition();
             condition.setPropertyInfo(propertyInfo);
             condition.setRel(ConditionRel.Equals);
-            condition.setVariableA(param);
+            condition.setVariable(param);
             if (conditionList == null) {
                 conditionList = new ConditionList(condition);
             } else {
@@ -338,15 +341,50 @@ public class JpaParser extends BaseParser {
         return conditionList;
     }
 
-    private List<String> buildVariables(Parameter[] parameters) {
+    private List<String> buildVariables(Parameter[] parameters, TableInfo tableInfo) {
         List<String> variables = new ArrayList<>();
         for (Parameter parameter : parameters) {
+            if (parameter.getType() == tableInfo.getTableClass()) {
+                continue;
+            }
+            if (parameter.getType().isAnnotationPresent(Criteria.class)) {
+                continue;
+            }
             Param param = parameter.getAnnotation(Param.class);
             if (param != null) {
                 variables.add(param.value());
             }
         }
         return variables;
+    }
+
+    private void ensureConditionVariable(ConditionList conditionList, Parameter[] parameters, TableInfo tableInfo, String methodName) {
+        int i = 0;
+        while (conditionList != null) {
+            while (i < parameters.length && (tableInfo.getTableClass().isAssignableFrom(parameters[i].getType()) || parameters[i].getType().isAnnotationPresent(Criteria.class))) {
+                i++;
+            }
+            Condition condition = conditionList.getCondition();
+            if (i < parameters.length && StringUtils.isBlank(condition.getVariable())) {
+                Param param = parameters[i].getAnnotation(Param.class);
+                condition.setVariable(param != null ? param.value() : "param" + i + 1);
+            }
+            i++;
+            if (condition.getRel() == ConditionRel.Between) {
+                while (i < parameters.length && (tableInfo.getTableClass().isAssignableFrom(parameters[i].getType()) || parameters[i].getType().isAnnotationPresent(Criteria.class))) {
+                    i++;
+                }
+                if (i < parameters.length && StringUtils.isBlank(condition.getSecondVariable())) {
+                    Param param = parameters[i].getAnnotation(Param.class);
+                    condition.setSecondVariable(param != null ? param.value() : "param" + i + 1);
+                }
+                i++;
+            }
+            conditionList = conditionList.getTailList();
+        }
+        if (i > parameters.length) {
+            throw new MybatisExtException("Insufficient parameters for method: " + methodName);
+        }
     }
 
     private final Symbol propertyEnd = join(property, end);
@@ -375,7 +413,7 @@ public class JpaParser extends BaseParser {
     public Semantic parse(TableInfo tableInfo, String methodName, Parameter[] parameters) {
         AtomicReference<Semantic> reference = new AtomicReference<>();
         List<TokenMarker> tokenMarkers = new ArrayList<>();
-        JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, buildVariables(parameters));
+        JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, buildVariables(parameters, tableInfo));
         grammar.match(jpaTokenizer, state -> {
             Semantic semantic = (Semantic) state.getResult();
             reference.set(semantic);
@@ -390,6 +428,7 @@ public class JpaParser extends BaseParser {
             tokenMarkers.get(0).printDiff(tokenMarkers.get(tokenMarkers.size() - 1), System.err);
             throw new ParserException("Conflict detected at column " + tokenMarkers.get(0).getDiffBegin(tokenMarkers.get(tokenMarkers.size() - 1)));
         }
+        ensureConditionVariable(reference.get().getConditionList(), parameters, tableInfo, methodName);
         return reference.get();
     }
 }
