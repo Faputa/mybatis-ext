@@ -8,8 +8,11 @@ public class Condition {
     private boolean ignorecase;
     private boolean not;
     private ConditionRel rel;
-    private String variableA;
-    private String variableB;
+    private String variable;
+    private String secondVariable;
+
+    private ConditionTest test;
+    private ConditionList conditionList;
 
     public PropertyInfo getPropertyInfo() {
         return propertyInfo;
@@ -43,19 +46,35 @@ public class Condition {
         this.rel = rel;
     }
 
-    public String getVariableA() {
-        return variableA;
+    public String getVariable() {
+        return variable;
     }
 
-    public void setVariableA(String variableA) {
-        this.variableA = variableA;
+    public void setVariable(String variable) {
+        this.variable = variable;
     }
 
-    public String getVariableB() {
-        return variableB;
+    public String getSecondVariable() {
+        return secondVariable;
     }
 
-    public void setVariableB(String variableB) {
-        this.variableB = variableB;
+    public void setSecondVariable(String secondVariable) {
+        this.secondVariable = secondVariable;
+    }
+
+    public ConditionTest getTest() {
+        return test;
+    }
+
+    public void setTest(ConditionTest test) {
+        this.test = test;
+    }
+
+    public ConditionList getConditionList() {
+        return conditionList;
+    }
+
+    public void setConditionList(ConditionList conditionList) {
+        this.conditionList = conditionList;
     }
 }

@@ -6,5 +6,5 @@ public interface JpaParserExample {
 
     void select(@Param("tableId") String tableId, @Param("userId") String userId);
 
-    void getDistinctTop10ByUserId$AndTableIdAndRowPrivilegeFieldsDotFieldInXyz$OrderByCreateTime(@Param("xyz") String s);
+    void getDistinctTop10ByUserId$AndTableIdAndRowPrivilegeFieldsDotFieldInXyz$OrderByCreateTime(String userId, String tableId, @Param("xyz") String s);
 }
