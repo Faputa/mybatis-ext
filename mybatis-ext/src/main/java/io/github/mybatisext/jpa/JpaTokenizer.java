@@ -1,7 +1,11 @@
 package io.github.mybatisext.jpa;
 
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
@@ -10,17 +14,49 @@ public class JpaTokenizer implements Tokenizer {
 
     private final TableInfo tableInfo;
     private final String text;
-    private final List<String> variables;
+    private final Configuration configuration;
+    private final Parameter[] parameters;
+    private final List<Variable> variables;
     private final ExpectedTokens expectedTokens;
     private final TokenMarker tokenMarker;
     private int cursor = 0;
 
-    public JpaTokenizer(TableInfo tableInfo, String text, List<String> variables) {
+    public JpaTokenizer(TableInfo tableInfo, String text, Configuration configuration) {
+        this(tableInfo, text, configuration, new Parameter[0]);
+    }
+
+    public JpaTokenizer(TableInfo tableInfo, String text, Configuration configuration, Parameter[] parameters) {
         this.tableInfo = tableInfo;
         this.text = text;
-        this.variables = variables;
+        this.configuration = configuration;
+        this.parameters = parameters;
+        this.variables = buildVariables(configuration, parameters);
         this.expectedTokens = new ExpectedTokens(text);
         this.tokenMarker = new TokenMarker(text);
+    }
+
+    private List<Variable> buildVariables(Configuration configuration, Parameter[] parameters) {
+        List<Variable> variables = new ArrayList<>();
+        if (parameters.length == 0) {
+            return variables;
+        }
+        if (parameters.length == 1 && Variable.hasSubVariable(configuration, parameters[0].getType())) {
+            Param param = parameters[0].getAnnotation(Param.class);
+            if (param != null) {
+                variables.add(new Variable(param.value(), parameters[0].getType()));
+                variables.addAll(new Variable("", parameters[0].getType()).getSubVariable(configuration));
+            } else {
+                variables.addAll(new Variable("", parameters[0].getType()).getSubVariable(configuration));
+            }
+            return variables;
+        }
+        for (Parameter parameter : parameters) {
+            Param param = parameter.getAnnotation(Param.class);
+            if (param != null) {
+                variables.add(new Variable(param.value(), parameter.getType()));
+            }
+        }
+        return variables;
     }
 
     private String next() {
@@ -104,11 +140,30 @@ public class JpaTokenizer implements Tokenizer {
         return propertyInfos;
     }
 
-    public List<String> variable() {
-        List<String> ss = new ArrayList<>();
+    public List<Variable> variable() {
+        List<Variable> ss = new ArrayList<>();
         int _cursor = cursor;
-        for (String variable : variables) {
-            String expect = variable.substring(0, 1).toUpperCase() + variable.substring(1);
+        for (Variable variable : variables) {
+            String expect = variable.getName().substring(0, 1).toUpperCase() + variable.getName().substring(1);
+            if (text.substring(cursor).startsWith(expect)) {
+                String s = "";
+                while (s.length() < expect.length()) {
+                    s += next();
+                    if (s.equals(expect)) {
+                        ss.add(variable);
+                    }
+                }
+            }
+            cursor = _cursor;
+        }
+        return ss;
+    }
+
+    public List<Variable> variable(Variable prevVariable) {
+        List<Variable> ss = new ArrayList<>();
+        int _cursor = cursor;
+        for (Variable variable : prevVariable.getSubVariable(configuration)) {
+            String expect = variable.getName().substring(0, 1).toUpperCase() + variable.getName().substring(1);
             if (text.substring(cursor).startsWith(expect)) {
                 String s = "";
                 while (s.length() < expect.length()) {
@@ -144,7 +199,15 @@ public class JpaTokenizer implements Tokenizer {
         return text;
     }
 
-    public List<String> getVariables() {
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    public Parameter[] getParameters() {
+        return parameters;
+    }
+
+    public List<Variable> getVariables() {
         return variables;
     }
 

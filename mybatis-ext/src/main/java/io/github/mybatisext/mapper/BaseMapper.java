@@ -10,7 +10,7 @@ public interface BaseMapper<T> extends ExtMapper<T> {
 
     int update(T entity);
 
-    int updateFull(T entity);
+    int updateIgnoreNull(T entity);
 
     int delete(T query);
 

@@ -1,25 +1,99 @@
+get(@Param(id) String id);
+    普通参数
+update(User user);
+    元数据参数onlyId=true
+list(User user);
+    元数据参数onlyId=false
+list(UserVo userVo);
+    条件对象参数
+
+考虑getParamConditionList
+    普通参数
+        属性名转条件
+    元数据参数
+        元数据转条件
+            如果是select、exists、count
+                onlyId=false
+                test=ConditionTest.NotNull
+            如果是update、delete
+                onlyId=true
+                test=ConditionTest.None
+    条件对象参数
+        条件对象转条件
+    其他
+        报错
+
+考虑buildVariables
+    只有一个参数的情况
+        普通参数
+            如果参数存在@Param
+                将参数注册为变量
+        否则且不为map、list、set
+            存在@Param
+                设置前缀
+            将属性注册为变量
+    有多个参数的情况
+        遍历参数
+            如果参数存在@Param
+                将参数注册为变量
+
 条件的参数来源
-    普通参数
+普通参数
+    判定
+        configuration.getTypeHandlerRegistry().hasTypeHandler(class)==true
+    举例
+        getById(String id);
+        getByName(String name);
+        get(@Param("id") String id)
+        get(@Param("name") String name)
+        ……
+        updateById(User user, String id);
+        updateByName(User user, String name);
+
+对象参数
+    判定
+        configuration.getTypeHandlerRegistry().hasTypeHandler(class)==false
+    举例
+        getById(UserVo userVo);
+        getByName(UserVo userVo);
+        ……
+        updateById(User user, UserVo userVo);
+        updateByName(User user, UserVo userVo);
+
+map参数（不支持）
+    判定
+        class instanceof Map
+    举例
+        getById(Map map)
+        getByName(Map map)
+        ……
+        updateById(User user, Map map);
+        updateByName(User user, Map map);
+
+条件对象参数
+    判定
+        class.isAnnotationPresent(Criteria.class)
+    举例
+        get(UserParam userParam);
+        ……
+        update(User user, UserParam userParam);
+
+元数据参数
+    判定
+        tableInfo.getTableClass().isAssignableFrom(class)
+    举例
+        get(User user);
+        ……
+        update(User user);
+
+元数据参数和条件对象参数只对没有条件子句的方法名有用
+update(User user);
     元数据参数
+
+update(Example example);
     条件对象参数
 
-update(User user)
-    元数据参数
-
-update(User user, Example example)
-    元数据参数
-    条件对象参数
-
-updateByName(User user)
-    元数据参数
-
-updateByName(User user, String name)
-    元数据参数
-    普通参数
-
-updateByName(User user, Example example)
-    元数据参数
-    条件对象参数
+考虑变量支持Dot语法
 
 条件对象
 where语句块变量

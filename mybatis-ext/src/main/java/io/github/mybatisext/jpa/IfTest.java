@@ -1,6 +1,6 @@
 package io.github.mybatisext.jpa;
 
-public enum ConditionTest {
+public enum IfTest {
 
     None,
 

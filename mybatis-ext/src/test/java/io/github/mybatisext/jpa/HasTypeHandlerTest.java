@@ -1,6 +1,8 @@
 package io.github.mybatisext.jpa;
 
-import java.lang.reflect.Method;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.transaction.TransactionFactory;
@@ -11,34 +13,23 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 
 import io.github.mybatisext.ExtConfiguration;
 import io.github.mybatisext.ExtContext;
-import io.github.mybatisext.metadata.TableInfo;
-import io.github.mybatisext.metadata.TableInfoFactory;
-import io.github.mybatisext.table.PrivilegeTable;
 
-public class JpaParserTest {
+public class HasTypeHandlerTest {
 
-    final ExtConfiguration configuration;
-    final TableInfo tableInfo;
-
-    JpaParserTest() {
+    @Test
+    void test() {
         MysqlDataSource dataSource = new MysqlDataSource();
         dataSource.setServerName("localhost");
         dataSource.setPort(3306);
         dataSource.setDatabaseName("visual");
         dataSource.setUser("root");
         dataSource.setPassword("root");
+
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
-        configuration = new ExtConfiguration(environment, new ExtContext());
-        tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-    }
-
-    @Test
-    public void testParse() {
-        JpaParser jpaParser = new JpaParser();
-        for (Method method : JpaParserExample.class.getDeclaredMethods()) {
-            Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters());
-            System.out.println(semantic);
-        }
+        ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
+        System.out.println(configuration.getTypeHandlerRegistry().hasTypeHandler(Map.class));
+        System.out.println(configuration.getTypeHandlerRegistry().hasTypeHandler(Set.class));
+        System.out.println(configuration.getTypeHandlerRegistry().hasTypeHandler(List.class));
     }
 }

@@ -44,7 +44,7 @@ public class ConditionFactoryTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        ConditionList conditionList = ConditionFactory.fromTableInfo(tableInfo, false, ConditionTest.NotNull, "pt");
+        ConditionList conditionList = ConditionFactory.fromTableInfo(tableInfo, false, IfTest.NotNull, "pt");
         System.out.println(conditionList);
     }
 }
