@@ -37,18 +37,22 @@ public class ConditionFactory {
         });
     }
 
-    private static final Map<TableInfo, Map<Boolean, Map<ConditionTest, Map<String, ConditionList>>>> fromTableInfoCache = new ConcurrentHashMap<>();
+    private static final Map<TableInfo, Map<Boolean, Map<IfTest, Map<String, ConditionList>>>> fromTableInfoCache = new ConcurrentHashMap<>();
 
-    public static ConditionList fromTableInfo(TableInfo tableInfo, boolean onlyId, ConditionTest test, String param) {
-        Map<Boolean, Map<ConditionTest, Map<String, ConditionList>>> map = fromTableInfoCache.computeIfAbsent(tableInfo, k -> new ConcurrentHashMap<>());
-        Map<ConditionTest, Map<String, ConditionList>> map2 = map.computeIfAbsent(onlyId, k -> new ConcurrentHashMap<>());
+    public static ConditionList fromTableInfo(TableInfo tableInfo, boolean onlyId, IfTest test, String param) {
+        Map<Boolean, Map<IfTest, Map<String, ConditionList>>> map = fromTableInfoCache.computeIfAbsent(tableInfo, k -> new ConcurrentHashMap<>());
+        Map<IfTest, Map<String, ConditionList>> map2 = map.computeIfAbsent(onlyId, k -> new ConcurrentHashMap<>());
         Map<String, ConditionList> map3 = map2.computeIfAbsent(test, k -> new ConcurrentHashMap<>());
         return map3.computeIfAbsent(param, k -> {
-            return processTableInfo(tableInfo, onlyId, test, param);
+            ConditionList conditionList = processTableInfo(tableInfo, onlyId, test, param);
+            if (conditionList == null && onlyId) {
+                conditionList = processTableInfo(tableInfo, false, test, param);
+            }
+            return conditionList;
         });
     }
 
-    private static ConditionList processTableInfo(TableInfo tableInfo, boolean onlyId, ConditionTest test, String param) {
+    private static ConditionList processTableInfo(TableInfo tableInfo, boolean onlyId, IfTest test, String param) {
         ConditionList conditionList = null;
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
             Condition condition = processPropertyInfo(propertyInfo, onlyId, test, StringUtils.isNotBlank(param) ? param + "." : "");
@@ -64,7 +68,7 @@ public class ConditionFactory {
         return conditionList;
     }
 
-    private static @Nullable Condition processPropertyInfo(PropertyInfo propertyInfo, boolean onlyId, ConditionTest test, String prefix) {
+    private static @Nullable Condition processPropertyInfo(PropertyInfo propertyInfo, boolean onlyId, IfTest test, String prefix) {
         if (onlyId && propertyInfo.getResultType() != ResultType.ID) {
             return null;
         }
@@ -102,7 +106,7 @@ public class ConditionFactory {
                 }
             }
             Condition condition = new Condition();
-            condition.setTest(ConditionTest.NotEmpty);
+            condition.setTest(IfTest.NotEmpty);
             condition.setConditionList(conditionList);
             return condition;
         }

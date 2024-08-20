@@ -13,7 +13,7 @@ import io.github.mybatisext.annotation.JoinRelations;
 import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.jpa.ConditionListRel;
 import io.github.mybatisext.jpa.ConditionRel;
-import io.github.mybatisext.jpa.ConditionTest;
+import io.github.mybatisext.jpa.IfTest;
 
 @Table(alias = "pt")
 @JoinParent(alias = "mt", joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"))
@@ -45,7 +45,7 @@ public class PrivilegeTable extends MetadataTable {
     @Column
     private String updateUser;
     @Column
-    @Criterion(test = ConditionTest.NotNull, rel = ConditionRel.Between, secondVariable = "updateTime")
+    @Criterion(test = IfTest.NotNull, rel = ConditionRel.Between, secondVariable = "updateTime")
     private java.sql.Timestamp createTime;
     @Column
     private java.sql.Timestamp updateTime;

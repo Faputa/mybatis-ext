@@ -11,7 +11,7 @@ public class Condition {
     private String variable;
     private String secondVariable;
 
-    private ConditionTest test;
+    private IfTest test;
     private ConditionList conditionList;
 
     public PropertyInfo getPropertyInfo() {
@@ -62,11 +62,11 @@ public class Condition {
         this.secondVariable = secondVariable;
     }
 
-    public ConditionTest getTest() {
+    public IfTest getTest() {
         return test;
     }
 
-    public void setTest(ConditionTest test) {
+    public void setTest(IfTest test) {
         this.test = test;
     }
 
