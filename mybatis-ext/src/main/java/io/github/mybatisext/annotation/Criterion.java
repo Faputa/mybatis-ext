@@ -6,13 +6,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import io.github.mybatisext.jpa.ConditionRel;
-import io.github.mybatisext.jpa.ConditionTest;
+import io.github.mybatisext.jpa.IfTest;
 
 @Target({ ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Criterion {
 
-    ConditionTest test() default ConditionTest.None;
+    IfTest test() default IfTest.None;
 
     ConditionRel rel() default ConditionRel.Equals;
 
