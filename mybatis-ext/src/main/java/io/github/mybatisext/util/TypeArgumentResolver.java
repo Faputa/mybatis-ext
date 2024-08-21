@@ -5,72 +5,56 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Objects;
 
-import javax.annotation.Nullable;
-
-/**
- * 解析泛型类型参数的实用工具类。
- */
 public class TypeArgumentResolver {
 
-    /**
-     * 解析泛型类在指定索引处的类型参数。
-     *
-     * @param sourceType 起始解析的原始类。
-     * @param targetType 目标泛型类。
-     * @param index      要解析的类型参数的索引。
-     * @return 解析得到的类型参数的Class对象，如果未找到则为null。
-     */
-    public static Class<?> resolveTypeArgument(Type sourceType, Class<?> targetType, int index) {
-        return analyzeGenericType(sourceType, null, null, targetType, index);
+    public static Class<?> resolveTypeArgument(Type currentType, Class<?> sourceClass, int index) {
+        return resolveTypeArgument(currentType, sourceClass, index, null, null);
     }
 
-    private static Class<?> analyzeGenericType(Type genericType, @Nullable Class<?> childType, @Nullable Type[] childTypeArguments, Class<?> targetType, int index) {
-        if (genericType instanceof ParameterizedType) {
-            return analyzeParameterizedType((ParameterizedType) genericType, childType, childTypeArguments, targetType, index);
-        }
-        if (genericType instanceof Class) {
-            return analyzeClass((Class<?>) genericType, null, targetType, index);
-        }
-        return null;
-    }
-
-    private static Class<?> analyzeParameterizedType(ParameterizedType parameterizedType, @Nullable Class<?> childType, @Nullable Type[] childTypeArguments, Class<?> targetType, int index) {
-        Type rawType = parameterizedType.getRawType();
-        if (rawType instanceof Class) {
-            Type[] typeArguments = parameterizedType.getActualTypeArguments();
-            if (childTypeArguments != null) {
-                assert childType != null;
-                adjustTypeArguments(childType, childTypeArguments, typeArguments);
+    private static Class<?> resolveTypeArgument(Type currentType, Class<?> sourceClass, int index, Class<?> actualClass, Type[] actualTypeArguments) {
+        Class<?> currentClass;
+        Type[] currentTypeArguments;
+        if (currentType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) currentType;
+            Type rawType = parameterizedType.getRawType();
+            if (!(rawType instanceof Class)) {
+                return null;
             }
-            return analyzeClass((Class<?>) rawType, typeArguments, targetType, index);
+            Type[] typeArguments = parameterizedType.getActualTypeArguments();
+            if (actualTypeArguments != null) {
+                adjustTypeArguments(actualClass, actualTypeArguments, typeArguments);
+            }
+            currentClass = (Class<?>) rawType;
+            currentTypeArguments = typeArguments;
+        } else if (currentType instanceof Class) {
+            currentClass = (Class<?>) currentType;
+            currentTypeArguments = actualTypeArguments;
+        } else {
+            return null;
         }
-        return null;
-    }
-
-    private static Class<?> analyzeClass(Class<?> classType, @Nullable Type[] classTypeArguments, Class<?> targetType, int index) {
-        // 找到了
-        if (classType == targetType && classTypeArguments != null && classTypeArguments[index] instanceof Class) {
-            return (Class<?>) classTypeArguments[index];
+        if (currentClass == sourceClass) {
+            if (currentTypeArguments != null && currentTypeArguments[index] instanceof Class) {
+                return (Class<?>) currentTypeArguments[index];
+            }
+            return null;
         }
-        // 检查接口
-        for (Type interfaceType : classType.getGenericInterfaces()) {
-            Class<?> resolvedClass = analyzeGenericType(interfaceType, classType, classTypeArguments, targetType, index);
+        for (Type interfaceType : currentClass.getGenericInterfaces()) {
+            Class<?> resolvedClass = resolveTypeArgument(interfaceType, sourceClass, index, currentClass, currentTypeArguments);
             if (resolvedClass != null) {
                 return resolvedClass;
             }
         }
-        // 检查超类
-        return analyzeGenericType(classType.getGenericSuperclass(), classType, classTypeArguments, targetType, index);
+        return resolveTypeArgument(currentClass.getGenericSuperclass(), sourceClass, index, currentClass, currentTypeArguments);
     }
 
-    private static void adjustTypeArguments(Class<?> childType, Type[] childTypeArguments, Type[] typeArguments) {
+    private static void adjustTypeArguments(Class<?> actualClass, Type[] actualTypeArguments, Type[] typeArguments) {
         for (int i = 0; i < typeArguments.length; i++) {
             if (typeArguments[i] instanceof TypeVariable) {
                 TypeVariable<?> typeVariable = (TypeVariable<?>) typeArguments[i];
-                TypeVariable<?>[] typeParameters = childType.getTypeParameters();
+                TypeVariable<?>[] typeParameters = actualClass.getTypeParameters();
                 for (int j = 0; j < typeParameters.length; j++) {
                     if (Objects.equals(typeVariable.getName(), typeParameters[j].getName())) {
-                        typeArguments[i] = childTypeArguments[j];
+                        typeArguments[i] = actualTypeArguments[j];
                         break;
                     }
                 }

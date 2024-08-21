@@ -21,7 +21,7 @@ public interface JpaParserExample {
 
     int delete(PrivilegeTable query);
 
-    int deleteBatch(PrivilegeTable query);
+    int deleteBatch(List<PrivilegeTable> query);
 
     PrivilegeTable get(PrivilegeTable query);
 

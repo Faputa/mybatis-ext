@@ -43,8 +43,9 @@ public class JpaTokenizer implements Tokenizer {
         if (parameters.length == 1 && Variable.hasSubVariable(configuration, parameters[0].getType())) {
             Param param = parameters[0].getAnnotation(Param.class);
             if (param != null) {
-                variables.add(new Variable(param.value(), parameters[0].getType()));
-                variables.addAll(new Variable("", parameters[0].getType()).getSubVariable(configuration));
+                Variable variable = new Variable(param.value(), parameters[0].getType());
+                variables.add(variable);
+                variables.addAll(variable.getSubVariable(configuration));
             } else {
                 variables.addAll(new Variable("", parameters[0].getType()).getSubVariable(configuration));
             }
