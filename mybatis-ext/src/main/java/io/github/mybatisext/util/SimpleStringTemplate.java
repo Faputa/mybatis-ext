@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 public class SimpleStringTemplate {
 
-    public static String process(String template, Object param) {
+    public static String build(String template, Object param) {
         Matcher matcher = Pattern.compile("\\{([^{}]+?)\\}").matcher(template);
         StringBuffer sb = new StringBuffer();
         while (matcher.find()) {

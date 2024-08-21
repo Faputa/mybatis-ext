@@ -15,7 +15,7 @@ import io.github.mybatisext.exception.MybatisExtException;
 public class Variable {
 
     private final String name;
-    private final String path;
+    private final String fullName;
     private final Class<?> javaType;
     private List<Variable> subVariables;
 
@@ -23,9 +23,9 @@ public class Variable {
         this(name, name, javaType);
     }
 
-    public Variable(String name, String path, Class<?> javaType) {
+    public Variable(String name, String fullName, Class<?> javaType) {
         this.name = name;
-        this.path = path;
+        this.fullName = fullName;
         this.javaType = javaType;
     }
 
@@ -33,8 +33,8 @@ public class Variable {
         return name;
     }
 
-    public String getPath() {
-        return path;
+    public String getFullName() {
+        return fullName;
     }
 
     public Class<?> getJavaType() {

@@ -2,6 +2,7 @@ package io.github.mybatisext.jpa;
 
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,6 +17,7 @@ import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.util.StringUtils;
+import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class JpaParser extends BaseParser {
 
@@ -109,8 +111,7 @@ public class JpaParser extends BaseParser {
     public JpaParser() {
         grammar.set(choice(
                 join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(modifierList), end, action(state -> {
-                    Semantic semantic = new Semantic();
-                    semantic.setType(SemanticType.SELECT);
+                    Semantic semantic = new Semantic(SemanticType.SELECT);
                     if (state.getMatch("Distinct") != null) {
                         semantic.setDistinct(true);
                     }
@@ -141,8 +142,7 @@ public class JpaParser extends BaseParser {
                     state.setReturn(semantic);
                 })),
                 join(keyword("exists"), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(modifierList), end, action(state -> {
-                    Semantic semantic = new Semantic();
-                    semantic.setType(SemanticType.EXISTS);
+                    Semantic semantic = new Semantic(SemanticType.EXISTS);
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
@@ -156,8 +156,7 @@ public class JpaParser extends BaseParser {
                     state.setReturn(semantic);
                 })),
                 join(keyword("count"), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(modifierList), end, action(state -> {
-                    Semantic semantic = new Semantic();
-                    semantic.setType(SemanticType.COUNT);
+                    Semantic semantic = new Semantic(SemanticType.COUNT);
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
@@ -171,8 +170,7 @@ public class JpaParser extends BaseParser {
                     state.setReturn(semantic);
                 })),
                 join(choice(keyword("update"), keyword("modify")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
-                    Semantic semantic = new Semantic();
-                    semantic.setType(SemanticType.UPDATE);
+                    Semantic semantic = new Semantic(SemanticType.UPDATE);
                     if (state.getMatch("IgnoreNull") != null) {
                         semantic.setIgnoreNull(true);
                     }
@@ -185,8 +183,7 @@ public class JpaParser extends BaseParser {
                     state.setReturn(semantic);
                 })),
                 join(choice(keyword("delete"), keyword("remove")), optional(keyword("Batch")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
-                    Semantic semantic = new Semantic();
-                    semantic.setType(SemanticType.DELETE);
+                    Semantic semantic = new Semantic(SemanticType.DELETE);
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
@@ -196,8 +193,7 @@ public class JpaParser extends BaseParser {
                     state.setReturn(semantic);
                 })),
                 join(choice(keyword("save"), keyword("insert")), optional(keyword("Batch")), end, action(state -> {
-                    Semantic semantic = new Semantic();
-                    semantic.setType(SemanticType.INSERT);
+                    Semantic semantic = new Semantic(SemanticType.INSERT);
                     state.setReturn(semantic);
                 }))));
 
@@ -232,12 +228,7 @@ public class JpaParser extends BaseParser {
             if (_variable == null) {
                 if (ConditionRel.Between != condition.getRel()) {
                     JpaTokenizer jpaTokenizer = state.getTokenizer();
-                    for (Variable v : jpaTokenizer.getVariables()) {
-                        if (condition.getPropertyInfo().getName().equals(v.getName())) {
-                            condition.setVariable(v.getPath());
-                            break;
-                        }
-                    }
+                    jpaTokenizer.getVariables().stream().filter(v -> condition.getPropertyInfo().getName().equals(v.getName())).findFirst().ifPresent(v -> condition.setVariable(v.getFullName()));
                 }
             } else {
                 condition.setVariable(_variable.val());
@@ -337,7 +328,7 @@ public class JpaParser extends BaseParser {
         property.set(join(propertyName, star(join(keyword("Dot"), propertyName))));
         variable.set(join(variableName, star(join(keyword("Dot"), variableName)), action(state -> {
             Variable _variable = (Variable) state.getResult();
-            state.setResult(_variable.getPath());
+            state.setResult(_variable.getFullName());
         })));
     }
 
@@ -351,6 +342,9 @@ public class JpaParser extends BaseParser {
             if (tableInfo.getTableClass().isAssignableFrom(parameters[0].getType())) {
                 Param param = parameters[0].getAnnotation(Param.class);
                 return ConditionFactory.fromTableInfo(tableInfo, onlyId, test, param != null ? param.value() : "");
+            }
+            if (Collection.class.isAssignableFrom(parameters[0].getType()) && tableInfo.getTableClass().isAssignableFrom(TypeArgumentResolver.resolveTypeArgument(parameters[0].getParameterizedType(), Collection.class, 0))) {
+                return ConditionFactory.fromTableInfo(tableInfo, onlyId, test, "item");
             }
             if (parameters[0].getType().isAnnotationPresent(Criteria.class)) {
                 Param param = parameters[0].getAnnotation(Param.class);
