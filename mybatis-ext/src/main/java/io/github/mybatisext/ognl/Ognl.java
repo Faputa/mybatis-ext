@@ -112,5 +112,4 @@ public class Ognl {
         }
         return false;
     }
-
 }

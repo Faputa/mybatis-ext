@@ -4,7 +4,7 @@ import java.util.List;
 
 public class Semantic {
 
-    private SemanticType type;
+    private final SemanticType type;
     private boolean distinct;
     private boolean ignoreNull;
     private Limit limit;
@@ -12,12 +12,12 @@ public class Semantic {
     private OrderBy orderBy;
     private GroupBy groupBy;
 
-    public SemanticType getType() {
-        return type;
+    public Semantic(SemanticType type) {
+        this.type = type;
     }
 
-    public void setType(SemanticType type) {
-        this.type = type;
+    public SemanticType getType() {
+        return type;
     }
 
     public boolean isDistinct() {
