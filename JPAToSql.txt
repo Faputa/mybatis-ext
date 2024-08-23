@@ -124,3 +124,71 @@ where语句块变量
 
 
 
+
+
+MySQL 连接更新
+update TB_ARTICLE a
+join TB_ACCOUNT b on b.ID=a.ACCOUNT_ID
+set
+	a.TITLE = ''
+where
+	a.ID = ''
+
+MySQL 连接删除
+delete a
+from TB_ARTICLE a
+join TB_ACCOUNT b on b.ID=a.ACCOUNT_ID
+where
+	a.ID = ''
+
+Oracle 连接更新
+UPDATE (
+SELECT a.*
+FROM TB_ARTICLE a
+JOIN TB_ACCOUNT b ON b.ID=a.ACCOUNT_ID
+WHERE
+	a.ID = '') x
+SET
+	x.TITLE = ''
+
+Oracle 连接删除
+DELETE FROM (
+SELECT a.*
+FROM TB_ARTICLE a
+JOIN TB_ACCOUNT b ON b.ID=a.ACCOUNT_ID
+WHERE
+	a.ID = '') x
+
+Oracle 批量插入
+begin
+insert into test (a,b,c) values (1,2,3);
+insert into test (a,b,c) values (1,2,3);
+end;
+
+Oracle 批量更新
+begin
+update test set b=2,c=3 where a=1;
+update test set b=2,c=3 where a=1;
+end;
+
+Oracle 批量删除
+begin
+delete test where a=1;
+delete test where a=1;
+end;
+
+MySQL 批量插入
+insert into test (a,b,c) values
+(1,2,3),
+(1,2,3);
+
+MySQL 批量更新
+update test set b=2,c=3 where a=1;
+update test set b=2,c=3 where a=1;
+
+MySQL 批量删除
+delete test where a=1;
+delete test where a=1;
+
+
+
