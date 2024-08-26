@@ -5,28 +5,51 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class SimpleStringTemplate {
 
     public static String build(String template, Object param) {
-        Matcher matcher = Pattern.compile("\\{([^{}]+?)\\}").matcher(template);
-        StringBuffer sb = new StringBuffer();
-        while (matcher.find()) {
-            String path = matcher.group(1);
-            Object obj = deepGet(param, path);
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(obj != null ? obj.toString() : matcher.group()));
+        StringBuilder sb = new StringBuilder();
+        StringBuilder group = new StringBuilder();
+        StringBuilder key = new StringBuilder();
+        List<String> keys = new ArrayList<>();
+        boolean inGroup = false;
+        for (int i = 0; i < template.length(); i++) {
+            char c = template.charAt(i);
+            if (c == '{') {
+                sb.append(group);
+                key.setLength(0);
+                keys.clear();
+                group.setLength(0);
+                group.append(c);
+                inGroup = true;
+            } else if (inGroup) {
+                group.append(c);
+                if (c == '.') {
+                    keys.add(key.toString().trim());
+                    key.setLength(0);
+                } else if (c == '}') {
+                    keys.add(key.toString().trim());
+                    Object obj = deepGet(param, keys);
+                    sb.append(obj != null ? obj.toString() : group);
+                    group.setLength(0);
+                    inGroup = false;
+                } else {
+                    key.append(c);
+                }
+            } else {
+                sb.append(c);
+            }
         }
-        matcher.appendTail(sb);
+        sb.append(group);
         return sb.toString();
     }
 
     /** like lodash get */
-    private static Object deepGet(Object obj, String path) {
-        String[] keys = path.trim().split("\\s*\\.\\s*");
+    private static Object deepGet(Object obj, List<String> keys) {
         for (String key : keys) {
             if (obj == null) {
                 return null;
@@ -56,7 +79,7 @@ public class SimpleStringTemplate {
                     }
                     obj = readMethod.invoke(obj);
                 } catch (Exception e) {
-                    return null;
+                    throw new IllegalArgumentException(e);
                 }
             }
         }
