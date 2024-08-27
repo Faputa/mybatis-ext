@@ -13,6 +13,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.annotation.Criteria;
+import io.github.mybatisext.annotation.OnlyById;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
@@ -133,7 +134,7 @@ public class JpaParser extends BaseParser {
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
                     } else {
-                        semantic.setConditionList(getParamConditionList(state, false, IfTest.NotNull));
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     MatchResult _modifierList = state.getMatch(modifierList);
                     if (_modifierList != null) {
@@ -147,7 +148,7 @@ public class JpaParser extends BaseParser {
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
                     } else {
-                        semantic.setConditionList(getParamConditionList(state, false, IfTest.NotNull));
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     MatchResult _modifierList = state.getMatch(modifierList);
                     if (_modifierList != null) {
@@ -161,7 +162,7 @@ public class JpaParser extends BaseParser {
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
                     } else {
-                        semantic.setConditionList(getParamConditionList(state, false, IfTest.NotNull));
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     MatchResult _modifierList = state.getMatch(modifierList);
                     if (_modifierList != null) {
@@ -178,7 +179,7 @@ public class JpaParser extends BaseParser {
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
                     } else {
-                        semantic.setConditionList(getParamConditionList(state, true, IfTest.None));
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     state.setReturn(semantic);
                 })),
@@ -188,7 +189,7 @@ public class JpaParser extends BaseParser {
                     if (_conditionList != null) {
                         semantic.setConditionList(_conditionList.val());
                     } else {
-                        semantic.setConditionList(getParamConditionList(state, true, IfTest.None));
+                        semantic.setConditionList(getParamConditionList(state));
                     }
                     state.setReturn(semantic);
                 })),
@@ -332,7 +333,7 @@ public class JpaParser extends BaseParser {
         })));
     }
 
-    private ConditionList getParamConditionList(State state, boolean onlyId, IfTest test) {
+    private ConditionList getParamConditionList(State state) {
         ConditionList conditionList = null;
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         Configuration configuration = jpaTokenizer.getConfiguration();
@@ -341,10 +342,12 @@ public class JpaParser extends BaseParser {
         if (parameters.length == 1) {
             if (tableInfo.getTableClass().isAssignableFrom(parameters[0].getType())) {
                 Param param = parameters[0].getAnnotation(Param.class);
-                return ConditionFactory.fromTableInfo(tableInfo, onlyId, test, param != null ? param.value() : "");
+                OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
+                return ConditionFactory.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "");
             }
             if (Collection.class.isAssignableFrom(parameters[0].getType()) && tableInfo.getTableClass().isAssignableFrom(TypeArgumentResolver.resolveTypeArgument(parameters[0].getParameterizedType(), Collection.class, 0))) {
-                return ConditionFactory.fromTableInfo(tableInfo, onlyId, test, "item");
+                OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
+                return ConditionFactory.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, "item");
             }
             if (parameters[0].getType().isAnnotationPresent(Criteria.class)) {
                 Param param = parameters[0].getAnnotation(Param.class);
