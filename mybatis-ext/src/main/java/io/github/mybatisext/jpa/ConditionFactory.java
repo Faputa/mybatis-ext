@@ -39,23 +39,23 @@ public class ConditionFactory {
 
     private static final Map<TableInfo, Map<Boolean, Map<IfTest, Map<String, ConditionList>>>> fromTableInfoCache = new ConcurrentHashMap<>();
 
-    public static ConditionList fromTableInfo(TableInfo tableInfo, boolean onlyId, IfTest test, String param) {
+    public static ConditionList fromTableInfo(TableInfo tableInfo, boolean onlyById, IfTest test, String param) {
         Map<Boolean, Map<IfTest, Map<String, ConditionList>>> map = fromTableInfoCache.computeIfAbsent(tableInfo, k -> new ConcurrentHashMap<>());
-        Map<IfTest, Map<String, ConditionList>> map2 = map.computeIfAbsent(onlyId, k -> new ConcurrentHashMap<>());
+        Map<IfTest, Map<String, ConditionList>> map2 = map.computeIfAbsent(onlyById, k -> new ConcurrentHashMap<>());
         Map<String, ConditionList> map3 = map2.computeIfAbsent(test, k -> new ConcurrentHashMap<>());
         return map3.computeIfAbsent(param, k -> {
-            ConditionList conditionList = processTableInfo(tableInfo, onlyId, test, param);
-            if (conditionList == null && onlyId) {
+            ConditionList conditionList = processTableInfo(tableInfo, onlyById, test, param);
+            if (conditionList == null && onlyById) {
                 conditionList = processTableInfo(tableInfo, false, test, param);
             }
             return conditionList;
         });
     }
 
-    private static ConditionList processTableInfo(TableInfo tableInfo, boolean onlyId, IfTest test, String param) {
+    private static ConditionList processTableInfo(TableInfo tableInfo, boolean onlyById, IfTest test, String param) {
         ConditionList conditionList = null;
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            Condition condition = processPropertyInfo(propertyInfo, onlyId, test, StringUtils.isNotBlank(param) ? param + "." : "");
+            Condition condition = processPropertyInfo(propertyInfo, onlyById, test, StringUtils.isNotBlank(param) ? param + "." : "");
             if (condition == null) {
                 continue;
             }
@@ -68,8 +68,8 @@ public class ConditionFactory {
         return conditionList;
     }
 
-    private static @Nullable Condition processPropertyInfo(PropertyInfo propertyInfo, boolean onlyId, IfTest test, String prefix) {
-        if (onlyId && propertyInfo.getResultType() != ResultType.ID) {
+    private static @Nullable Condition processPropertyInfo(PropertyInfo propertyInfo, boolean onlyById, IfTest test, String prefix) {
+        if (onlyById && propertyInfo.getResultType() != ResultType.ID) {
             return null;
         }
         if (propertyInfo.getResultType() == ResultType.ID || propertyInfo.getResultType() == ResultType.RESULT) {
@@ -83,7 +83,7 @@ public class ConditionFactory {
         if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
             ConditionList conditionList = null;
             for (PropertyInfo subPropertyInfo : propertyInfo.getSubPropertyInfos()) {
-                Condition subCondition = processPropertyInfo(subPropertyInfo, onlyId, test, prefix + propertyInfo.getName() + ".");
+                Condition subCondition = processPropertyInfo(subPropertyInfo, onlyById, test, prefix + propertyInfo.getName() + ".");
                 if (conditionList == null) {
                     conditionList = new ConditionList(subCondition);
                 } else {
@@ -98,7 +98,7 @@ public class ConditionFactory {
         if (propertyInfo.getResultType() == ResultType.COLLECTION) {
             ConditionList conditionList = null;
             for (PropertyInfo subPropertyInfo : propertyInfo.getSubPropertyInfos()) {
-                Condition subCondition = processPropertyInfo(subPropertyInfo, onlyId, test, prefix + propertyInfo.getName() + "[0].");
+                Condition subCondition = processPropertyInfo(subPropertyInfo, onlyById, test, prefix + propertyInfo.getName() + "[0].");
                 if (conditionList == null) {
                     conditionList = new ConditionList(subCondition);
                 } else {
