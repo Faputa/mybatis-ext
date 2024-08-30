@@ -1,6 +1,5 @@
 package io.github.mybatisext.jpa;
 
-import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,23 +8,24 @@ import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.reflect.GenericParameter;
 
 public class JpaTokenizer implements Tokenizer {
 
     private final TableInfo tableInfo;
     private final String text;
     private final Configuration configuration;
-    private final Parameter[] parameters;
+    private final GenericParameter[] parameters;
     private final List<Variable> variables;
     private final ExpectedTokens expectedTokens;
     private final TokenMarker tokenMarker;
     private int cursor = 0;
 
     public JpaTokenizer(TableInfo tableInfo, String text, Configuration configuration) {
-        this(tableInfo, text, configuration, new Parameter[0]);
+        this(tableInfo, text, configuration, new GenericParameter[0]);
     }
 
-    public JpaTokenizer(TableInfo tableInfo, String text, Configuration configuration, Parameter[] parameters) {
+    public JpaTokenizer(TableInfo tableInfo, String text, Configuration configuration, GenericParameter[] parameters) {
         this.tableInfo = tableInfo;
         this.text = text;
         this.configuration = configuration;
@@ -35,7 +35,7 @@ public class JpaTokenizer implements Tokenizer {
         this.tokenMarker = new TokenMarker(text);
     }
 
-    private List<Variable> buildVariables(Configuration configuration, Parameter[] parameters) {
+    private List<Variable> buildVariables(Configuration configuration, GenericParameter[] parameters) {
         List<Variable> variables = new ArrayList<>();
         if (parameters.length == 0) {
             return variables;
@@ -51,7 +51,7 @@ public class JpaTokenizer implements Tokenizer {
             }
             return variables;
         }
-        for (Parameter parameter : parameters) {
+        for (GenericParameter parameter : parameters) {
             Param param = parameter.getAnnotation(Param.class);
             if (param != null) {
                 variables.add(new Variable(param.value(), parameter.getType()));
@@ -204,7 +204,7 @@ public class JpaTokenizer implements Tokenizer {
         return configuration;
     }
 
-    public Parameter[] getParameters() {
+    public GenericParameter[] getParameters() {
         return parameters;
     }
 

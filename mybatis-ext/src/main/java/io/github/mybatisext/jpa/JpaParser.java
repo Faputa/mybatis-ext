@@ -1,6 +1,5 @@
 package io.github.mybatisext.jpa;
 
-import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -17,6 +16,7 @@ import io.github.mybatisext.annotation.OnlyById;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.util.StringUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
@@ -337,7 +337,7 @@ public class JpaParser extends BaseParser {
         ConditionList conditionList = null;
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         Configuration configuration = jpaTokenizer.getConfiguration();
-        Parameter[] parameters = jpaTokenizer.getParameters();
+        GenericParameter[] parameters = jpaTokenizer.getParameters();
         TableInfo tableInfo = jpaTokenizer.getTableInfo();
         if (parameters.length == 1) {
             if (tableInfo.getTableClass().isAssignableFrom(parameters[0].getType())) {
@@ -345,7 +345,7 @@ public class JpaParser extends BaseParser {
                 OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
                 return ConditionFactory.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "");
             }
-            if (Collection.class.isAssignableFrom(parameters[0].getType()) && tableInfo.getTableClass().isAssignableFrom(TypeArgumentResolver.resolveTypeArgument(parameters[0].getParameterizedType(), Collection.class, 0))) {
+            if (Collection.class.isAssignableFrom(parameters[0].getType()) && tableInfo.getTableClass().isAssignableFrom(TypeArgumentResolver.resolveTypeArgument(parameters[0].getGenericType(), Collection.class, 0))) {
                 OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
                 return ConditionFactory.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, "item");
             }
@@ -354,7 +354,7 @@ public class JpaParser extends BaseParser {
                 return ConditionFactory.fromCriteria(configuration, parameters[0].getType(), param != null ? param.value() : "");
             }
         }
-        for (Parameter parameter : parameters) {
+        for (GenericParameter parameter : parameters) {
             Param param = parameter.getAnnotation(Param.class);
             if (param == null || !configuration.getTypeHandlerRegistry().hasTypeHandler(parameter.getType())) {
                 throw new MybatisExtException("Unsupported parameter type: " + parameter.getType().getName() + ". Method: " + jpaTokenizer.getText());
@@ -373,7 +373,7 @@ public class JpaParser extends BaseParser {
         return conditionList;
     }
 
-    private void ensureConditionVariable(Configuration configuration, ConditionList conditionList, Parameter[] parameters, TableInfo tableInfo, String methodName) {
+    private void ensureConditionVariable(Configuration configuration, ConditionList conditionList, GenericParameter[] parameters, TableInfo tableInfo, String methodName) {
         int i = 0;
         Set<String> set = new HashSet<>();
         for (; conditionList != null; conditionList = conditionList.getTailList()) {
@@ -443,7 +443,7 @@ public class JpaParser extends BaseParser {
         return reference.get();
     }
 
-    public Semantic parse(Configuration configuration, TableInfo tableInfo, String methodName, Parameter[] parameters) {
+    public Semantic parse(Configuration configuration, TableInfo tableInfo, String methodName, GenericParameter[] parameters) {
         AtomicReference<Semantic> reference = new AtomicReference<>();
         List<TokenMarker> tokenMarkers = new ArrayList<>();
         JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, configuration, parameters);

@@ -1,7 +1,5 @@
 package io.github.mybatisext.jpa;
 
-import java.lang.reflect.Method;
-
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
@@ -13,6 +11,9 @@ import io.github.mybatisext.ExtConfiguration;
 import io.github.mybatisext.ExtContext;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
+import io.github.mybatisext.reflect.GenericMethod;
+import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.reflect.GenericTypeFactory;
 import io.github.mybatisext.table.PrivilegeTable;
 
 public class JpaParserTest {
@@ -36,7 +37,8 @@ public class JpaParserTest {
     @Test
     public void testParse() {
         JpaParser jpaParser = new JpaParser();
-        for (Method method : JpaParserExample.class.getDeclaredMethods()) {
+        GenericType genericType = GenericTypeFactory.build(JpaParserExample.class);
+        for (GenericMethod method : genericType.getMethods()) {
             Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters());
             System.out.println(semantic);
         }
