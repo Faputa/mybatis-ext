@@ -16,10 +16,7 @@ public class TypeArgumentResolver {
         }
         GenericType genericType = (GenericType) type;
         if (genericType.getType() == sourceClass) {
-            if (genericType.getTypeParameters() != null && genericType.getTypeParameters()[index] instanceof Class) {
-                return (Class<?>) genericType.getTypeParameters()[index];
-            }
-            return null;
+            return genericType.getTypeParameters()[index].getType();
         }
         for (GenericType interfaceType : genericType.getGenericInterfaces()) {
             Class<?> resolvedClass = resolveTypeArgument(interfaceType, sourceClass, index);

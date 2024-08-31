@@ -3,17 +3,17 @@ package io.github.mybatisext.reflect;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.util.Map;
 
 public class GenericMethod {
 
     private final Method method;
-    private final Class<?> actualClass;
-    private final Type[] actualTypeArguments;
+    private final Map<TypeVariable<?>, Type> typeMap;
 
-    public GenericMethod(Method method, Class<?> actualClass, Type[] actualTypeArguments) {
+    public GenericMethod(Method method, Map<TypeVariable<?>, Type> typeMap) {
         this.method = method;
-        this.actualClass = actualClass;
-        this.actualTypeArguments = actualTypeArguments;
+        this.typeMap = typeMap;
     }
 
     public Method getMethod() {
@@ -25,20 +25,20 @@ public class GenericMethod {
         Type[] types = method.getGenericParameterTypes();
         GenericParameter[] genericParameters = new GenericParameter[parameters.length];
         for (int i = 0; i < parameters.length; i++) {
-            genericParameters[i] = new GenericParameter(parameters[i], GenericTypeFactory.build(types[i], actualClass, actualTypeArguments));
+            genericParameters[i] = new GenericParameter(parameters[i], GenericTypeFactory.build(types[i], typeMap));
         }
         return genericParameters;
     }
 
     public GenericType getGenericReturnType() {
-        return GenericTypeFactory.build(method.getGenericReturnType(), actualClass, actualTypeArguments);
+        return GenericTypeFactory.build(method.getGenericReturnType(), typeMap);
     }
 
     public GenericType[] getGenericParameterTypes() {
         Type[] types = method.getGenericParameterTypes();
         GenericType[] genericTypes = new GenericType[types.length];
         for (int i = 0; i < types.length; i++) {
-            genericTypes[i] = GenericTypeFactory.build(types[i], actualClass, actualTypeArguments);
+            genericTypes[i] = GenericTypeFactory.build(types[i], typeMap);
         }
         return genericTypes;
     }
