@@ -3,35 +3,42 @@ package io.github.mybatisext.reflect;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GenericType implements Type {
 
     private final Class<?> type;
-    private final Type[] typeArguments;
+    private final Map<TypeVariable<?>, Type> typeMap;
 
-    public GenericType(Class<?> type, Type[] typeArguments) {
+    public GenericType(Class<?> type, Map<TypeVariable<?>, Type> typeMap) {
         this.type = type;
-        this.typeArguments = typeArguments;
+        this.typeMap = typeMap;
     }
 
     public Class<?> getType() {
         return type;
     }
 
-    public Type[] getTypeParameters() {
-        return typeArguments;
+    public GenericType[] getTypeParameters() {
+        TypeVariable<?>[] typeVariables = type.getTypeParameters();
+        GenericType[] genericTypes = new GenericType[typeVariables.length];
+        for (int i = 0; i < typeVariables.length; i++) {
+            genericTypes[i] = GenericTypeFactory.build(typeVariables[i], typeMap);
+        }
+        return genericTypes;
     }
 
     public GenericField[] getDeclaredFields() {
         Field[] fields = type.getDeclaredFields();
         GenericField[] genericFields = new GenericField[fields.length];
         for (int i = 0; i < fields.length; i++) {
-            genericFields[i] = new GenericField(fields[i], type, typeArguments);
+            genericFields[i] = new GenericField(fields[i], typeMap);
         }
         return genericFields;
     }
@@ -40,7 +47,7 @@ public class GenericType implements Type {
         Method[] methods = type.getDeclaredMethods();
         GenericMethod[] genericMethods = new GenericMethod[methods.length];
         for (int i = 0; i < methods.length; i++) {
-            genericMethods[i] = new GenericMethod(methods[i], type, typeArguments);
+            genericMethods[i] = new GenericMethod(methods[i], typeMap);
         }
         return genericMethods;
     }
@@ -94,14 +101,14 @@ public class GenericType implements Type {
         if (superType == null) {
             return null;
         }
-        return GenericTypeFactory.build(superType, type, typeArguments);
+        return GenericTypeFactory.build(superType, typeMap);
     }
 
     public GenericType[] getGenericInterfaces() {
         Type[] interfaces = type.getGenericInterfaces();
         GenericType[] types = new GenericType[interfaces.length];
         for (int i = 0; i < interfaces.length; i++) {
-            types[i] = GenericTypeFactory.build(interfaces[i], type, typeArguments);
+            types[i] = GenericTypeFactory.build(interfaces[i], typeMap);
         }
         return types;
     }
