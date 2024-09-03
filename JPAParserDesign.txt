@@ -313,3 +313,17 @@ continuation
     (state, result) -> boolean
 
 
+
+JPA属性参数匹配方案
+变量名匹配
+属性名匹配
+索引匹配
+类型匹配？
+
+跳过规则参考isSpecialParameter
+private static boolean isSpecialParameter(Class<?> clazz) {
+    return RowBounds.class.isAssignableFrom(clazz) || ResultHandler.class.isAssignableFrom(clazz);
+}
+
+
+
