@@ -12,7 +12,15 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.annotation.Criteria;
+import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.annotation.OnlyById;
+import io.github.mybatisext.condition.Condition;
+import io.github.mybatisext.condition.ConditionComp;
+import io.github.mybatisext.condition.ConditionCompRel;
+import io.github.mybatisext.condition.ConditionFactory;
+import io.github.mybatisext.condition.ConditionList;
+import io.github.mybatisext.condition.ConditionRel;
+import io.github.mybatisext.condition.ConditionTerm;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
@@ -132,9 +140,9 @@ public class JpaParser extends BaseParser {
                     }
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
-                        semantic.setConditionList(_conditionList.val());
+                        semantic.setCondition(ensureConditionVariable(state, _conditionList.val()));
                     } else {
-                        semantic.setConditionList(getParamConditionList(state));
+                        semantic.setCondition(getParamConditionList(state));
                     }
                     MatchResult _modifierList = state.getMatch(modifierList);
                     if (_modifierList != null) {
@@ -146,9 +154,9 @@ public class JpaParser extends BaseParser {
                     Semantic semantic = new Semantic(SemanticType.EXISTS);
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
-                        semantic.setConditionList(_conditionList.val());
+                        semantic.setCondition(ensureConditionVariable(state, _conditionList.val()));
                     } else {
-                        semantic.setConditionList(getParamConditionList(state));
+                        semantic.setCondition(getParamConditionList(state));
                     }
                     MatchResult _modifierList = state.getMatch(modifierList);
                     if (_modifierList != null) {
@@ -160,9 +168,9 @@ public class JpaParser extends BaseParser {
                     Semantic semantic = new Semantic(SemanticType.COUNT);
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
-                        semantic.setConditionList(_conditionList.val());
+                        semantic.setCondition(ensureConditionVariable(state, _conditionList.val()));
                     } else {
-                        semantic.setConditionList(getParamConditionList(state));
+                        semantic.setCondition(getParamConditionList(state));
                     }
                     MatchResult _modifierList = state.getMatch(modifierList);
                     if (_modifierList != null) {
@@ -177,9 +185,9 @@ public class JpaParser extends BaseParser {
                     }
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
-                        semantic.setConditionList(_conditionList.val());
+                        semantic.setCondition(ensureConditionVariable(state, _conditionList.val()));
                     } else {
-                        semantic.setConditionList(getParamConditionList(state));
+                        semantic.setCondition(getParamConditionList(state));
                     }
                     state.setReturn(semantic);
                 })),
@@ -187,26 +195,29 @@ public class JpaParser extends BaseParser {
                     Semantic semantic = new Semantic(SemanticType.DELETE);
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
-                        semantic.setConditionList(_conditionList.val());
+                        semantic.setCondition(ensureConditionVariable(state, _conditionList.val()));
                     } else {
-                        semantic.setConditionList(getParamConditionList(state));
+                        semantic.setCondition(getParamConditionList(state));
                     }
                     state.setReturn(semantic);
                 })),
-                join(choice(keyword("save"), keyword("insert")), optional(keyword("Batch")), end, action(state -> {
+                join(choice(keyword("save"), keyword("insert")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.INSERT);
+                    if (state.getMatch("IgnoreNull") != null) {
+                        semantic.setIgnoreNull(true);
+                    }
                     state.setReturn(semantic);
                 }))));
 
         conditionList.set(
                 join(condition, optional(join(choice(keyword("And"), keyword("Or")), conditionList)), action(state -> {
-                    Condition c = state.getMatch(condition).val();
+                    ConditionTerm c = state.getMatch(condition).val();
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         if (state.getMatch("And") != null) {
-                            state.setReturn(new ConditionList(c, _conditionList.val(), ConditionListRel.And));
+                            state.setReturn(new ConditionList(c, _conditionList.val(), ConditionCompRel.And));
                         } else {
-                            state.setReturn(new ConditionList(c, _conditionList.val(), ConditionListRel.Or));
+                            state.setReturn(new ConditionList(c, _conditionList.val(), ConditionCompRel.Or));
                         }
                     } else {
                         state.setReturn(new ConditionList(c));
@@ -216,7 +227,7 @@ public class JpaParser extends BaseParser {
         Symbol integerB = new Symbol("integerB").set(integer);
         Symbol variableB = new Symbol("variableB").set(variable);
         Function<ConditionRel, Symbol> conditionAction = rel -> action(state -> {
-            Condition condition = new Condition();
+            ConditionTerm condition = new ConditionTerm();
             condition.setPropertyInfo(state.getMatch(property).val());
             condition.setRel(rel);
             if (state.getMatch("Ignorecase") != null) {
@@ -333,8 +344,7 @@ public class JpaParser extends BaseParser {
         })));
     }
 
-    private ConditionList getParamConditionList(State state) {
-        ConditionList conditionList = null;
+    private Condition getParamConditionList(State state) {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         Configuration configuration = jpaTokenizer.getConfiguration();
         GenericParameter[] parameters = jpaTokenizer.getParameters();
@@ -354,39 +364,32 @@ public class JpaParser extends BaseParser {
                 return ConditionFactory.fromCriteria(configuration, parameters[0].getType(), param != null ? param.value() : "");
             }
         }
+        ConditionComp conditionComp = new ConditionComp(ConditionCompRel.And);
         for (GenericParameter parameter : parameters) {
             Param param = parameter.getAnnotation(Param.class);
             if (param == null || !configuration.getTypeHandlerRegistry().hasTypeHandler(parameter.getType())) {
                 throw new MybatisExtException("Unsupported parameter type: " + parameter.getType().getName() + ". Method: " + jpaTokenizer.getText());
             }
             PropertyInfo propertyInfo = parseProperty(configuration, jpaTokenizer.getTableInfo(), param.value());
-            Condition condition = new Condition();
+            ConditionTerm condition = new ConditionTerm();
             condition.setPropertyInfo(propertyInfo);
             condition.setRel(ConditionRel.Equals);
             condition.setVariable(param.value());
-            if (conditionList == null) {
-                conditionList = new ConditionList(condition);
-            } else {
-                conditionList = new ConditionList(condition, conditionList, ConditionListRel.And);
-            }
+            conditionComp.getConditions().add(condition);
         }
-        return conditionList;
+        return conditionComp;
     }
 
-    private void ensureConditionVariable(Configuration configuration, ConditionList conditionList, GenericParameter[] parameters, TableInfo tableInfo, String methodName) {
+    private Condition ensureConditionVariable(State state, ConditionList conditionList) {
+        JpaTokenizer jpaTokenizer = state.getTokenizer();
+        GenericParameter[] parameters = jpaTokenizer.getParameters();
         int i = 0;
         Set<String> set = new HashSet<>();
-        for (; conditionList != null; conditionList = conditionList.getTailList()) {
-            while (i < parameters.length && !configuration.getTypeHandlerRegistry().hasTypeHandler(parameters[i].getType())) {
-                i++;
-            }
-            Condition condition = conditionList.getCondition();
-            if (condition.getConditionList() != null) {
-                continue;
-            }
+        for (ConditionList list = conditionList; list != null; list = list.getTailList()) {
+            ConditionTerm condition = list.getCondition();
             if (StringUtils.isBlank(condition.getVariable())) {
                 if (i >= parameters.length) {
-                    throw new MybatisExtException("Insufficient parameters for method: " + methodName);
+                    throw new MybatisExtException("Insufficient parameters for method: " + jpaTokenizer.getText());
                 }
                 Param param = parameters[i].getAnnotation(Param.class);
                 condition.setVariable(param != null ? param.value() : "param" + i + 1);
@@ -399,12 +402,9 @@ public class JpaParser extends BaseParser {
                 }
             }
             if (condition.getRel() == ConditionRel.Between) {
-                while (i < parameters.length && !configuration.getTypeHandlerRegistry().hasTypeHandler(parameters[i].getType())) {
-                    i++;
-                }
                 if (StringUtils.isBlank(condition.getSecondVariable())) {
                     if (i >= parameters.length) {
-                        throw new MybatisExtException("Insufficient parameters for method: " + methodName);
+                        throw new MybatisExtException("Insufficient parameters for method: " + jpaTokenizer.getText());
                     }
                     Param param = parameters[i].getAnnotation(Param.class);
                     condition.setSecondVariable(param != null ? param.value() : "param" + i + 1);
@@ -418,6 +418,7 @@ public class JpaParser extends BaseParser {
                 }
             }
         }
+        return ConditionFactory.fromConditionList(conditionList);
     }
 
     private final Symbol propertyEnd = join(property, end);
@@ -461,7 +462,6 @@ public class JpaParser extends BaseParser {
             tokenMarkers.get(0).printDiff(tokenMarkers.get(tokenMarkers.size() - 1), System.err);
             throw new ParserException("Conflict detected at column " + tokenMarkers.get(0).getDiffBegin(tokenMarkers.get(tokenMarkers.size() - 1)));
         }
-        ensureConditionVariable(configuration, reference.get().getConditionList(), parameters, tableInfo, methodName);
         return reference.get();
     }
 }

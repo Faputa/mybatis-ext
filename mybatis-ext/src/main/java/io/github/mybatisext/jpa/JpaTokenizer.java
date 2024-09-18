@@ -1,6 +1,7 @@
 package io.github.mybatisext.jpa;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
@@ -9,6 +10,7 @@ import org.apache.ibatis.session.Configuration;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.reflect.GenericParameter;
+import io.github.mybatisext.util.MybatisUtils;
 
 public class JpaTokenizer implements Tokenizer {
 
@@ -29,7 +31,7 @@ public class JpaTokenizer implements Tokenizer {
         this.tableInfo = tableInfo;
         this.text = text;
         this.configuration = configuration;
-        this.parameters = parameters;
+        this.parameters = Arrays.stream(parameters).filter(v -> !MybatisUtils.isSpecialParameter(v.getType())).toArray(GenericParameter[]::new);
         this.variables = buildVariables(configuration, parameters);
         this.expectedTokens = new ExpectedTokens(text);
         this.tokenMarker = new TokenMarker(text);

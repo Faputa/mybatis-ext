@@ -1,8 +1,13 @@
-package io.github.mybatisext.jpa;
+package io.github.mybatisext.condition;
 
+import java.util.Objects;
+
+import javax.annotation.Nonnull;
+
+import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.metadata.PropertyInfo;
 
-public class Condition {
+public class ConditionTerm implements Condition {
 
     private PropertyInfo propertyInfo;
     private boolean ignorecase;
@@ -10,9 +15,7 @@ public class Condition {
     private ConditionRel rel;
     private String variable;
     private String secondVariable;
-
-    private IfTest test;
-    private ConditionList conditionList;
+    private IfTest test = IfTest.None;
 
     public PropertyInfo getPropertyInfo() {
         return propertyInfo;
@@ -66,15 +69,24 @@ public class Condition {
         return test;
     }
 
-    public void setTest(IfTest test) {
+    public void setTest(@Nonnull IfTest test) {
         this.test = test;
     }
 
-    public ConditionList getConditionList() {
-        return conditionList;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ConditionTerm that = (ConditionTerm) o;
+        return ignorecase == that.ignorecase && not == that.not && Objects.equals(propertyInfo, that.propertyInfo) && rel == that.rel && Objects.equals(variable, that.variable) && Objects.equals(secondVariable, that.secondVariable) && test == that.test;
     }
 
-    public void setConditionList(ConditionList conditionList) {
-        this.conditionList = conditionList;
+    @Override
+    public int hashCode() {
+        return Objects.hash(propertyInfo, ignorecase, not, rel, variable, secondVariable, test);
     }
 }

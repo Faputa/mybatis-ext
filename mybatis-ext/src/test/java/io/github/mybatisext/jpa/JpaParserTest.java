@@ -1,5 +1,12 @@
 package io.github.mybatisext.jpa;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
@@ -38,9 +45,14 @@ public class JpaParserTest {
     public void testParse() {
         JpaParser jpaParser = new JpaParser();
         GenericType genericType = GenericTypeFactory.build(JpaParserExample.class);
+        Map<String, Set<Semantic>> map = new HashMap<>();
         for (GenericMethod method : genericType.getMethods()) {
             Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters());
+            map.computeIfAbsent(method.getName(), k -> new HashSet<>()).add(semantic);
             System.out.println(semantic);
         }
+        map.forEach((k, v) -> {
+            assertEquals(1, v.size(), k);
+        });
     }
 }

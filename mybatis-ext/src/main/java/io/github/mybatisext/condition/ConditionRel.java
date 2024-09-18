@@ -1,7 +1,7 @@
-package io.github.mybatisext.jpa;
+package io.github.mybatisext.condition;
 
 public enum ConditionRel {
-    
+
     Equals,
 
     LessThan,

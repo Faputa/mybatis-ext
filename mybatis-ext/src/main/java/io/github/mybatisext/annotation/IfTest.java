@@ -1,4 +1,4 @@
-package io.github.mybatisext.jpa;
+package io.github.mybatisext.annotation;
 
 public enum IfTest {
 

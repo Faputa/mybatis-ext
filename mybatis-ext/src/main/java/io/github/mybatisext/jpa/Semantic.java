@@ -1,6 +1,9 @@
 package io.github.mybatisext.jpa;
 
 import java.util.List;
+import java.util.Objects;
+
+import io.github.mybatisext.condition.Condition;
 
 public class Semantic {
 
@@ -8,7 +11,7 @@ public class Semantic {
     private boolean distinct;
     private boolean ignoreNull;
     private Limit limit;
-    private ConditionList conditionList;
+    private Condition condition;
     private OrderBy orderBy;
     private GroupBy groupBy;
 
@@ -44,12 +47,12 @@ public class Semantic {
         this.limit = limit;
     }
 
-    public ConditionList getConditionList() {
-        return conditionList;
+    public Condition getCondition() {
+        return condition;
     }
 
-    public void setConditionList(ConditionList conditionList) {
-        this.conditionList = conditionList;
+    public void setCondition(Condition condition) {
+        this.condition = condition;
     }
 
     public OrderBy getOrderBy() {
@@ -72,5 +75,22 @@ public class Semantic {
         for (Modifier modifier : modifiers) {
             modifier.accept(this);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Semantic semantic = (Semantic) o;
+        return distinct == semantic.distinct && ignoreNull == semantic.ignoreNull && type == semantic.type && Objects.equals(limit, semantic.limit) && Objects.equals(condition, semantic.condition) && Objects.equals(orderBy, semantic.orderBy) && Objects.equals(groupBy, semantic.groupBy);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, distinct, ignoreNull, limit, condition, orderBy, groupBy);
     }
 }

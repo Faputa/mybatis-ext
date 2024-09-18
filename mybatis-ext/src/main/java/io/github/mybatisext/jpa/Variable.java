@@ -6,11 +6,17 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.util.StringUtils;
 
 public class Variable {
 
@@ -20,12 +26,12 @@ public class Variable {
     private List<Variable> subVariables;
 
     public Variable(String name, Class<?> javaType) {
-        this(name, name, javaType);
+        this("", name, javaType);
     }
 
-    public Variable(String name, String fullName, Class<?> javaType) {
+    public Variable(String prefix, String name, Class<?> javaType) {
         this.name = name;
-        this.fullName = fullName;
+        this.fullName = StringUtils.isNotBlank(prefix) ? prefix + "." + name : name;
         this.javaType = javaType;
     }
 
@@ -59,7 +65,7 @@ public class Variable {
                 if (set.contains(field.getName())) {
                     continue;
                 }
-                subVariables.add(new Variable(field.getName(), name + "." + field.getName(), field.getType()));
+                subVariables.add(new Variable(fullName, field.getName(), field.getType()));
                 set.add(field.getName());
             }
         }
@@ -77,7 +83,7 @@ public class Variable {
             if (readMethod == null) {
                 continue;
             }
-            subVariables.add(new Variable(readMethod.getName(), name + "." + readMethod.getName(), readMethod.getReturnType()));
+            subVariables.add(new Variable(fullName, readMethod.getName(), readMethod.getReturnType()));
             set.add(readMethod.getName());
         }
         return subVariables;
