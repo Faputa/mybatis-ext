@@ -9,6 +9,9 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 
 import io.github.mybatisext.ExtConfiguration;
 import io.github.mybatisext.ExtContext;
+import io.github.mybatisext.annotation.IfTest;
+import io.github.mybatisext.condition.Condition;
+import io.github.mybatisext.condition.ConditionFactory;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.table.PrivilegeTable;
@@ -27,8 +30,8 @@ public class ConditionFactoryTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
-        ConditionList conditionList = ConditionFactory.fromCriteria(configuration, PrivilegeTable.class, "pt");
-        System.out.println(conditionList);
+        Condition condition = ConditionFactory.fromCriteria(configuration, PrivilegeTable.class, "pt");
+        System.out.println(condition);
     }
 
     @Test
@@ -44,7 +47,7 @@ public class ConditionFactoryTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        ConditionList conditionList = ConditionFactory.fromTableInfo(tableInfo, false, IfTest.NotNull, "pt");
-        System.out.println(conditionList);
+        Condition condition = ConditionFactory.fromTableInfo(tableInfo, false, IfTest.NotNull, "pt");
+        System.out.println(condition);
     }
 }

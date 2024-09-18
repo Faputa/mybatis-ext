@@ -120,9 +120,13 @@ public class PropertyInfo {
         this.ofType = ofType;
     }
 
+    public boolean isOwn() {
+        return joinTableInfo.getTableInfo() == tableInfo;
+    }
+
     public List<PropertyInfo> getSubPropertyInfos() {
         if (ResultType.ASSOCIATION == resultType || ResultType.COLLECTION == resultType) {
-            if (joinTableInfo.getTableInfo() == tableInfo) {
+            if (isOwn()) {
                 return subPropertyInfos;
             }
             if (StringUtils.isNotBlank(columnName)) {

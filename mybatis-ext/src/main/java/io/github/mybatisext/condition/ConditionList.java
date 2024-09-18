@@ -1,22 +1,22 @@
-package io.github.mybatisext.jpa;
+package io.github.mybatisext.condition;
 
 public class ConditionList {
 
-    private final Condition condition;
+    private final ConditionTerm condition;
     private final ConditionList tailList;
-    private final ConditionListRel rel;
+    private final ConditionCompRel rel;
 
-    public ConditionList(Condition condition) {
+    public ConditionList(ConditionTerm condition) {
         this(condition, null, null);
     }
 
-    public ConditionList(Condition condition, ConditionList tailList, ConditionListRel rel) {
+    public ConditionList(ConditionTerm condition, ConditionList tailList, ConditionCompRel rel) {
         this.condition = condition;
         this.tailList = tailList;
         this.rel = rel;
     }
 
-    public Condition getCondition() {
+    public ConditionTerm getCondition() {
         return condition;
     }
 
@@ -24,7 +24,7 @@ public class ConditionList {
         return tailList;
     }
 
-    public ConditionListRel getRel() {
+    public ConditionCompRel getRel() {
         return rel;
     }
 }

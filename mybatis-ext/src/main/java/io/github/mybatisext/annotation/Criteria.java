@@ -5,7 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import io.github.mybatisext.jpa.ConditionListRel;
+import io.github.mybatisext.condition.ConditionCompRel;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -13,5 +13,5 @@ public @interface Criteria {
 
     Class<?> table() default void.class;
 
-    ConditionListRel rel() default ConditionListRel.And;
+    ConditionCompRel rel() default ConditionCompRel.And;
 }

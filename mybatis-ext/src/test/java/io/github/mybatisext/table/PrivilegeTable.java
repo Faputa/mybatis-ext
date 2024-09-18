@@ -6,18 +6,18 @@ import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Criteria;
 import io.github.mybatisext.annotation.Criterion;
 import io.github.mybatisext.annotation.Id;
+import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.JoinRelations;
 import io.github.mybatisext.annotation.Table;
-import io.github.mybatisext.jpa.ConditionListRel;
-import io.github.mybatisext.jpa.ConditionRel;
-import io.github.mybatisext.jpa.IfTest;
+import io.github.mybatisext.condition.ConditionCompRel;
+import io.github.mybatisext.condition.ConditionRel;
 
 @Table(alias = "pt")
 @JoinParent(alias = "mt", joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"))
-@Criteria(rel = ConditionListRel.And)
+@Criteria(rel = ConditionCompRel.And)
 public class PrivilegeTable extends MetadataTable {
 
     @Id
