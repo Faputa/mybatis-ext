@@ -5,8 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import io.github.mybatisext.jpa.ConditionRel;
-import io.github.mybatisext.jpa.IfTest;
+import io.github.mybatisext.condition.ConditionRel;
 
 @Target({ ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
