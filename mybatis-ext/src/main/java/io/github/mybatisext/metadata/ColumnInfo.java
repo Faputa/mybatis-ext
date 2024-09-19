@@ -18,6 +18,8 @@ public class ColumnInfo {
     private int precision;
     /** 标度 */
     private int scale;
+    /** 只读 */
+    private boolean readonly;
 
     public String getName() {
         return name;
@@ -75,6 +77,14 @@ public class ColumnInfo {
         this.scale = scale;
     }
 
+    public boolean isReadonly() {
+        return readonly;
+    }
+
+    public void setReadonly(boolean readonly) {
+        this.readonly = readonly;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -84,17 +94,11 @@ public class ColumnInfo {
             return false;
         }
         ColumnInfo that = (ColumnInfo) o;
-        return nullable == that.nullable
-                && length == that.length
-                && precision == that.precision
-                && scale == that.scale
-                && Objects.equals(name, that.name)
-                && Objects.equals(comment, that.comment)
-                && Objects.equals(columnDefinition, that.columnDefinition);
+        return nullable == that.nullable && length == that.length && precision == that.precision && scale == that.scale && readonly == that.readonly && Objects.equals(name, that.name) && Objects.equals(comment, that.comment) && Objects.equals(columnDefinition, that.columnDefinition);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, comment, nullable, columnDefinition, length, precision, scale);
+        return Objects.hash(name, comment, nullable, columnDefinition, length, precision, scale, readonly);
     }
 }
