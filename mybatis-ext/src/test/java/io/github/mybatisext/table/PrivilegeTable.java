@@ -94,6 +94,11 @@ public class PrivilegeTable extends MetadataTable {
         return tableId;
     }
 
+    @Column
+    public String getTableId2() {
+        return tableId;
+    }
+
     public void setTableId(String tableId) {
         this.tableId = tableId;
     }

@@ -50,10 +50,7 @@ public class JoinColumnFeature {
             return false;
         }
         JoinColumnFeature that = (JoinColumnFeature) o;
-        return Objects.equals(leftColumn, that.leftColumn)
-                && Objects.equals(rightColumn, that.rightColumn)
-                && Objects.equals(leftTable, that.leftTable)
-                && Objects.equals(rightTable, that.rightTable);
+        return Objects.equals(leftColumn, that.leftColumn) && Objects.equals(rightColumn, that.rightColumn) && Objects.equals(leftTable, that.leftTable) && Objects.equals(rightTable, that.rightTable);
     }
 
     @Override

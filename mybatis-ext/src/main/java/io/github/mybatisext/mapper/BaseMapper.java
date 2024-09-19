@@ -20,9 +20,9 @@ public interface BaseMapper<T> extends ExtMapper<T> {
 
     int updateIgnoreNull(@OnlyById T entity);
 
-    int updateBatch(@OnlyById List<T> entity);
+    int updateBatch(@OnlyById List<T> list);
 
-    int updateBatchIgnoreNull(@OnlyById List<T> entity);
+    int updateBatchIgnoreNull(@OnlyById List<T> list);
 
     int delete(@OnlyById T query);
 
