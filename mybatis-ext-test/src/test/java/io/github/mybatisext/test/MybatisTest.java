@@ -33,6 +33,6 @@ public class MybatisTest {
         SqlSession session = sqlSessionFactory.openSession();
         CameraMapper0 cameraMapper = session.getMapper(CameraMapper0.class);
         System.out.println(cameraMapper.countCamera());
-        assertThrows(BindingException.class, () -> cameraMapper.countCamera2());
+        assertThrows(BindingException.class, () -> cameraMapper.countByOrgId(16));
     }
 }

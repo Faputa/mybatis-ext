@@ -35,13 +35,11 @@ public class JoinTableInfo {
         return rightJoinTableInfos;
     }
 
-    public LinkedHashSet<String> getTableAliases() {
-        LinkedHashSet<String> tableAliases = new LinkedHashSet<>();
+    public void collectTableAliases(LinkedHashSet<String> tableAliases) {
         leftJoinTableInfos.forEach((leftJoinColumn, leftJoinTable) -> {
-            tableAliases.addAll(leftJoinTable.getTableAliases());
+            leftJoinTable.collectTableAliases(tableAliases);
         });
         tableAliases.add(alias);
-        return tableAliases;
     }
 
     @Override

@@ -7,23 +7,28 @@ import io.github.mybatisext.reflect.GenericTypeFactory;
 
 public class TypeArgumentResolver {
 
-    public static Class<?> resolveTypeArgument(Type type, Class<?> sourceClass, int index) {
+    public static Class<?>  resolveTypeArgument(Type type, Class<?> sourceClass, int index) {
+        GenericType genericType = resolveGenericTypeArgument(type, sourceClass, index);
+        if (genericType == null) {
+            return null;
+        }
+        return genericType.getType();
+    }
+
+    public static GenericType resolveGenericTypeArgument(Type type, Class<?> sourceClass, int index) {
         if (type == null) {
             return null;
         }
-        if (!(type instanceof GenericType)) {
-            type = GenericTypeFactory.build(type);
-        }
-        GenericType genericType = (GenericType) type;
+        GenericType genericType = type instanceof GenericType ? (GenericType) type : GenericTypeFactory.build(type);
         if (genericType.getType() == sourceClass) {
-            return genericType.getTypeParameters()[index].getType();
+            return genericType.getTypeParameters()[index];
         }
         for (GenericType interfaceType : genericType.getGenericInterfaces()) {
-            Class<?> resolvedClass = resolveTypeArgument(interfaceType, sourceClass, index);
+            GenericType resolvedClass = resolveGenericTypeArgument(interfaceType, sourceClass, index);
             if (resolvedClass != null) {
                 return resolvedClass;
             }
         }
-        return resolveTypeArgument(genericType.getGenericSuperclass(), sourceClass, index);
+        return resolveGenericTypeArgument(genericType.getGenericSuperclass(), sourceClass, index);
     }
 }

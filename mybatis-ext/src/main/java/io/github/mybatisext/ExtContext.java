@@ -1,15 +1,17 @@
 package io.github.mybatisext;
 
+import io.github.mybatisext.dialect.DefaultDialectSelector;
+import io.github.mybatisext.dialect.DialectSelector;
+
 public class ExtContext {
 
-    /** 是否启用级联 */
-    private boolean cascadeEnabled = false;
+    private DialectSelector dialectSelector = new DefaultDialectSelector();
 
-    public boolean isCascadeEnabled() {
-        return cascadeEnabled;
+    public DialectSelector getDialectSelector() {
+        return dialectSelector;
     }
 
-    public void setCascadeEnabled(boolean cascadeEnabled) {
-        this.cascadeEnabled = cascadeEnabled;
+    public void setDialectSelector(DialectSelector dialectSelector) {
+        this.dialectSelector = dialectSelector;
     }
 }

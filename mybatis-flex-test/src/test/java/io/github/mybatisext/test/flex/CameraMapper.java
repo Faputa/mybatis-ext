@@ -1,9 +1,13 @@
 package io.github.mybatisext.test.flex;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.apache.ibatis.annotations.Mapper;
 
-import io.github.mybatisext.annotation.MapTable;
 import com.mybatisflex.core.BaseMapper;
+
+import io.github.mybatisext.annotation.MapTable;
 
 @Mapper
 @MapTable(Camera.class)
@@ -11,7 +15,9 @@ public interface CameraMapper extends BaseMapper<Camera> {
 
     long countCamera();
 
-    long countCamera2();
+    Optional<Long> countByOrgId(int orgId);
 
-    // long countCamera3();
+    List<Camera> listByOrgId(int orgId);
+
+    Camera listOneByOrgIdOrderByCameraId(int orgId);
 }

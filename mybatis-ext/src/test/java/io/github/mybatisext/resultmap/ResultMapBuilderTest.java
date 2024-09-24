@@ -29,7 +29,7 @@ public class ResultMapBuilderTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        ResultMap resultMap = new ResultMapBuilder(configuration).buildResultMap(tableInfo);
+        ResultMap resultMap = ResultMapBuilder.buildResultMap(configuration, tableInfo);
         System.out.println(resultMap);
     }
 }

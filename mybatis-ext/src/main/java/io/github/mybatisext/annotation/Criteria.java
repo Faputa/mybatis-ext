@@ -13,5 +13,5 @@ public @interface Criteria {
 
     Class<?> table() default void.class;
 
-    ConditionCompRel rel() default ConditionCompRel.And;
+    ConditionCompRel rel() default ConditionCompRel.AND;
 }

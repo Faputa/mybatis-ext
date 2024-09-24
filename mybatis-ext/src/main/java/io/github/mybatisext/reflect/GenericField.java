@@ -1,8 +1,10 @@
 package io.github.mybatisext.reflect;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.HashMap;
 import java.util.Map;
 
 public class GenericField {
@@ -12,7 +14,7 @@ public class GenericField {
 
     public GenericField(Field field, Map<TypeVariable<?>, Type> typeMap) {
         this.field = field;
-        this.genericType = GenericTypeFactory.build(field.getGenericType(), typeMap);
+        this.genericType = GenericTypeFactory.build(field.getGenericType(), new HashMap<>(typeMap));
     }
 
     public Field getField() {
@@ -25,6 +27,18 @@ public class GenericField {
 
     public Class<?> getType() {
         return genericType.getType();
+    }
+
+    public String getName() {
+        return field.getName();
+    }
+
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+        return field.getAnnotation(annotationClass);
+    }
+
+    public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass) {
+        return field.getAnnotationsByType(annotationClass);
     }
 
     @Override

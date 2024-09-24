@@ -8,7 +8,7 @@ public interface CameraMapper0 extends BaseMapper<Camera> {
 
     long countCamera();
 
-    Optional<Long> countCamera2();
+    Optional<Long> countByOrgId(int orgId);
 
     int deleteCameraTwice();
 }

@@ -5,31 +5,56 @@ import java.sql.Timestamp;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import io.github.mybatisext.annotation.Column;
+import io.github.mybatisext.annotation.Id;
+
 @TableName("camera")
 public class Camera {
 
     // 必须添加此注解，否则不会生成ID相关的语句
     @TableId
+    @Id
+    @Column
     private Long cameraId;
+    @Column
     private Long orgId;
+    @Column
     private String cameraName;
+    @Column
     private String cameraCode;
+    @Column
     private String cameraMemo;
+    @Column
     private String ip;
+    @Column
     private Integer port;
+    @Column
     private String username;
+    @Column
     private String password;
+    @Column
     private String streamType;
+    @Column
     private String site;
+    @Column
     private String vendor;
+    @Column
     private String model;
+    @Column
     private Integer interval;
+    @Column
     private Boolean enabled;
+    @Column
     private Boolean emergencyEnabled;
+    @Column
     private Boolean emergencyAllowed;
+    @Column
     private Integer status;
+    @Column
     private Timestamp insertTime;
+    @Column
     private Timestamp updateTime;
+    @Column
     private Boolean deleted;
 
     public Long getCameraId() {

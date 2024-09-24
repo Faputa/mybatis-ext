@@ -2,28 +2,53 @@ package io.github.mybatisext.test.spring;
 
 import java.sql.Timestamp;
 
+import io.github.mybatisext.annotation.Column;
+import io.github.mybatisext.annotation.Id;
+
 public class Camera {
 
+    @Id
+    @Column
     private Long cameraId;
+    @Column
     private Long orgId;
+    @Column
     private String cameraName;
+    @Column
     private String cameraCode;
+    @Column
     private String cameraMemo;
+    @Column
     private String ip;
+    @Column
     private Integer port;
+    @Column
     private String username;
+    @Column
     private String password;
+    @Column
     private String streamType;
+    @Column
     private String site;
+    @Column
     private String vendor;
+    @Column
     private String model;
+    @Column
     private Integer interval;
+    @Column
     private Boolean enabled;
+    @Column
     private Boolean emergencyEnabled;
+    @Column
     private Boolean emergencyAllowed;
+    @Column
     private Integer status;
+    @Column
     private Timestamp insertTime;
+    @Column
     private Timestamp updateTime;
+    @Column
     private Boolean deleted;
 
     public Long getCameraId() {
