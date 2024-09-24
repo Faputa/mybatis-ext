@@ -15,6 +15,7 @@ public class Ognl {
     public static final String IsNumber = "@io.github.mybatisext.ognl.Ognl@isNumber";
     public static final String IsNotNumber = "@io.github.mybatisext.ognl.Ognl@isNotNumber";
     public static final String HasProperty = "@io.github.mybatisext.ognl.Ognl@hasProperty";
+    public static final String ToUpperCase = "@io.github.mybatisext.ognl.Ognl@toUpperCase";
 
     /**
      * 可以用于判断String,Long,Integer,Map,Array,Collection是否为空
@@ -87,7 +88,7 @@ public class Ognl {
 
     /**
      * 判断对象是否存在属性
-     * 
+     *
      * @param o            对象
      * @param propertyName 属性名
      * @return
@@ -111,5 +112,15 @@ public class Ognl {
             }
         }
         return false;
+    }
+
+    /**
+     * 将对象转字符串再转大写
+     *
+     * @param o 对象
+     * @return
+     */
+    public static String toUpperCase(Object o) {
+        return o.toString().toUpperCase();
     }
 }

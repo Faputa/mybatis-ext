@@ -192,3 +192,29 @@ delete test where a=1;
 
 
 
+
+insert
+    是否批量
+    是否忽略空
+    是否主键生成
+
+update
+    是否批量
+    是否忽略空
+    是否连接
+
+delete
+    是否批量
+    是否连接
+
+select
+    是否连接
+
+count
+    是否连接
+
+exists
+    是否连接
+
+
+

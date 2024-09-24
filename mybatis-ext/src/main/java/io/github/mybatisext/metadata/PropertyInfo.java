@@ -13,6 +13,7 @@ import org.apache.ibatis.type.JdbcType;
 import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.idgenerator.IdGenerator;
+import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.resultmap.ResultMapBuilder;
 import io.github.mybatisext.resultmap.ResultType;
 import io.github.mybatisext.util.StringUtils;
@@ -24,7 +25,7 @@ public class PropertyInfo {
     private String columnName;
     private TableInfo tableInfo;
     private JoinTableInfo joinTableInfo;
-    private Class<?> javaType;
+    private GenericType javaType;
     private JdbcType jdbcType;
 
     // resultMap项的类型
@@ -35,7 +36,7 @@ public class PropertyInfo {
     private IdGenerator<?> customIdGenerator;
 
     // resultType=COLLECTION
-    private Class<?> ofType;
+    private GenericType ofType;
 
     // resultType=ASSOCIATION,COLLECTION且为非关联表属性
     private final List<PropertyInfo> subPropertyInfos = new ArrayList<>();
@@ -72,11 +73,11 @@ public class PropertyInfo {
         this.joinTableInfo = joinTableInfo;
     }
 
-    public Class<?> getJavaType() {
+    public GenericType getJavaType() {
         return javaType;
     }
 
-    public void setJavaType(Class<?> javaType) {
+    public void setJavaType(GenericType javaType) {
         this.javaType = javaType;
     }
 
@@ -112,21 +113,21 @@ public class PropertyInfo {
         this.customIdGenerator = customIdGenerator;
     }
 
-    public Class<?> getOfType() {
+    public GenericType getOfType() {
         return ofType;
     }
 
-    public void setOfType(Class<?> ofType) {
+    public void setOfType(GenericType ofType) {
         this.ofType = ofType;
     }
 
-    public boolean isOwn() {
+    public boolean isOwnColumn() {
         return joinTableInfo.getTableInfo() == tableInfo;
     }
 
     public List<PropertyInfo> getSubPropertyInfos() {
         if (ResultType.ASSOCIATION == resultType || ResultType.COLLECTION == resultType) {
-            if (isOwn()) {
+            if (isOwnColumn()) {
                 return subPropertyInfos;
             }
             if (StringUtils.isNotBlank(columnName)) {
@@ -137,7 +138,9 @@ public class PropertyInfo {
                 newPropertyInfo.setResultType(ResultType.RESULT);
                 return Collections.singletonList(newPropertyInfo);
             }
-            return joinTableInfo.getTableInfo().getNameToPropertyInfo().values().stream().filter(propertyInfo -> ResultType.ID == propertyInfo.getResultType() || ResultType.RESULT == propertyInfo.getResultType()).map(propertyInfo -> {
+            return joinTableInfo.getTableInfo().getNameToPropertyInfo().values().stream().filter(propertyInfo -> {
+                return propertyInfo.getResultType() == ResultType.ID || propertyInfo.getResultType() == ResultType.RESULT;
+            }).map(propertyInfo -> {
                 PropertyInfo newPropertyInfo = new PropertyInfo();
                 newPropertyInfo.setName(propertyInfo.getName());
                 newPropertyInfo.setColumnName(propertyInfo.getColumnName());
@@ -158,7 +161,7 @@ public class PropertyInfo {
         if (ResultType.ID == resultType) {
             return new ResultMapping.Builder(configuration, name)
                     .column(joinTableInfo.getAlias() + "_" + columnName)
-                    .javaType(javaType)
+                    .javaType(javaType.getType())
                     .jdbcType(jdbcType)
                     .flags(Collections.singletonList(ResultFlag.ID))
                     .build();
@@ -166,23 +169,23 @@ public class PropertyInfo {
         if (ResultType.RESULT == resultType) {
             return new ResultMapping.Builder(configuration, name)
                     .column(joinTableInfo.getAlias() + "_" + columnName)
-                    .javaType(javaType)
+                    .javaType(javaType.getType())
                     .jdbcType(jdbcType)
                     .build();
         }
         if (ResultType.ASSOCIATION == resultType) {
             String nestedResultMapId = resultMapId + "[association" + "=" + name + "]";
-            new ResultMapBuilder(configuration).buildNestedResultMap(this, nestedResultMapId);
+            ResultMapBuilder.buildNestedResultMap(configuration, nestedResultMapId, this);
             return new ResultMapping.Builder(configuration, name)
-                    .javaType(javaType)
+                    .javaType(javaType.getType())
                     .nestedResultMapId(nestedResultMapId)
                     .build();
         }
         if (ResultType.COLLECTION == resultType) {
             String nestedResultMapId = resultMapId + "[collection" + "=" + name + "]";
-            new ResultMapBuilder(configuration).buildNestedResultMap(this, nestedResultMapId);
+            ResultMapBuilder.buildNestedResultMap(configuration, nestedResultMapId, this);
             return new ResultMapping.Builder(configuration, name)
-                    .javaType(ofType)
+                    .javaType(ofType.getType())
                     .nestedResultMapId(nestedResultMapId)
                     .build();
         }

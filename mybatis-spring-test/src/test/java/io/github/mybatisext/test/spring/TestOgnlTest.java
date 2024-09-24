@@ -40,4 +40,9 @@ public class TestOgnlTest {
         List<Object> list = testOgnlMapper.testOgnlCallMapperStatement();
         System.out.println(list);
     }
+
+    @Test
+    void testBind() {
+        System.out.println(testOgnlMapper.testBind());
+    }
 }

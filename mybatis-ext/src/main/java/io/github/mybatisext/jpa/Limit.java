@@ -2,12 +2,12 @@ package io.github.mybatisext.jpa;
 
 import java.util.Objects;
 
-public class Limit implements Modifier {
+public class Limit {
 
     private Integer offset;
     private Integer rowCount;
-    private String offsetVariable;
-    private String rowCountVariable;
+    private Variable offsetVariable;
+    private Variable rowCountVariable;
 
     public Integer getOffset() {
         return offset;
@@ -25,25 +25,20 @@ public class Limit implements Modifier {
         this.rowCount = rowCount;
     }
 
-    public String getOffsetVariable() {
+    public Variable getOffsetVariable() {
         return offsetVariable;
     }
 
-    public void setOffsetVariable(String offsetVariable) {
+    public void setOffsetVariable(Variable offsetVariable) {
         this.offsetVariable = offsetVariable;
     }
 
-    public String getRowCountVariable() {
+    public Variable getRowCountVariable() {
         return rowCountVariable;
     }
 
-    public void setRowCountVariable(String rowCountVariable) {
+    public void setRowCountVariable(Variable rowCountVariable) {
         this.rowCountVariable = rowCountVariable;
-    }
-
-    @Override
-    public void accept(Semantic semantic) {
-        semantic.setLimit(this);
     }
 
     @Override

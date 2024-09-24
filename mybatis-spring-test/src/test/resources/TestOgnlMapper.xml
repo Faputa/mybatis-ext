@@ -20,4 +20,12 @@
             select #{item} value
         </foreach>
 	</select>
+
+    <select id="testBind">
+        <bind name="a" value="1" />
+        <bind name="a" value="a+1" />
+        <bind name="a" value="a+1" />
+        <bind name="a" value="a+1" />
+        select #{a}
+    </select>
 </mapper>

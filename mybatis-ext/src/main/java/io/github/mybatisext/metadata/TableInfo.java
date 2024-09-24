@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import io.github.mybatisext.reflect.GenericType;
+
 public class TableInfo {
 
     /** 表名 */
@@ -13,7 +15,7 @@ public class TableInfo {
     /** 模式 */
     private String schema;
     /** 实体类 */
-    private Class<?> tableClass;
+    private GenericType tableClass;
     /** 连接图 */
     private JoinTableInfo joinTableInfo;
     /** 别名到关联表的映射 */
@@ -47,11 +49,11 @@ public class TableInfo {
         this.schema = schema;
     }
 
-    public Class<?> getTableClass() {
+    public GenericType getTableClass() {
         return tableClass;
     }
 
-    public void setTableClass(Class<?> tableClass) {
+    public void setTableClass(GenericType tableClass) {
         this.tableClass = tableClass;
     }
 

@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import io.github.mybatisext.metadata.PropertyInfo;
 
-public class OrderBy implements Modifier {
+public class OrderBy {
 
     private List<PropertyInfo> propertyInfos;
     private OrderByType type;
@@ -24,11 +24,6 @@ public class OrderBy implements Modifier {
 
     public void setType(OrderByType type) {
         this.type = type;
-    }
-
-    @Override
-    public void accept(Semantic semantic) {
-        semantic.setOrderBy(this);
     }
 
     @Override

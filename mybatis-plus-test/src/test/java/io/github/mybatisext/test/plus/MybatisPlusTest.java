@@ -15,6 +15,8 @@ public class MybatisPlusTest {
 		System.out.println("########" + cameraMapper.countCamera());
 		// 预期10000
 		System.out.println("########" + cameraMapper.selectCount(null));
-		System.out.println("########" + cameraMapper.countCamera2());
+		System.out.println("########" + cameraMapper.countByOrgId(16));
+		System.out.println("########" + cameraMapper.listByOrgId(16));
+		System.out.println("########" + cameraMapper.listOneByOrgIdOrderByCameraId(16));
 	}
 }

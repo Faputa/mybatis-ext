@@ -1,5 +1,8 @@
 package io.github.mybatisext.test.plus;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.apache.ibatis.annotations.Mapper;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
@@ -10,7 +13,9 @@ public interface CameraMapper extends CameraMapper0 {
     long countCamera();
 
     @DS("ds2")
-    long countCamera2();
+    Optional<Long> countByOrgId(int orgId);
 
-    // long countCamera3();
+    List<Camera> listByOrgId(int orgId);
+
+    Camera listOneByOrgIdOrderByCameraId(int orgId);
 }

@@ -17,7 +17,7 @@ import io.github.mybatisext.condition.ConditionRel;
 
 @Table(alias = "pt")
 @JoinParent(alias = "mt", joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"))
-@Criteria(rel = ConditionCompRel.And)
+@Criteria(rel = ConditionCompRel.AND)
 public class PrivilegeTable extends MetadataTable {
 
     @Id
