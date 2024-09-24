@@ -2,7 +2,7 @@ package io.github.mybatisext.condition;
 
 public enum ConditionCompRel {
 
-    And,
+    AND,
 
-    Or,
+    OR,
 }

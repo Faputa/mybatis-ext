@@ -7,6 +7,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import io.github.mybatisext.ExtContext;
+import io.github.mybatisext.dialect.DialectSelector;
 import io.github.mybatisext.spring.ExtSqlSessionFactoryBean;
 
 @Aspect
@@ -15,13 +17,17 @@ public class MybatisExtAspect {
 
     @Autowired
     private MybatisExtProperties properties;
+    @Autowired
+    private DialectSelector dialectSelector;
 
-    @Around("@annotation(org.springframework.context.annotation.Bean)")
+    @Around("@annotation(org.springframework.context.annotation.Bean) && execution(org.apache.ibatis.session.SqlSessionFactory+ *(..))")
     public Object aroundBeanMethod(ProceedingJoinPoint joinPoint) throws Throwable {
         Object result = joinPoint.proceed();
         if (result instanceof SqlSessionFactory) {
             ExtSqlSessionFactoryBean extSqlSessionFactoryBean = new ExtSqlSessionFactoryBean();
-            extSqlSessionFactoryBean.setExtContext(properties.toExtContext());
+            ExtContext extContext = properties.toExtContext();
+            extContext.setDialectSelector(dialectSelector);
+            extSqlSessionFactoryBean.setExtContext(extContext);
             return extSqlSessionFactoryBean.buildSqlSessionFactory((SqlSessionFactory) result);
         }
         return result;

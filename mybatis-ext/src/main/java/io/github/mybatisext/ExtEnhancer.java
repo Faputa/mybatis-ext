@@ -1,6 +1,5 @@
 package io.github.mybatisext;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -8,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.apache.ibatis.binding.BindingException;
@@ -19,6 +16,9 @@ import org.apache.ibatis.session.Configuration;
 import io.github.mybatisext.annotation.MapTable;
 import io.github.mybatisext.mapper.BaseMapper;
 import io.github.mybatisext.mapper.ExtMapper;
+import io.github.mybatisext.reflect.GenericMethod;
+import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.reflect.GenericTypeFactory;
 import io.github.mybatisext.statement.MappedStatementBuilder;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
@@ -26,13 +26,7 @@ public class ExtEnhancer {
 
     private final Configuration originConfiguration;
     private final MappedStatementBuilder statementBuilder;
-    private final Set<String> builtStatementId = ConcurrentHashMap.newKeySet();
-
-    private static ThreadLocal<ExtEnhancer> instance = new ThreadLocal<>();
-
-    public static ExtEnhancer getInstance() {
-        return instance.get();
-    }
+    private final Object lock = new Object();
 
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
 
@@ -42,58 +36,9 @@ public class ExtEnhancer {
     }
 
     public MappedStatement getMappedStatement(String id) {
-        instance.set(this);
-        MappedStatement mappedStatement = this.originConfiguration.getMappedStatement(id);
-        if (mappedStatement != null) {
-            return mappedStatement;
+        if (originConfiguration.hasStatement(id)) {
+            return originConfiguration.getMappedStatement(id);
         }
-        mappedStatement = resolveMappedStatement(id);
-        if (mappedStatement != null) {
-            if (Objects.equals(mappedStatement.getId(), id)) {
-                return mappedStatement;
-            }
-        }
-        return null;
-    }
-
-    public boolean hasStatement(String statementName) {
-        boolean hasStatement = this.originConfiguration.hasStatement(statementName);
-        if (hasStatement) {
-            return true;
-        }
-        MappedStatement ms = resolveMappedStatement(statementName);
-        if (ms != null) {
-            return Objects.equals(ms.getId(), statementName);
-        }
-        return false;
-    }
-
-    public void validateAllMapperMethod() {
-        for (Class<?> mapperClass : originConfiguration.getMapperRegistry().getMappers()) {
-            if (!isEnhancedMapper(mapperClass)) {
-                continue;
-            }
-            for (Method method : mapperClass.getMethods()) {
-                if (isBridgeOrDefault(method)) {
-                    continue;
-                }
-                if (method.getDeclaringClass() == BaseMapper.class) {
-                    continue;
-                }
-                String statementId = mapperClass.getName() + "." + method.getName();
-                MappedStatement ms = resolveMappedStatement(statementId);
-                if (ms == null) {
-                    throw new BindingException("Invalid bound statement (not found): " + statementId);
-                }
-            }
-        }
-    }
-
-    public Configuration getOriginConfiguration() {
-        return originConfiguration;
-    }
-
-    private MappedStatement resolveMappedStatement(String id) {
         int lastIndexOf = id.lastIndexOf(".");
         if (lastIndexOf < 0) {
             return null;
@@ -108,11 +53,48 @@ public class ExtEnhancer {
         if (ms != null) {
             return ms;
         }
-        if (!builtStatementId.contains(id)) {
-            builtStatementId.add(id);
-            return buildMappedStatement(id, methodName, mapperClass);
+        ms = buildMappedStatement(id, mapperClass, methodName);
+        if (ms != null) {
+            synchronized (lock) {
+                if (!originConfiguration.hasStatement(id)) {
+                    originConfiguration.addMappedStatement(ms);
+                }
+            }
         }
-        return null;
+        return ms;
+    }
+
+    public boolean hasStatement(String statementName) {
+        if (originConfiguration.hasStatement(statementName)) {
+            return true;
+        }
+        MappedStatement ms = getMappedStatement(statementName);
+        if (ms != null) {
+            return Objects.equals(ms.getId(), statementName);
+        }
+        return false;
+    }
+
+    public void validateAllMapperMethod() {
+        for (Class<?> mapperClass : originConfiguration.getMapperRegistry().getMappers()) {
+            if (isNotEnhancedMapper(mapperClass)) {
+                continue;
+            }
+            GenericType genericType = GenericTypeFactory.build(mapperClass);
+            for (GenericMethod method : genericType.getMethods()) {
+                if (method.isBridge() || method.isDefault() || method.getDeclaringClass() == BaseMapper.class) {
+                    continue;
+                }
+                String id = mapperClass.getName() + "." + method.getName();
+                MappedStatement ms = resolveMappedStatement(mapperClass, method.getName());
+                if (ms == null) {
+                    ms = buildMappedStatement(id, mapperClass, method.getName());
+                }
+                if (ms == null) {
+                    throw new BindingException("Invalid bound statement (not found): " + id);
+                }
+            }
+        }
     }
 
     private MappedStatement resolveMappedStatement(Class<?> mapperClass, String methodName) {
@@ -129,59 +111,50 @@ public class ExtEnhancer {
                 return ms;
             }
         }
-        return resolveMappedStatement(mapperClass.getSuperclass(), methodName);
+        return null;
     }
 
-    private MappedStatement buildMappedStatement(String id, String methodName, Class<?> mapperClass) {
-        if (!isEnhancedMapper(mapperClass)) {
+    private MappedStatement buildMappedStatement(String id, Class<?> mapperClass, String methodName) {
+        if (isNotEnhancedMapper(mapperClass)) {
             return null;
         }
-        Class<?> tableType = getEntityClass(mapperClass);
-        assert tableType != null;
-        Class<?> returnType = null;
-        List<Method> methods = new ArrayList<>();
-        for (Method method : mapperClass.getMethods()) {
-            if (isBridgeOrDefault(method) || !method.getName().equals(methodName)) {
+        GenericType tableType = getEntityClass(mapperClass);
+        GenericType genericType = GenericTypeFactory.build(mapperClass);
+        GenericType returnType = null;
+        List<GenericMethod> methods = new ArrayList<>();
+        for (GenericMethod method : genericType.getMethods()) {
+            if (method.isBridge() || method.isDefault() || !method.getName().equals(methodName)) {
                 continue;
             }
-            Class<?> mReturnType = method.getReturnType();
-            if (mReturnType == Optional.class) {
-                mReturnType = TypeArgumentResolver.resolveTypeArgument(method.getGenericReturnType(), Optional.class, 0);
+            GenericType mReturnType = method.getGenericReturnType();
+            if (Collection.class.isAssignableFrom(mReturnType.getType())) {
+                mReturnType = TypeArgumentResolver.resolveGenericTypeArgument(method.getGenericReturnType(), Collection.class, 0);
+            } else if (mReturnType.getType() == Optional.class) {
+                mReturnType = TypeArgumentResolver.resolveGenericTypeArgument(method.getGenericReturnType(), Optional.class, 0);
             }
-            assert mReturnType != null;
             if (returnType == null || returnType.isAssignableFrom(mReturnType)) {
                 returnType = mReturnType;
-            } else if (!mReturnType.isAssignableFrom(returnType) && Void.class != mReturnType) {
-                throw new IllegalArgumentException("returnType inconsistency: " + id);
+            } else if (!mReturnType.isAssignableFrom(returnType) && mReturnType.getType() != Void.class) {
+                throw new IllegalArgumentException("returnType inconsistency: " + mapperClass.getName() + "." + methodName);
             }
             methods.add(method);
         }
-        MappedStatement ms = statementBuilder.build(id, methodName, methods, returnType, tableType);
-        if (ms != null) {
-            originConfiguration.addMappedStatement(ms);
+        if (methods.isEmpty()) {
+            return null;
         }
-        return ms;
+        return statementBuilder.build(id, tableType, methods, returnType);
     }
 
-    private boolean isEnhancedMapper(Class<?> mapperClass) {
-        return mapperClass.isInterface() && !isGenericClass(mapperClass)
-                && (mapperClass.isAnnotationPresent(MapTable.class) || ExtMapper.class.isAssignableFrom(mapperClass));
+    private boolean isNotEnhancedMapper(Class<?> mapperClass) {
+        return !mapperClass.isInterface() || mapperClass.getTypeParameters().length > 0 || (!mapperClass.isAnnotationPresent(MapTable.class) && !ExtMapper.class.isAssignableFrom(mapperClass));
     }
 
-    private boolean isGenericClass(Class<?> type) {
-        return type.getTypeParameters().length > 0;
-    }
-
-    private boolean isBridgeOrDefault(Method method) {
-        return method.isBridge() || method.isDefault();
-    }
-
-    private Class<?> getEntityClass(Class<?> mapperClass) {
+    private GenericType getEntityClass(Class<?> mapperClass) {
         MapTable annotation = mapperClass.getAnnotation(MapTable.class);
         if (annotation != null) {
-            return annotation.value();
+            return GenericTypeFactory.build(annotation.value());
         }
-        return TypeArgumentResolver.resolveTypeArgument(mapperClass, ExtMapper.class, 0);
+        return TypeArgumentResolver.resolveGenericTypeArgument(mapperClass, ExtMapper.class, 0);
     }
 
     private Class<?> getMapperClass(String namespace) {

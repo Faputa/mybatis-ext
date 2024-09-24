@@ -2,9 +2,12 @@ package io.github.mybatisext.test;
 
 import java.sql.Timestamp;
 
+import io.github.mybatisext.annotation.Column;
+
 public class Camera {
 
     private Long cameraId;
+    @Column
     private Long orgId;
     private String cameraName;
     private String cameraCode;

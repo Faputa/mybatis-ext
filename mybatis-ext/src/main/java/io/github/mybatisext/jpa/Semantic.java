@@ -1,9 +1,11 @@
 package io.github.mybatisext.jpa;
 
+import io.github.mybatisext.condition.Condition;
+import io.github.mybatisext.metadata.PropertyInfo;
+import io.github.mybatisext.metadata.TableInfo;
+
 import java.util.List;
 import java.util.Objects;
-
-import io.github.mybatisext.condition.Condition;
 
 public class Semantic {
 
@@ -11,9 +13,12 @@ public class Semantic {
     private boolean distinct;
     private boolean ignoreNull;
     private Limit limit;
-    private Condition condition;
+    private Condition where;
     private OrderBy orderBy;
-    private GroupBy groupBy;
+    private List<PropertyInfo> groupBy;
+    private Condition having;
+    private TableInfo tableInfo;
+    private Variable targetVariable;
 
     public Semantic(SemanticType type) {
         this.type = type;
@@ -47,12 +52,12 @@ public class Semantic {
         this.limit = limit;
     }
 
-    public Condition getCondition() {
-        return condition;
+    public Condition getWhere() {
+        return where;
     }
 
-    public void setCondition(Condition condition) {
-        this.condition = condition;
+    public void setWhere(Condition where) {
+        this.where = where;
     }
 
     public OrderBy getOrderBy() {
@@ -63,18 +68,36 @@ public class Semantic {
         this.orderBy = orderBy;
     }
 
-    public GroupBy getGroupBy() {
+    public List<PropertyInfo> getGroupBy() {
         return groupBy;
     }
 
-    public void setGroupBy(GroupBy groupBy) {
+    public void setGroupBy(List<PropertyInfo> groupBy) {
         this.groupBy = groupBy;
     }
 
-    public void setModifierList(List<Modifier> modifiers) {
-        for (Modifier modifier : modifiers) {
-            modifier.accept(this);
-        }
+    public Condition getHaving() {
+        return having;
+    }
+
+    public void setHaving(Condition having) {
+        this.having = having;
+    }
+
+    public TableInfo getTableInfo() {
+        return tableInfo;
+    }
+
+    public void setTableInfo(TableInfo tableInfo) {
+        this.tableInfo = tableInfo;
+    }
+
+    public Variable getTargetVariable() {
+        return targetVariable;
+    }
+
+    public void setTargetVariable(Variable targetVariable) {
+        this.targetVariable = targetVariable;
     }
 
     @Override
@@ -86,11 +109,11 @@ public class Semantic {
             return false;
         }
         Semantic semantic = (Semantic) o;
-        return distinct == semantic.distinct && ignoreNull == semantic.ignoreNull && type == semantic.type && Objects.equals(limit, semantic.limit) && Objects.equals(condition, semantic.condition) && Objects.equals(orderBy, semantic.orderBy) && Objects.equals(groupBy, semantic.groupBy);
+        return distinct == semantic.distinct && ignoreNull == semantic.ignoreNull && type == semantic.type && Objects.equals(limit, semantic.limit) && Objects.equals(where, semantic.where) && Objects.equals(orderBy, semantic.orderBy) && Objects.equals(groupBy, semantic.groupBy) && Objects.equals(having, semantic.having) && Objects.equals(tableInfo, semantic.tableInfo) && Objects.equals(targetVariable, semantic.targetVariable);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, distinct, ignoreNull, limit, condition, orderBy, groupBy);
+        return Objects.hash(type, distinct, ignoreNull, limit, where, orderBy, groupBy, having, tableInfo, targetVariable);
     }
 }

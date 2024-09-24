@@ -37,8 +37,8 @@ public class MybatisExtTest {
         SqlSession session = sqlSessionFactory.openSession();
         CameraMapper cameraMapper = session.getMapper(CameraMapper.class);
         System.out.println(cameraMapper.countCamera());
-        System.out.println(cameraMapper.countCamera2());
+        System.out.println(cameraMapper.countByOrgId(16));
         System.out.println(session.<Long>selectOne("countCamera"));
-        System.out.println(session.<Long>selectOne("countCamera2"));
+        System.out.println(session.<Long>selectOne("countByOrgId", 16));
     }
 }

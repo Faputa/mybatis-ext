@@ -13,6 +13,8 @@ public class MybatisExtSpringBootTest {
 	@Test
 	public void test() {
 		System.out.println("########" + cameraMapper.countCamera());
-		System.out.println("########" + cameraMapper.countCamera2());
+		System.out.println("########" + cameraMapper.countByOrgId(16));
+		System.out.println("########" + cameraMapper.listByOrgId(16));
+		System.out.println("########" + cameraMapper.listOneByOrgIdOrderByCameraId(16));
 	}
 }

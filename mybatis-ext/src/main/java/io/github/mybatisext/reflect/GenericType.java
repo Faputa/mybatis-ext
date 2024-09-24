@@ -1,13 +1,16 @@
 package io.github.mybatisext.reflect;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,10 +18,16 @@ public class GenericType implements Type {
 
     private final Class<?> type;
     private final Map<TypeVariable<?>, Type> typeMap;
+    private final GenericType[] typeParameters;
 
     public GenericType(Class<?> type, Map<TypeVariable<?>, Type> typeMap) {
         this.type = type;
         this.typeMap = typeMap;
+        TypeVariable<?>[] typeVariables = type.getTypeParameters();
+        this.typeParameters = new GenericType[typeVariables.length];
+        for (int i = 0; i < typeVariables.length; i++) {
+            this.typeParameters[i] = GenericTypeFactory.build(typeVariables[i], new HashMap<>(typeMap));
+        }
     }
 
     public Class<?> getType() {
@@ -26,12 +35,7 @@ public class GenericType implements Type {
     }
 
     public GenericType[] getTypeParameters() {
-        TypeVariable<?>[] typeVariables = type.getTypeParameters();
-        GenericType[] genericTypes = new GenericType[typeVariables.length];
-        for (int i = 0; i < typeVariables.length; i++) {
-            genericTypes[i] = GenericTypeFactory.build(typeVariables[i], typeMap);
-        }
-        return genericTypes;
+        return typeParameters;
     }
 
     public GenericField[] getDeclaredFields() {
@@ -101,20 +105,62 @@ public class GenericType implements Type {
         if (superType == null) {
             return null;
         }
-        return GenericTypeFactory.build(superType, typeMap);
+        return GenericTypeFactory.build(superType, new HashMap<>(typeMap));
     }
 
     public GenericType[] getGenericInterfaces() {
         Type[] interfaces = type.getGenericInterfaces();
         GenericType[] types = new GenericType[interfaces.length];
         for (int i = 0; i < interfaces.length; i++) {
-            types[i] = GenericTypeFactory.build(interfaces[i], typeMap);
+            types[i] = GenericTypeFactory.build(interfaces[i], new HashMap<>(typeMap));
         }
         return types;
+    }
+
+    public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
+        return type.isAnnotationPresent(annotationClass);
+    }
+
+    public boolean isAssignableFrom(Class<?> cls) {
+        return type.isAssignableFrom(cls);
+    }
+
+    public boolean isAssignableFrom(GenericType cls) {
+        return type.isAssignableFrom(cls.type);
+    }
+
+    @SuppressWarnings("hiding")
+    public <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
+        return type.getAnnotation(annotationClass);
+    }
+
+    public String getName() {
+        return type.getName();
+    }
+
+    public String getSimpleName() {
+        return type.getSimpleName();
     }
 
     @Override
     public String toString() {
         return type.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        GenericType that = (GenericType) o;
+        return Objects.equals(type, that.type) && Arrays.equals(typeParameters, that.typeParameters);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, Arrays.hashCode(typeParameters));
     }
 }

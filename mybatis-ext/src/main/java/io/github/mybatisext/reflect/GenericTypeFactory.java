@@ -6,16 +6,27 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GenericTypeFactory {
 
+    private static final Map<Type, GenericType> tableInfoCache = new ConcurrentHashMap<>();
+
     public static GenericType build(Type type) {
-        return build(type, new HashMap<>());
+        GenericType _genericType = tableInfoCache.get(type);
+        if (_genericType != null) {
+            return _genericType;
+        }
+        GenericType genericType = build(type, new HashMap<>());
+        return tableInfoCache.computeIfAbsent(type, k -> genericType);
     }
 
     public static GenericType build(Type type, Map<TypeVariable<?>, Type> typeMap) {
         if (type instanceof Class) {
             return new GenericType((Class<?>) type, typeMap);
+        }
+        if (type instanceof GenericType) {
+            return (GenericType) type;
         }
         if (type instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) type;

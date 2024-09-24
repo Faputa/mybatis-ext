@@ -11,4 +11,6 @@ public interface TestOgnlMapper {
     List<Object> testVaragsToList(Object a, Object b);
 
 	List<Object> testOgnlCallMapperStatement();
+
+    int testBind();
 }

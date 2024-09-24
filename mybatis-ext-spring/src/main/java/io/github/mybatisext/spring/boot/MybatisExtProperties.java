@@ -34,7 +34,6 @@ public class MybatisExtProperties {
 
     public ExtContext toExtContext() {
         ExtContext extContext = new ExtContext();
-        extContext.setCascadeEnabled(cascadeEnabled);
         return extContext;
     }
 }

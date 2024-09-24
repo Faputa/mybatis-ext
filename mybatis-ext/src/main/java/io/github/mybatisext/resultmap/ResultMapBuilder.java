@@ -9,18 +9,13 @@ import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.reflect.GenericType;
 
 public class ResultMapBuilder {
 
-    private final Configuration configuration;
-
-    public ResultMapBuilder(Configuration configuration) {
-        this.configuration = configuration;
-    }
-
-    public ResultMap buildResultMap(TableInfo tableInfo) {
-        Class<?> tableClass = tableInfo.getTableClass();
-        String id = tableClass.getName();
+    public static ResultMap buildResultMap(Configuration configuration, TableInfo tableInfo) {
+        GenericType tableClass = tableInfo.getTableClass();
+        String id = tableClass.getName() + "-Inline";
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
         }
@@ -30,15 +25,12 @@ public class ResultMapBuilder {
             resultMappings.add(propertyInfo.getResultMapping(configuration, id));
         }
 
-        ResultMap resultMap = new ResultMap.Builder(configuration, id, tableClass, resultMappings).build();
-        configuration.addResultMap(resultMap);
-        return resultMap;
+        return new ResultMap.Builder(configuration, id, tableClass.getType(), resultMappings).build();
     }
 
-    public void buildNestedResultMap(PropertyInfo propertyInfo, String id) {
+    public static ResultMap buildNestedResultMap(Configuration configuration, String id, PropertyInfo propertyInfo) {
         if (configuration.hasResultMap(id)) {
-            configuration.getResultMap(id);
-            return;
+            return configuration.getResultMap(id);
         }
 
         List<ResultMapping> resultMappings = new ArrayList<>();
@@ -46,7 +38,12 @@ public class ResultMapBuilder {
             resultMappings.add(subPropertyInfo.getResultMapping(configuration, id));
         }
 
-        ResultMap resultMap = new ResultMap.Builder(configuration, id, propertyInfo.getJavaType(), resultMappings).build();
-        configuration.addResultMap(resultMap);
+        return new ResultMap.Builder(configuration, id, propertyInfo.getJavaType().getType(), resultMappings).build();
+    }
+
+    public static synchronized void addResultMap(Configuration configuration, ResultMap resultMap) {
+        if (!configuration.hasResultMap(resultMap.getId())) {
+            configuration.addResultMap(resultMap);
+        }
     }
 }
