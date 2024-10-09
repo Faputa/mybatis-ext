@@ -190,6 +190,29 @@ MySQL 批量删除
 delete test where a=1;
 delete test where a=1;
 
+H2 连接删除
+DELETE FROM TB_ARTICLE a
+WHERE EXISTS (
+SELECT 1
+FROM TB_ACCOUNT b
+WHERE
+    b.ID = a.ACCOUNT_ID
+AND a.ID = 2
+);
+
+H2 连接更新
+UPDATE TB_ARTICLE a
+SET
+    a.TITLE='标题2',
+    a.CONTENT='内容2'
+WHERE EXISTS (
+SELECT 1
+FROM TB_ACCOUNT b
+WHERE
+    b.ID = a.ACCOUNT_ID
+AND a.ID = 2
+);
+
 
 
 
