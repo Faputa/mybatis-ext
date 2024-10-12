@@ -23,7 +23,7 @@ public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
         return buildSqlSessionFactory(super.buildSqlSessionFactory());
     }
 
-    public SqlSessionFactory buildSqlSessionFactory(SqlSessionFactory sqlSessionFactory) throws Exception {
+    public SqlSessionFactory buildSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
         Configuration configuration = sqlSessionFactory.getConfiguration();
         if (configuration instanceof ExtConfiguration) {
             return sqlSessionFactory;
