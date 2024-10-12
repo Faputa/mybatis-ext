@@ -11,6 +11,8 @@ public class MybatisExtSpringTest {
 		CameraMapper cameraMapper = context.getBean(CameraMapper.class);
 		System.out.println("########" + cameraMapper.countCamera());
 		System.out.println("########" + cameraMapper.countByOrgId(16));
+		System.out.println("########" + cameraMapper.listByOrgId(16));
+		System.out.println("########" + cameraMapper.listOneByOrgIdOrderByCameraId(16));
 		context.close();
 	}
 }
