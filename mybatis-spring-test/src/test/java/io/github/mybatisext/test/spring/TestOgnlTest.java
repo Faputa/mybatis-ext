@@ -1,5 +1,8 @@
 package io.github.mybatisext.test.spring;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.ibatis.session.Configuration;
@@ -44,5 +47,17 @@ public class TestOgnlTest {
     @Test
     void testBind() {
         System.out.println(testOgnlMapper.testBind());
+    }
+
+    @Test
+    void testParameterObject() {
+        testOgnlMapper.testParameterObject1(1);
+        testOgnlMapper.testParameterObject2(1);
+        testOgnlMapper.testParameterObject3(1, 2);
+        testOgnlMapper.testParameterObject4(new Org());
+        testOgnlMapper.testParameterObject5(new HashMap<>());
+        testOgnlMapper.testParameterObject6(new ArrayList<>());
+        testOgnlMapper.testParameterObject7(new HashSet<>());
+        testOgnlMapper.testParameterObject8(new Object[0]);
     }
 }
