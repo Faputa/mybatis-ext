@@ -21,11 +21,44 @@
         </foreach>
 	</select>
 
-    <select id="testBind">
+    <select id="testBind" resultType="int">
         <bind name="a" value="1" />
         <bind name="a" value="a+1" />
         <bind name="a" value="a+1" />
         <bind name="a" value="a+1" />
+        select #{a}
+    </select>
+
+    <select id="testParameterObject1" resultType="int">
+        <bind name="a" value="@Ognl@printParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="testParameterObject2" resultType="int">
+        <bind name="a" value="@Ognl@printParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="testParameterObject3" resultType="int">
+        <bind name="a" value="@Ognl@printParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="testParameterObject4" resultType="int">
+        <bind name="a" value="@Ognl@printParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="testParameterObject5" resultType="int">
+        <bind name="a" value="@Ognl@printParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="testParameterObject6" resultType="int">
+        <bind name="a" value="@Ognl@printParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="testParameterObject7" resultType="int">
+        <bind name="a" value="@Ognl@printParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="testParameterObject8" resultType="int">
+        <bind name="a" value="@Ognl@printParameterObject(_parameter)" />
         select #{a}
     </select>
 </mapper>
