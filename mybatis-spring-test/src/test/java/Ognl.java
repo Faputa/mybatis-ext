@@ -6,6 +6,8 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
+import com.alibaba.fastjson2.JSON;
+
 import io.github.mybatisext.test.spring.TestOgnlTest;
 
 public class Ognl {
@@ -29,5 +31,11 @@ public class Ognl {
             parameterMap.put("param" + (i + 1), parameter[i]);
         }
         return session.selectList(statement, parameterMap);
+    }
+
+    public static int printParameterObject(Object parameterObject) {
+        System.out.println(">>>>>>>>>>>>" + parameterObject.getClass());
+        System.out.println(">>>>>>>>>>>>" + JSON.toJSONString(parameterObject));
+        return 1;
     }
 }
