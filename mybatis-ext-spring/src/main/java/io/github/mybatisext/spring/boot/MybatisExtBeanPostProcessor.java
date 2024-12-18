@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.stereotype.Component;
 
-import io.github.mybatisext.ExtContext;
+import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.DialectSelector;
 import io.github.mybatisext.spring.ExtSqlSessionFactoryBean;
 

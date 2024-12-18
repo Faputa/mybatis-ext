@@ -1,4 +1,4 @@
-package io.github.mybatisext;
+package io.github.mybatisext.adapter;
 
 import io.github.mybatisext.dialect.DefaultDialectSelector;
 import io.github.mybatisext.dialect.DialectSelector;

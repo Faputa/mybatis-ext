@@ -14,11 +14,11 @@ public class Semantic {
     private boolean ignoreNull;
     private Limit limit;
     private Condition where;
-    private OrderBy orderBy;
+    private List<OrderByElement> orderBy;
     private List<PropertyInfo> groupBy;
     private Condition having;
     private TableInfo tableInfo;
-    private Variable targetVariable;
+    private Variable parameter;
 
     public Semantic(SemanticType type) {
         this.type = type;
@@ -60,11 +60,11 @@ public class Semantic {
         this.where = where;
     }
 
-    public OrderBy getOrderBy() {
+    public List<OrderByElement> getOrderBy() {
         return orderBy;
     }
 
-    public void setOrderBy(OrderBy orderBy) {
+    public void setOrderBy(List<OrderByElement> orderBy) {
         this.orderBy = orderBy;
     }
 
@@ -92,12 +92,12 @@ public class Semantic {
         this.tableInfo = tableInfo;
     }
 
-    public Variable getTargetVariable() {
-        return targetVariable;
+    public Variable getParameter() {
+        return parameter;
     }
 
-    public void setTargetVariable(Variable targetVariable) {
-        this.targetVariable = targetVariable;
+    public void setParameter(Variable parameter) {
+        this.parameter = parameter;
     }
 
     @Override
@@ -109,11 +109,11 @@ public class Semantic {
             return false;
         }
         Semantic semantic = (Semantic) o;
-        return distinct == semantic.distinct && ignoreNull == semantic.ignoreNull && type == semantic.type && Objects.equals(limit, semantic.limit) && Objects.equals(where, semantic.where) && Objects.equals(orderBy, semantic.orderBy) && Objects.equals(groupBy, semantic.groupBy) && Objects.equals(having, semantic.having) && Objects.equals(tableInfo, semantic.tableInfo) && Objects.equals(targetVariable, semantic.targetVariable);
+        return distinct == semantic.distinct && ignoreNull == semantic.ignoreNull && type == semantic.type && Objects.equals(limit, semantic.limit) && Objects.equals(where, semantic.where) && Objects.equals(orderBy, semantic.orderBy) && Objects.equals(groupBy, semantic.groupBy) && Objects.equals(having, semantic.having) && Objects.equals(tableInfo, semantic.tableInfo) && Objects.equals(parameter, semantic.parameter);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, distinct, ignoreNull, limit, where, orderBy, groupBy, having, tableInfo, targetVariable);
+        return Objects.hash(type, distinct, ignoreNull, limit, where, orderBy, groupBy, having, tableInfo, parameter);
     }
 }
