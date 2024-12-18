@@ -1,21 +1,20 @@
 package io.github.mybatisext.jpa;
 
-import java.util.List;
-import java.util.Objects;
-
 import io.github.mybatisext.metadata.PropertyInfo;
 
-public class OrderBy {
+import java.util.Objects;
 
-    private List<PropertyInfo> propertyInfos;
+public class OrderByElement {
+
+    private PropertyInfo propertyInfo;
     private OrderByType type;
 
-    public List<PropertyInfo> getPropertyInfos() {
-        return propertyInfos;
+    public PropertyInfo getPropertyInfo() {
+        return propertyInfo;
     }
 
-    public void setPropertyInfos(List<PropertyInfo> propertyInfos) {
-        this.propertyInfos = propertyInfos;
+    public void setPropertyInfo(PropertyInfo propertyInfo) {
+        this.propertyInfo = propertyInfo;
     }
 
     public OrderByType getType() {
@@ -34,12 +33,12 @@ public class OrderBy {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        OrderBy orderBy = (OrderBy) o;
-        return Objects.equals(propertyInfos, orderBy.propertyInfos) && type == orderBy.type;
+        OrderByElement that = (OrderByElement) o;
+        return Objects.equals(propertyInfo, that.propertyInfo) && type == that.type;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(propertyInfos, type);
+        return Objects.hash(propertyInfo, type);
     }
 }

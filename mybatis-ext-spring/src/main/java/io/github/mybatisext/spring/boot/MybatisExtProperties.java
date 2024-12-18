@@ -3,7 +3,7 @@ package io.github.mybatisext.spring.boot;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import io.github.mybatisext.ExtContext;
+import io.github.mybatisext.adapter.ExtContext;
 
 @Configuration
 @ConfigurationProperties(prefix = MybatisExtProperties.PREFIX)

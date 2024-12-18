@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
 
-import io.github.mybatisext.ExtConfiguration;
-import io.github.mybatisext.ExtContext;
+import io.github.mybatisext.adapter.ExtConfiguration;
+import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.table.PrivilegeTable;
 
 public class TableInfoFactoryTest {

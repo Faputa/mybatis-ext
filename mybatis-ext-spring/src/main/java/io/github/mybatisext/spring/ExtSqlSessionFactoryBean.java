@@ -5,8 +5,8 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.mybatis.spring.SqlSessionFactoryBean;
 
-import io.github.mybatisext.ExtConfiguration;
-import io.github.mybatisext.ExtContext;
+import io.github.mybatisext.adapter.ExtConfiguration;
+import io.github.mybatisext.adapter.ExtContext;
 
 public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
 

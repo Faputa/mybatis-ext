@@ -14,7 +14,8 @@ import io.github.mybatisext.condition.ConditionComp;
 import io.github.mybatisext.condition.ConditionTerm;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
-import io.github.mybatisext.jpa.OrderBy;
+import io.github.mybatisext.jpa.OrderByElement;
+import io.github.mybatisext.jpa.OrderByType;
 import io.github.mybatisext.jpa.Semantic;
 import io.github.mybatisext.jpa.SemanticType;
 import io.github.mybatisext.metadata.JoinTableInfo;
@@ -54,8 +55,8 @@ public class SemanticScriptBuilder {
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(semantic);
         return "<script>" + dialect.update(
                 semantic.getTableInfo(),
-                semantic.getTargetVariable(),
-                Collection.class.isAssignableFrom(semantic.getTargetVariable().getJavaType().getType()),
+                semantic.getParameter(),
+                Collection.class.isAssignableFrom(semantic.getParameter().getJavaType().getType()),
                 semantic.isIgnoreNull(),
                 joinTableInfos.size() > 1,
                 tableAndJoin,
@@ -65,8 +66,8 @@ public class SemanticScriptBuilder {
     private String buildInsert(Semantic semantic) {
         return "<script>" + dialect.insert(
                 semantic.getTableInfo(),
-                semantic.getTargetVariable(),
-                Collection.class.isAssignableFrom(semantic.getTargetVariable().getJavaType().getType()),
+                semantic.getParameter(),
+                Collection.class.isAssignableFrom(semantic.getParameter().getJavaType().getType()),
                 semantic.isIgnoreNull()) + "</script>";
     }
 
@@ -76,8 +77,8 @@ public class SemanticScriptBuilder {
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(semantic);
         return "<script>" + dialect.delete(
                 semantic.getTableInfo(),
-                semantic.getTargetVariable(),
-                Collection.class.isAssignableFrom(semantic.getTargetVariable().getJavaType().getType()),
+                semantic.getParameter(),
+                Collection.class.isAssignableFrom(semantic.getParameter().getJavaType().getType()),
                 joinTableInfos.size() > 1,
                 tableAndJoin,
                 where) + "</script>";
@@ -287,12 +288,18 @@ public class SemanticScriptBuilder {
         return "GROUP BY " + String.join(", ", columns);
     }
 
-    private String buildOrderBy(OrderBy orderBy) {
-        List<String> columns = new ArrayList<>();
-        for (PropertyInfo propertyInfo : orderBy.getPropertyInfos()) {
-            columns.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName());
+    private String buildOrderBy(List<OrderByElement> orderBy) {
+        List<String> ss = new ArrayList<>();
+        for (OrderByElement orderByElement : orderBy) {
+            String s = orderByElement.getPropertyInfo().getJoinTableInfo().getAlias() + "." + orderByElement.getPropertyInfo().getColumnName();
+            if (OrderByType.ASC == orderByElement.getType()) {
+                s += " ASC";
+            } else if (OrderByType.DESC == orderByElement.getType()) {
+                s += " DESC";
+            }
+            ss.add(s);
         }
-        return "ORDER BY " + String.join(", ", columns);
+        return "ORDER BY " + String.join(", ", ss);
     }
 
     private List<JoinTableInfo> collectJoinTableInfo(Semantic semantic) {
@@ -310,8 +317,8 @@ public class SemanticScriptBuilder {
                 }
             }
             if (semantic.getOrderBy() != null) {
-                for (PropertyInfo propertyInfo : semantic.getOrderBy().getPropertyInfos()) {
-                    directAliases.add(propertyInfo.getJoinTableInfo().getAlias());
+                for (OrderByElement orderByElement : semantic.getOrderBy()) {
+                    directAliases.add(orderByElement.getPropertyInfo().getJoinTableInfo().getAlias());
                 }
             }
         }

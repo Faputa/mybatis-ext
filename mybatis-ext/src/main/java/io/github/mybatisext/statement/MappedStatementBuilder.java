@@ -18,7 +18,7 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
-import io.github.mybatisext.ExtContext;
+import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.jpa.JpaParser;

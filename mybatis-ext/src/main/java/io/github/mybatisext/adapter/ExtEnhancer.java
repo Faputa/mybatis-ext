@@ -1,4 +1,4 @@
-package io.github.mybatisext;
+package io.github.mybatisext.adapter;
 
 import java.util.ArrayList;
 import java.util.Collection;
