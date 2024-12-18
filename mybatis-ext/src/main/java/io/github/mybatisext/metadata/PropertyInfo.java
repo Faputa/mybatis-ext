@@ -175,7 +175,7 @@ public class PropertyInfo {
         }
         if (ResultType.ASSOCIATION == resultType) {
             String nestedResultMapId = resultMapId + "[association" + "=" + name + "]";
-            ResultMapBuilder.buildNestedResultMap(configuration, nestedResultMapId, this);
+            ResultMapBuilder.addNestedResultMap(configuration, nestedResultMapId, this);
             return new ResultMapping.Builder(configuration, name)
                     .javaType(javaType.getType())
                     .nestedResultMapId(nestedResultMapId)
@@ -183,7 +183,7 @@ public class PropertyInfo {
         }
         if (ResultType.COLLECTION == resultType) {
             String nestedResultMapId = resultMapId + "[collection" + "=" + name + "]";
-            ResultMapBuilder.buildNestedResultMap(configuration, nestedResultMapId, this);
+            ResultMapBuilder.addNestedResultMap(configuration, nestedResultMapId, this);
             return new ResultMapping.Builder(configuration, name)
                     .javaType(ofType.getType())
                     .nestedResultMapId(nestedResultMapId)

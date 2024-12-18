@@ -19,31 +19,26 @@ public class ResultMapBuilder {
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
         }
-
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
             resultMappings.add(propertyInfo.getResultMapping(configuration, id));
         }
-
         return new ResultMap.Builder(configuration, id, tableClass.getType(), resultMappings).build();
     }
 
-    public static ResultMap buildNestedResultMap(Configuration configuration, String id, PropertyInfo propertyInfo) {
+    public static void addNestedResultMap(Configuration configuration, String id, PropertyInfo propertyInfo) {
         if (configuration.hasResultMap(id)) {
-            return configuration.getResultMap(id);
+            return;
         }
-
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo subPropertyInfo : propertyInfo.getSubPropertyInfos()) {
             resultMappings.add(subPropertyInfo.getResultMapping(configuration, id));
         }
-
-        return new ResultMap.Builder(configuration, id, propertyInfo.getJavaType().getType(), resultMappings).build();
-    }
-
-    public static synchronized void addResultMap(Configuration configuration, ResultMap resultMap) {
-        if (!configuration.hasResultMap(resultMap.getId())) {
-            configuration.addResultMap(resultMap);
+        ResultMap resultMap = new ResultMap.Builder(configuration, id, propertyInfo.getJavaType().getType(), resultMappings).build();
+        synchronized (ResultMapBuilder.class) {
+            if (!configuration.hasResultMap(id)) {
+                configuration.addResultMap(resultMap);
+            }
         }
     }
 }

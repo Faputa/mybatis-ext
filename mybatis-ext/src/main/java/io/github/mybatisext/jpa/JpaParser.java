@@ -34,7 +34,7 @@ public class JpaParser extends BaseParser {
     Symbol propertyList = new Symbol("propertyList");
     Symbol property = new Symbol("property");
     Symbol variable = new Symbol("variable");
-    Symbol orderBy = new Symbol("orderBy");
+    Symbol orderByList = new Symbol("orderByList");
     Symbol limit = new Symbol("limit");
 
     Symbol propertyName = new Symbol("propertyName").set((state, continuation) -> {
@@ -145,8 +145,9 @@ public class JpaParser extends BaseParser {
         });
     }
 
-    Symbol groupBy = new Symbol("groupBy").set(propertyList);
-    Symbol having = new Symbol("having").set(conditionList);
+    Symbol groupBy = new Symbol("groupBy").set(join(keyword("GroupBy"), propertyList));
+    Symbol having = new Symbol("having").set(join(keyword("Having"), conditionList));
+    Symbol orderBy = new Symbol("orderBy").set(join(keyword("OrderBy"), orderByList));
 
     public JpaParser() {
         grammar.set(choice(
@@ -215,7 +216,7 @@ public class JpaParser extends BaseParser {
                 })),
                 join(choice(keyword("update"), keyword("modify")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.UPDATE);
-                    semantic.setTargetVariable(getParamTargetVariable(state));
+                    semantic.setParameter(getParamTargetVariable(state));
                     if (state.getMatch("IgnoreNull") != null) {
                         semantic.setIgnoreNull(true);
                     }
@@ -229,7 +230,7 @@ public class JpaParser extends BaseParser {
                 })),
                 join(choice(keyword("delete"), keyword("remove")), optional(keyword("Batch")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.DELETE);
-                    semantic.setTargetVariable(getParamTargetVariable(state));
+                    semantic.setParameter(getParamTargetVariable(state));
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setWhere(ensureConditionVariable(state, _conditionList.val()));
@@ -240,7 +241,7 @@ public class JpaParser extends BaseParser {
                 })),
                 join(choice(keyword("save"), keyword("insert")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.INSERT);
-                    semantic.setTargetVariable(getParamTargetVariable(state));
+                    semantic.setParameter(getParamTargetVariable(state));
                     if (state.getMatch("IgnoreNull") != null) {
                         semantic.setIgnoreNull(true);
                     }
@@ -282,15 +283,21 @@ public class JpaParser extends BaseParser {
                         join(keyword("IsTrue"), conditionAction(ConditionRel.IsTrue)),
                         join(keyword("IsFalse"), conditionAction(ConditionRel.IsFalse)))))));
 
-        orderBy.set(join(keyword("OrderBy"), propertyList, optional(choice(keyword("Asc"), keyword("Desc"))), action(state -> {
-            OrderBy orderBy = new OrderBy();
-            orderBy.setPropertyInfos(state.getMatch(propertyList).val());
+        orderByList.set(join(property, optional(choice(keyword("Asc"), keyword("Desc"))), optional(join(keyword("And"), orderByList)), action(state -> {
+            OrderByElement orderByElement = new OrderByElement();
+            orderByElement.setPropertyInfo(state.getMatch(property).val());
             if (state.getMatch("Asc") != null) {
-                orderBy.setType(OrderByType.ASC);
+                orderByElement.setType(OrderByType.ASC);
             } else if (state.getMatch("Desc") != null) {
-                orderBy.setType(OrderByType.DESC);
+                orderByElement.setType(OrderByType.DESC);
             }
-            state.setReturn(orderBy);
+            List<OrderByElement> orderByElements = new ArrayList<>();
+            MatchResult _orderByList = state.getMatch(orderByList);
+            if (_orderByList != null) {
+                orderByElements.addAll(_orderByList.val());
+            }
+            orderByElements.add(orderByElement);
+            state.setReturn(orderByElements);
         })));
 
         limit.set(join(keyword("Limit"), choice(
@@ -323,14 +330,14 @@ public class JpaParser extends BaseParser {
 
         propertyList.set(
                 join(property, optional(join(keyword("And"), propertyList)), action(state -> {
-                    List<PropertyInfo> list = new ArrayList<>();
+                    List<PropertyInfo> propertyInfos = new ArrayList<>();
                     PropertyInfo propertyInfo = state.getMatch(property).val();
-                    list.add(propertyInfo);
                     MatchResult _propertyList = state.getMatch(propertyList);
                     if (_propertyList != null) {
-                        list.addAll(_propertyList.val());
+                        propertyInfos.addAll(_propertyList.val());
                     }
-                    state.setReturn(list);
+                    propertyInfos.add(propertyInfo);
+                    state.setReturn(propertyInfos);
                 })));
 
         property.set(join(propertyName, star(join(keyword("Dot"), propertyName))));
