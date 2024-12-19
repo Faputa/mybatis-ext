@@ -40,6 +40,11 @@ public class SimpleStringTemplate {
                 } else {
                     key.append(c);
                 }
+            } else if (c == '\\') {
+                i++;
+                if (i < template.length()) {
+                    sb.append(template.charAt(i));
+                }
             } else {
                 sb.append(c);
             }
