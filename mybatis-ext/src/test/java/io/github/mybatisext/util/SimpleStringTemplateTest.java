@@ -33,12 +33,13 @@ public class SimpleStringTemplateTest {
         map.put("age", 25);
         map.put("address", new HashMap<String, Object>() {
             {
-                put("city", "Los Angeles");
+                // 测试转义字符
+                put("{ci.ty}", "Los Angeles");
                 put("country", "USA");
             }
         });
 
-        String template = "Hello {name}, you are {age} years old. You live in {address.city}, {address.country}.";
+        String template = "Hello {name}, you are {age} years old. You live in {address.\\{ci\\.ty\\}}, {address.country}.";
         String expected = "Hello Jane Doe, you are 25 years old. You live in Los Angeles, USA.";
         String result = SimpleStringTemplate.build(template, map);
         assertEquals(expected, result);
@@ -56,7 +57,7 @@ public class SimpleStringTemplateTest {
 
     @Test
     public void testWithArray() {
-        String[] array = { "Apple", "Banana", "Cherry" };
+        String[] array = {"Apple", "Banana", "Cherry"};
 
         String template = "I have {0}, {1}, and {2}.";
         String expected = "I have Apple, Banana, and Cherry.";

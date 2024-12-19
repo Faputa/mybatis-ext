@@ -12,30 +12,53 @@ import java.util.Map;
 public class SimpleStringTemplate {
 
     public static String build(String template, Object param) {
+        return build(template, param, true);
+    }
+
+    public static String build(String template, Object param, boolean useStrict) {
         StringBuilder sb = new StringBuilder();
-        StringBuilder group = new StringBuilder();
+        StringBuilder placeholder = new StringBuilder();
         StringBuilder key = new StringBuilder();
         List<String> keys = new ArrayList<>();
         boolean inGroup = false;
         for (int i = 0; i < template.length(); i++) {
             char c = template.charAt(i);
-            if (c == '{') {
-                sb.append(group);
+            if (c == '\\') {
+                i++;
+                if (i < template.length()) {
+                    char c1 = template.charAt(i);
+                    if (inGroup) {
+                        placeholder.append(c1);
+                        key.append(c1);
+                    } else {
+                        sb.append(c1);
+                    }
+                }
+            } else if (c == '{') {
+                // 支持{嵌套
+                sb.append(placeholder);
                 key.setLength(0);
                 keys.clear();
-                group.setLength(0);
-                group.append(c);
+                placeholder.setLength(0);
+                placeholder.append(c);
                 inGroup = true;
             } else if (inGroup) {
-                group.append(c);
+                placeholder.append(c);
                 if (c == '.') {
                     keys.add(key.toString().trim());
                     key.setLength(0);
                 } else if (c == '}') {
                     keys.add(key.toString().trim());
                     Object obj = deepGet(param, keys);
-                    sb.append(obj != null ? obj.toString() : group);
-                    group.setLength(0);
+                    if (obj == null) {
+                        if (useStrict) {
+                            throw new IllegalArgumentException("param path not found: " + String.join(".", keys));
+                        }
+                        sb.append(placeholder);
+                    } else {
+                        sb.append(obj);
+                    }
+                    placeholder.setLength(0);
                     inGroup = false;
                 } else {
                     key.append(c);
@@ -44,11 +67,13 @@ public class SimpleStringTemplate {
                 sb.append(c);
             }
         }
-        sb.append(group);
+        sb.append(placeholder);
         return sb.toString();
     }
 
-    /** like lodash get */
+    /**
+     * like lodash get
+     */
     private static Object deepGet(Object obj, List<String> keys) {
         for (String key : keys) {
             if (obj == null) {
