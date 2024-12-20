@@ -17,7 +17,7 @@ public class SimpleStringTemplate {
 
     public static String build(String template, Object param, boolean useStrict) {
         StringBuilder sb = new StringBuilder();
-        StringBuilder group = new StringBuilder();
+        StringBuilder placeholder = new StringBuilder();
         StringBuilder key = new StringBuilder();
         List<String> keys = new ArrayList<>();
         boolean inGroup = false;
@@ -28,7 +28,7 @@ public class SimpleStringTemplate {
                 if (i < template.length()) {
                     char c1 = template.charAt(i);
                     if (inGroup) {
-                        group.append(c1);
+                        placeholder.append(c1);
                         key.append(c1);
                     } else {
                         sb.append(c1);
@@ -36,14 +36,14 @@ public class SimpleStringTemplate {
                 }
             } else if (c == '{') {
                 // 支持{嵌套
-                sb.append(group);
+                sb.append(placeholder);
                 key.setLength(0);
                 keys.clear();
-                group.setLength(0);
-                group.append(c);
+                placeholder.setLength(0);
+                placeholder.append(c);
                 inGroup = true;
             } else if (inGroup) {
-                group.append(c);
+                placeholder.append(c);
                 if (c == '.') {
                     keys.add(key.toString().trim());
                     key.setLength(0);
@@ -54,11 +54,11 @@ public class SimpleStringTemplate {
                         if (useStrict) {
                             throw new IllegalArgumentException("param path not found: " + String.join(".", keys));
                         }
-                        sb.append(group);
+                        sb.append(placeholder);
                     } else {
                         sb.append(obj);
                     }
-                    group.setLength(0);
+                    placeholder.setLength(0);
                     inGroup = false;
                 } else {
                     key.append(c);
@@ -67,7 +67,7 @@ public class SimpleStringTemplate {
                 sb.append(c);
             }
         }
-        sb.append(group);
+        sb.append(placeholder);
         return sb.toString();
     }
 
