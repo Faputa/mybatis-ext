@@ -192,9 +192,9 @@ public class ConditionFactory {
             }
             Criterion criterion = readMethod.getAnnotation(Criterion.class);
             if (criterion != null) {
-                Condition condition = processCriterion(criterion, genericType, tableInfo, readMethod.getName(), readMethod.getGenericReturnType(), prefix);
+                Condition condition = processCriterion(criterion, genericType, tableInfo, propertyDescriptor.getName(), readMethod.getGenericReturnType(), prefix);
                 conditionComp.getConditions().add(condition);
-                set.add(readMethod.getName());
+                set.add(propertyDescriptor.getName());
             }
         }
 
