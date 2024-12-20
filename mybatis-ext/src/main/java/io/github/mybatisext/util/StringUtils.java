@@ -5,7 +5,7 @@ import javax.annotation.Nullable;
 public class StringUtils {
 
     public static boolean isBlank(@Nullable String str) {
-        return str == null || str.trim().length() == 0;
+        return str == null || str.trim().isEmpty();
     }
 
     public static boolean isNotBlank(@Nullable String str) {
