@@ -130,7 +130,7 @@ public class TableInfoFactory {
                 } else {
                     JoinRelation[] joinRelations = readMethod.getAnnotationsByType(JoinRelation.class);
                     if (joinRelations.length > 0) {
-                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, readMethod.getName(), readMethod.getGenericReturnType(), featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, propertyDescriptor.getName(), readMethod.getGenericReturnType(), featureToJoinTableInfo, aliasCount);
                     }
                 }
             }

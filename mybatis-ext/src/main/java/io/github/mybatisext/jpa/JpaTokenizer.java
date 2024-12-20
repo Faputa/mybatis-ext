@@ -42,14 +42,15 @@ public class JpaTokenizer implements Tokenizer {
         if (parameters.length == 0) {
             return variables;
         }
-        if (parameters.length == 1 && Variable.hasSubVariable(configuration, parameters[0].getType())) {
+        if (parameters.length == 1 && VariableFactory.hasSubVariable(configuration, parameters[0].getType())) {
             Param param = parameters[0].getAnnotation(Param.class);
             if (param != null) {
-                Variable variable = new Variable(param.value(), parameters[0].getGenericType());
+                Variable variable = VariableFactory.build(configuration, param.value(), parameters[0].getGenericType());
                 variables.add(variable);
-                variables.addAll(variable.getSubVariable(configuration));
+                variables.addAll(variable.values());
             } else {
-                variables.addAll(new Variable("", parameters[0].getGenericType()).getSubVariable(configuration));
+                Variable variable = VariableFactory.build(configuration, "", parameters[0].getGenericType());
+                variables.addAll(variable.values());
             }
             return variables;
         }
@@ -165,7 +166,7 @@ public class JpaTokenizer implements Tokenizer {
     public List<Variable> variable(Variable prevVariable) {
         List<Variable> ss = new ArrayList<>();
         int _cursor = cursor;
-        for (Variable variable : prevVariable.getSubVariable(configuration)) {
+        for (Variable variable : prevVariable.values()) {
             String expect = variable.getName().substring(0, 1).toUpperCase() + variable.getName().substring(1);
             if (text.substring(cursor).startsWith(expect)) {
                 String s = "";
