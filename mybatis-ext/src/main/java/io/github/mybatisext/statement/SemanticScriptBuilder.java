@@ -274,7 +274,7 @@ public class SemanticScriptBuilder {
                     return propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " " + propertyInfo.getJoinTableInfo().getAlias() + "_" + propertyInfo.getColumnName();
                 }
             } else {
-                selectItems.add(buildSelectItems(propertyInfo.getSubPropertyInfos()));
+                selectItems.add(buildSelectItems(new ArrayList<>(propertyInfo.values())));
             }
         }
         return String.join(", ", selectItems);

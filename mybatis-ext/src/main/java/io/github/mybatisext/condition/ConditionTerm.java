@@ -115,75 +115,75 @@ public class ConditionTerm implements Condition {
             case Equals: {
                 if (ignorecase) {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " = #{__{variable}__bind}");
+                    ss.add(dialect.upper("{propertyInfo}") + " = #{__{variable}__bind}");
                 } else {
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} = #{{variable}}");
+                    ss.add("{propertyInfo} = #{{variable}}");
                 }
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case LessThan: {
                 if (ignorecase) {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " &lt; #{__{variable}__bind}");
+                    ss.add(dialect.upper("{propertyInfo}") + " &lt; #{__{variable}__bind}");
                 } else {
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} &lt; #{{variable}}");
+                    ss.add("{propertyInfo} &lt; #{{variable}}");
                 }
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case LessThanEqual: {
                 if (ignorecase) {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " &lt;= #{__{variable}__bind}");
+                    ss.add(dialect.upper("{propertyInfo}") + " &lt;= #{__{variable}__bind}");
                 } else {
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} &lt;= #{{variable}}");
+                    ss.add("{propertyInfo} &lt;= #{{variable}}");
                 }
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case GreaterThan: {
                 if (ignorecase) {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " &gt; #{__{variable}__bind}");
+                    ss.add(dialect.upper("{propertyInfo}") + " &gt; #{__{variable}__bind}");
                 } else {
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} &gt; #{{variable}}");
+                    ss.add("{propertyInfo} &gt; #{{variable}}");
                 }
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case GreaterThanEqual: {
                 if (ignorecase) {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " &gt;= #{__{variable}__bind}");
+                    ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable}__bind}");
                 } else {
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} &gt;= #{{variable}}");
+                    ss.add("{propertyInfo} &gt;= #{{variable}}");
                 }
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case Like: {
                 if (ignorecase) {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " &gt;= #{__{variable}__bind}");
+                    ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable}__bind}");
                 } else {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"'%' + ${{variable}} + '%'\"/>");
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} &gt;= #{__{variable}__bind}");
+                    ss.add("{propertyInfo} &gt;= #{__{variable}__bind}");
                 }
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case StartWith: {
                 if (ignorecase) {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " &gt;= #{__{variable}__bind}");
+                    ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable}__bind}");
                 } else {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"${{variable}} + '%'\"/>");
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} &gt;= #{__{variable}__bind}");
+                    ss.add("{propertyInfo} &gt;= #{__{variable}__bind}");
                 }
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case EndWith: {
                 if (ignorecase) {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable})\"/>");
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " &gt;= #{__{variable}__bind}");
+                    ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable}__bind}");
                 } else {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"'%' + ${{variable}}\"/>");
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} &gt;= #{__{variable}__bind}");
+                    ss.add("{propertyInfo} &gt;= #{__{variable}__bind}");
                 }
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
@@ -191,37 +191,37 @@ public class ConditionTerm implements Condition {
                 if (ignorecase) {
                     ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
                     ss.add("<bind name=\"__{secondVariable}__bind\" value=\"" + Ognl.ToUpperCase + "({secondVariable})\"/>");
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " BETWEEN #{__{variable}__bind} AND #{__{secondVariable}__bind}");
+                    ss.add(dialect.upper("{propertyInfo}") + " BETWEEN #{__{variable}__bind} AND #{__{secondVariable}__bind}");
                 } else {
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} BETWEEN #{{variable}} AND #{{secondVariable}}");
+                    ss.add("{propertyInfo} BETWEEN #{{variable}} AND #{{secondVariable}}");
                 }
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case In: {
                 if (ignorecase) {
-                    ss.add(dialect.upper("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName}") + " IN <foreach collection=\"{variable}\" item=\"__{variable}__item\" separator=\",\" open=\"(\" close=\")\">");
+                    ss.add(dialect.upper("{propertyInfo}") + " IN <foreach collection=\"{variable}\" item=\"__{variable}__item\" separator=\",\" open=\"(\" close=\")\">");
                     ss.add("<bind name=\"__{variable}__item\" value=\"" + Ognl.ToUpperCase + "(__{variable}__item)\"/>");
                 } else {
-                    ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} IN <foreach collection=\"{variable}\" item=\"__{variable}__item\" separator=\",\" open=\"(\" close=\")\">");
+                    ss.add("{propertyInfo} IN <foreach collection=\"{variable}\" item=\"__{variable}__item\" separator=\",\" open=\"(\" close=\")\">");
                 }
                 ss.add("#{__{variable}__item}");
                 ss.add("</foreach>");
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case IsNull: {
-                ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} IS NULL");
+                ss.add("{propertyInfo} IS NULL");
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case IsNotNull: {
-                ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} IS NOT NULL");
+                ss.add("{propertyInfo} IS NOT NULL");
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case IsTrue: {
-                ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} " + dialect.isTrue());
+                ss.add("{propertyInfo} " + dialect.isTrue());
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
             case IsFalse: {
-                ss.add("{propertyInfo.joinTableInfo.alias}.{propertyInfo.columnName} " + dialect.isFalse());
+                ss.add("{propertyInfo} " + dialect.isFalse());
                 return SimpleStringTemplate.build(String.join(" ", ss), this);
             }
         }
