@@ -128,7 +128,7 @@ public class JpaTokenizer implements Tokenizer {
     public List<PropertyInfo> property(PropertyInfo prevPropertyInfo) {
         List<PropertyInfo> propertyInfos = new ArrayList<>();
         int _cursor = cursor;
-        for (PropertyInfo propertyInfo : prevPropertyInfo.getSubPropertyInfos()) {
+        for (PropertyInfo propertyInfo : prevPropertyInfo.values()) {
             String expect = propertyInfo.getName().substring(0, 1).toUpperCase() + propertyInfo.getName().substring(1);
             if (text.substring(cursor).startsWith(expect)) {
                 String s = "";

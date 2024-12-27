@@ -72,7 +72,7 @@ public abstract class BaseDialect implements Dialect {
                 }
                 ss.add(value);
             } else {
-                ss.add(buildInsertValues(propertyInfo.getSubPropertyInfos(), subVariable, ignoreNull, hasNext || iterator.hasNext()));
+                ss.add(buildInsertValues(propertyInfo.values(), subVariable, ignoreNull, hasNext || iterator.hasNext()));
             }
         }
         return String.join(" ", ss);
@@ -108,7 +108,7 @@ public abstract class BaseDialect implements Dialect {
                 }
                 ss.add(columnName);
             } else {
-                ss.add(buildInsertItems(propertyInfo.getSubPropertyInfos(), subVariable, ignoreNull, hasNext || iterator.hasNext()));
+                ss.add(buildInsertItems(propertyInfo.values(), subVariable, ignoreNull, hasNext || iterator.hasNext()));
             }
         }
         return String.join(" ", ss);
@@ -143,7 +143,7 @@ public abstract class BaseDialect implements Dialect {
                 }
                 ss.add(updateItem);
             } else {
-                ss.add(buildUpdateSet(tableAlias, propertyInfo.getSubPropertyInfos(), subVariable, ignoreNull, hasNext || iterator.hasNext()));
+                ss.add(buildUpdateSet(tableAlias, propertyInfo.values(), subVariable, ignoreNull, hasNext || iterator.hasNext()));
             }
         }
         return String.join(" ", ss);
