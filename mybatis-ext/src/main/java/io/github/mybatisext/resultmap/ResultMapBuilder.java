@@ -31,7 +31,7 @@ public class ResultMapBuilder {
             return;
         }
         List<ResultMapping> resultMappings = new ArrayList<>();
-        for (PropertyInfo subPropertyInfo : propertyInfo.getSubPropertyInfos()) {
+        for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
             resultMappings.add(subPropertyInfo.getResultMapping(configuration, id));
         }
         ResultMap resultMap = new ResultMap.Builder(configuration, id, propertyInfo.getJavaType().getType(), resultMappings).build();

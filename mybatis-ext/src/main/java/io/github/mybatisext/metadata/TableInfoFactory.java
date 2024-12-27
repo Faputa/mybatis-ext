@@ -166,9 +166,9 @@ public class TableInfoFactory {
         propertyInfo.setJdbcType(column.jdbcType());
         propertyInfo.setJoinTableInfo(tableInfo.getJoinTableInfo());
         if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
-            propertyInfo.getSubPropertyInfos().addAll(collectColumnPropertyInfos(configuration, tableInfo, GenericTypeFactory.build(propertyInfo.getJavaType()), readonly));
+            propertyInfo.putAll(collectColumnPropertyInfos(configuration, tableInfo, GenericTypeFactory.build(propertyInfo.getJavaType()), readonly));
         } else if (propertyInfo.getResultType() == ResultType.COLLECTION) {
-            propertyInfo.getSubPropertyInfos().addAll(collectColumnPropertyInfos(configuration, tableInfo, GenericTypeFactory.build(propertyInfo.getOfType()), readonly));
+            propertyInfo.putAll(collectColumnPropertyInfos(configuration, tableInfo, GenericTypeFactory.build(propertyInfo.getOfType()), readonly));
         } else {
             if (id != null) {
                 processIdType(propertyInfo, id);
@@ -194,7 +194,7 @@ public class TableInfoFactory {
         return propertyInfo;
     }
 
-    private static List<PropertyInfo> collectColumnPropertyInfos(Configuration configuration, TableInfo tableInfo, GenericType javaType, boolean readonly) {
+    private static Map<String, PropertyInfo> collectColumnPropertyInfos(Configuration configuration, TableInfo tableInfo, GenericType javaType, boolean readonly) {
         Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
         for (GenericType c = javaType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             for (GenericField field : c.getDeclaredFields()) {
@@ -231,7 +231,7 @@ public class TableInfoFactory {
                 nameToPropertyInfo.put(propertyDescriptor.getName(), propertyInfo);
             }
         }
-        return new ArrayList<>(nameToPropertyInfo.values());
+        return nameToPropertyInfo;
     }
 
     private static void processIdType(PropertyInfo propertyInfo, Id id) {
@@ -273,6 +273,10 @@ public class TableInfoFactory {
         buildJoinTableInfos(configuration, tableInfo, currentClass, propertyInfo, joinRelations, aliasToJoinTableInfo);
         checkJoinTableInfos(aliasToJoinTableInfo);
         mergeJoinTableInfos(tableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
+
+        if (propertyInfo.getResultType() == ResultType.ASSOCIATION || propertyInfo.getResultType() == ResultType.COLLECTION) {
+            propertyInfo.putAll(collectJoinTablePropertyInfos(tableInfo, propertyInfo.getJoinTableInfo()));
+        }
     }
 
     private static void buildJoinTableInfos(Configuration configuration, TableInfo rootTableInfo, GenericType currentClass, PropertyInfo propertyInfo, JoinRelation[] joinRelations, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
@@ -452,6 +456,46 @@ public class TableInfoFactory {
             }
         }
         return propertyInfo;
+    }
+
+    private static Map<String, PropertyInfo> collectJoinTablePropertyInfos(TableInfo tableInfo, JoinTableInfo joinTableInfo) {
+        Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
+        for (PropertyInfo propertyInfo : joinTableInfo.getTableInfo().getNameToPropertyInfo().values()) {
+            if (!propertyInfo.isOwnColumn()) {
+                continue;
+            }
+            PropertyInfo newPropertyInfo = copyPropertyInfoWithTables(tableInfo, joinTableInfo, propertyInfo);
+            newPropertyInfo.putAll(collectJoinTablePropertyInfos(tableInfo, joinTableInfo, propertyInfo));
+            nameToPropertyInfo.put(propertyInfo.getName(), newPropertyInfo);
+        }
+        return nameToPropertyInfo;
+    }
+
+    private static Map<String, PropertyInfo> collectJoinTablePropertyInfos(TableInfo tableInfo, JoinTableInfo joinTableInfo, PropertyInfo propertyInfo) {
+        Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
+        for (PropertyInfo value : propertyInfo.values()) {
+            if (!value.isOwnColumn()) {
+                continue;
+            }
+            PropertyInfo newPropertyInfo = copyPropertyInfoWithTables(tableInfo, joinTableInfo, propertyInfo);
+            newPropertyInfo.putAll(collectJoinTablePropertyInfos(tableInfo, joinTableInfo, propertyInfo));
+            nameToPropertyInfo.put(propertyInfo.getName(), newPropertyInfo);
+        }
+        return nameToPropertyInfo;
+    }
+
+    private static PropertyInfo copyPropertyInfoWithTables(TableInfo tableInfo, JoinTableInfo joinTableInfo, PropertyInfo propertyInfo) {
+        PropertyInfo newPropertyInfo = new PropertyInfo();
+        newPropertyInfo.setName(propertyInfo.getName());
+        newPropertyInfo.setColumnName(propertyInfo.getColumnName());
+        newPropertyInfo.setTableInfo(tableInfo);
+        newPropertyInfo.setJoinTableInfo(joinTableInfo);
+        newPropertyInfo.setJavaType(propertyInfo.getJavaType());
+        newPropertyInfo.setJdbcType(propertyInfo.getJdbcType());
+        newPropertyInfo.setResultType(propertyInfo.getResultType());
+        newPropertyInfo.setIdType(propertyInfo.getIdType());
+        newPropertyInfo.setCustomIdGenerator(propertyInfo.getCustomIdGenerator());
+        return newPropertyInfo;
     }
 
     private static JoinColumnFeature buildJoinColumnFeature(JoinColumnInfo joinColumnInfo, JoinTableInfo leftJoinTableInfo, JoinTableInfo righJoinTableInfo) {

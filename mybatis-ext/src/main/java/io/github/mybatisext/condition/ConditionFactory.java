@@ -137,7 +137,7 @@ public class ConditionFactory {
             ConditionComp conditionComp = new ConditionComp(ConditionCompRel.AND);
             conditionComp.setTest(test);
             conditionComp.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
-            for (PropertyInfo subPropertyInfo : propertyInfo.getSubPropertyInfos()) {
+            for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
                 Condition condition = processPropertyInfo(subPropertyInfo, onlyById, test, StringUtils.isNotBlank(prefix) ? prefix + "." + propertyInfo.getName() : propertyInfo.getName());
                 conditionComp.getConditions().add(condition);
             }
@@ -147,7 +147,7 @@ public class ConditionFactory {
             ConditionComp conditionComp = new ConditionComp(ConditionCompRel.AND);
             conditionComp.setTest(IfTest.NotEmpty);
             conditionComp.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
-            for (PropertyInfo subPropertyInfo : propertyInfo.getSubPropertyInfos()) {
+            for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
                 Condition condition = processPropertyInfo(subPropertyInfo, onlyById, test, (StringUtils.isNotBlank(prefix) ? prefix + "." + propertyInfo.getName() : propertyInfo.getName()) + "[0]");
                 conditionComp.getConditions().add(condition);
             }
@@ -231,7 +231,7 @@ public class ConditionFactory {
             if (propertyInfo == null) {
                 propertyInfo = tableInfo.getNameToPropertyInfo().get(s);
             } else {
-                propertyInfo = propertyInfo.getSubPropertyInfos().stream().filter(v -> v.getName().equals(s)).findFirst().orElse(null);
+                propertyInfo = propertyInfo.values().stream().filter(v -> v.getName().equals(s)).findFirst().orElse(null);
             }
             if (propertyInfo == null) {
                 throw new MybatisExtException("Property '" + property + "' not found in TableInfo " + tableInfo.getTableClass().getName());
