@@ -235,11 +235,10 @@ public class TableInfoFactory {
     }
 
     private static void processIdType(PropertyInfo propertyInfo, Id id) {
-        if (id.customIdGenerator() == void.class) {
-            if (IdType.CUSTOM.equals(id.idType())) {
+        if (id.idType() == IdType.CUSTOM) {
+            if (id.customIdGenerator() == void.class) {
                 throw new MybatisExtException("customIdGenerator cannot be null");
             }
-        } else {
             if (!IdGenerator.class.isAssignableFrom(id.customIdGenerator())) {
                 throw new MybatisExtException("customIdGenerator must implement the IdGenerator");
             }
