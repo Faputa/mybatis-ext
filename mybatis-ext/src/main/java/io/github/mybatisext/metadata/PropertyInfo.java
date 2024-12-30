@@ -14,7 +14,6 @@ import io.github.mybatisext.idgenerator.IdGenerator;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.resultmap.ResultMapBuilder;
 import io.github.mybatisext.resultmap.ResultType;
-import io.github.mybatisext.util.StringUtils;
 
 public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
