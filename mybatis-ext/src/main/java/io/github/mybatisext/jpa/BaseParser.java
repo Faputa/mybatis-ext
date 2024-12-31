@@ -98,7 +98,7 @@ public abstract class BaseParser {
             int begin = tokenizer.getCursor();
             return symbol.match(new State(state, state.getScope()), s2 -> {
                 int end = tokenizer.getCursor();
-                s2.setMatchResult(name, symbol, state.getScope(), tokenizer.substring(begin, end), s2.getResult());
+                s2.addMatch(name, symbol, state.getScope(), tokenizer.substring(begin, end), s2.getResult());
                 return continuation.test(s2);
             });
         });

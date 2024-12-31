@@ -27,31 +27,31 @@ public class MathParserTest extends BaseParser {
         Symbol all = new Symbol("all").set(join(expr, end));
 
         expr.set(join(term, optional(choice(join(keyword("+"), expr, action(state -> {
-            int a = state.getMatchResult(term).val();
-            int b = state.getMatchResult(expr).val();
+            int a = state.findMatch(term).val();
+            int b = state.findMatch(expr).val();
             state.setReturn(a + b);
         })), join(keyword("-"), expr, action(state -> {
-            int a = state.getMatchResult(term).val();
-            int b = state.getMatchResult(expr).val();
+            int a = state.findMatch(term).val();
+            int b = state.findMatch(expr).val();
             state.setReturn(a - b);
         }))))));
 
         term.set(join(factor, optional(choice(join(keyword("*"), term, action(state -> {
-            int a = state.getMatchResult(factor).val();
-            int b = state.getMatchResult(term).val();
+            int a = state.findMatch(factor).val();
+            int b = state.findMatch(term).val();
             state.setReturn(a * b);
         })), join(keyword("/"), term, action(state -> {
-            int a = state.getMatchResult(factor).val();
-            int b = state.getMatchResult(term).val();
+            int a = state.findMatch(factor).val();
+            int b = state.findMatch(term).val();
             state.setReturn(a / b);
         }))))));
 
         factor.set(choice(integer, join(keyword("("), expr, keyword(")"), action(state -> {
-            state.setReturn(state.getMatchResult(expr).val());
+            state.setReturn(state.findMatch(expr).val());
         }))));
 
         integer.set(join(assign("temp", join(plus(digit))), action(state -> {
-            String temp = state.getMatchResult("temp").text();
+            String temp = state.findMatch("temp").text();
             state.setReturn(Integer.parseInt(temp));
         })));
 
@@ -71,31 +71,31 @@ public class MathParserTest extends BaseParser {
         Symbol all = new Symbol("all").set(join(expr, end));
 
         expr.set(choice(term, join(term, keyword("+"), expr, action(state -> {
-            int a = state.getMatchResult(term).val();
-            int b = state.getMatchResult(expr).val();
+            int a = state.findMatch(term).val();
+            int b = state.findMatch(expr).val();
             state.setReturn(a + b);
         })), join(term, keyword("-"), expr, action(state -> {
-            int a = state.getMatchResult(term).val();
-            int b = state.getMatchResult(expr).val();
+            int a = state.findMatch(term).val();
+            int b = state.findMatch(expr).val();
             state.setReturn(a - b);
         }))));
 
         term.set(choice(factor, join(factor, keyword("*"), term, action(state -> {
-            int a = state.getMatchResult(factor).val();
-            int b = state.getMatchResult(term).val();
+            int a = state.findMatch(factor).val();
+            int b = state.findMatch(term).val();
             state.setReturn(a * b);
         })), join(factor, keyword("/"), term, action(state -> {
-            int a = state.getMatchResult(factor).val();
-            int b = state.getMatchResult(term).val();
+            int a = state.findMatch(factor).val();
+            int b = state.findMatch(term).val();
             state.setReturn(a / b);
         }))));
 
         factor.set(choice(integer, join(keyword("("), expr, keyword(")"), action(state -> {
-            state.setReturn(state.getMatchResult(expr).val());
+            state.setReturn(state.findMatch(expr).val());
         }))));
 
         integer.set(join(assign("temp", join(choice(digit, join(digit, integer)))), action(state -> {
-            String temp = state.getMatchResult("temp").text();
+            String temp = state.findMatch("temp").text();
             state.setReturn(Integer.parseInt(temp));
         })));
 

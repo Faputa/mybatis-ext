@@ -31,7 +31,7 @@ public final class Symbol {
             int begin = tokenizer.getCursor();
             return match.test(state, s2 -> {
                 int end = tokenizer.getCursor();
-                s2.setMatchResult(this, state.getScope(), tokenizer.substring(begin, end), s2.getResult());
+                s2.addMatch(this, state.getScope(), tokenizer.substring(begin, end), s2.getResult());
                 return continuation.test(state);
             });
         };
@@ -51,7 +51,7 @@ public final class Symbol {
                 if (value == null) {
                     value = s2.getResult();
                 }
-                s2.setMatchResult(this, state.getScope(), tokenizer.substring(begin, end), value);
+                s2.addMatch(this, state.getScope(), tokenizer.substring(begin, end), value);
                 s2.setResult(value);
                 return continuation.test(s2);
             });

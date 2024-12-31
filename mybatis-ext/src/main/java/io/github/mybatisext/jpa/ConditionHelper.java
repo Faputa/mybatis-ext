@@ -95,7 +95,7 @@ public class ConditionHelper {
         if (condition.hasTest()) {
             ss.add("<if test=\"" + toTestOgnl(condition) + "\">");
             if (prefix != null) {
-                ss.add(prefix + " ");
+                ss.add(prefix.toString());
             }
             ss.add(toExpr(condition, dialect));
             ss.add("</if>");
@@ -103,7 +103,7 @@ public class ConditionHelper {
         }
         {
             if (prefix != null) {
-                ss.add(prefix + " ");
+                ss.add(prefix.toString());
             }
             ss.add(toExpr(condition, dialect));
             return String.join(" ", ss);

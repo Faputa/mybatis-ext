@@ -67,7 +67,7 @@ public class State {
         return true;
     }
 
-    public MatchResult getMatchResult(Symbol symbol, Scope scope, int index) {
+    public MatchResult findMatch(Symbol symbol, Scope scope, int index) {
         List<MatchResult> foundMatchResults = new ArrayList<>();
         for (State state = this; state != scope.getOutside() && state != null; state = state.prevState) {
             int i = 0;
@@ -86,25 +86,25 @@ public class State {
         return null;
     }
 
-    public MatchResult getMatchResult(Symbol symbol, int index) {
+    public MatchResult findMatch(Symbol symbol, int index) {
         assert scope != null;
-        return getMatchResult(symbol, scope, index);
+        return findMatch(symbol, scope, index);
     }
 
-    public MatchResult getMatchResult(Symbol symbol) {
-        return getMatchResult(symbol, 0);
+    public MatchResult findMatch(Symbol symbol) {
+        return findMatch(symbol, 0);
     }
 
-    public boolean setMatchResult(Symbol symbol, Scope scope, String text, Object value) {
+    public boolean addMatch(Symbol symbol, Scope scope, String text, Object value) {
         MatchResult matchResult = new MatchResult(symbol, scope, text, value);
         return matchResults.add(matchResult);
     }
 
-    public boolean setMatchResult(Symbol symbol, String text, Object value) {
-        return setMatchResult(symbol, scope, text, value);
+    public boolean addMatch(Symbol symbol, String text, Object value) {
+        return addMatch(symbol, scope, text, value);
     }
 
-    public MatchResult getMatchResult(String name, Scope scope) {
+    public MatchResult findMatch(String name, Scope scope) {
         for (State state = this; state != scope.getOutside() && state != null; state = state.prevState) {
             Map<String, MatchResult> nameToMatchResult = state.scopeToNameToMatchResult.get(scope);
             if (nameToMatchResult != null) {
@@ -117,20 +117,20 @@ public class State {
         return null;
     }
 
-    public MatchResult getMatchResult(String name) {
+    public MatchResult findMatch(String name) {
         assert scope != null;
-        return getMatchResult(name, scope);
+        return findMatch(name, scope);
     }
 
-    public boolean setMatchResult(String name, Symbol symbol, Scope scope, String text, Object value) {
+    public boolean addMatch(String name, Symbol symbol, Scope scope, String text, Object value) {
         Map<String, MatchResult> nameToMatchResult = scopeToNameToMatchResult.computeIfAbsent(scope, k -> new HashMap<>());
         MatchResult matchResult = new MatchResult(symbol, scope, text, value);
         nameToMatchResult.put(name, matchResult);
         return true;
     }
 
-    public boolean setMatchResult(String name, Symbol symbol, String text, Object value) {
+    public boolean addMatch(String name, Symbol symbol, String text, Object value) {
         assert scope != null;
-        return setMatchResult(name, symbol, scope, text, value);
+        return addMatch(name, symbol, scope, text, value);
     }
 }
