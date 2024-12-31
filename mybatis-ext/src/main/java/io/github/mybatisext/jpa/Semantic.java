@@ -1,6 +1,5 @@
 package io.github.mybatisext.jpa;
 
-import io.github.mybatisext.condition.Condition;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 

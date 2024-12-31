@@ -10,16 +10,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
-import io.github.mybatisext.annotation.Criteria;
 import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.annotation.OnlyById;
-import io.github.mybatisext.condition.Condition;
-import io.github.mybatisext.condition.ConditionComp;
-import io.github.mybatisext.condition.ConditionCompRel;
-import io.github.mybatisext.condition.ConditionFactory;
-import io.github.mybatisext.condition.ConditionList;
-import io.github.mybatisext.condition.ConditionRel;
-import io.github.mybatisext.condition.ConditionTerm;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
@@ -118,11 +110,11 @@ public class JpaParser extends BaseParser {
     Symbol integerB = new Symbol("integerB").set(integer);
     Symbol variableB = new Symbol("variableB").set(variable);
 
-    Symbol conditionAction(ConditionRel rel) {
+    Symbol conditionAction(CompareOperator compareOperator) {
         return action(state -> {
-            ConditionTerm condition = new ConditionTerm();
+            Condition condition = new Condition(ConditionType.BASIC);
             condition.setPropertyInfo(state.getMatch(property).val());
-            condition.setRel(rel);
+            condition.setCompareOperator(compareOperator);
             if (state.getMatch("Ignorecase") != null) {
                 condition.setIgnorecase(true);
             }
@@ -131,13 +123,13 @@ public class JpaParser extends BaseParser {
             }
             MatchResult _variable = state.getMatch(variable);
             if (_variable == null) {
-                if (ConditionRel.Between != condition.getRel()) {
+                if (CompareOperator.Between != compareOperator) {
                     JpaTokenizer jpaTokenizer = state.getTokenizer();
                     jpaTokenizer.getVariables().stream().filter(v -> condition.getPropertyInfo().getName().equals(v.getName())).findFirst().ifPresent(condition::setVariable);
                 }
             } else {
                 condition.setVariable(_variable.val());
-                if (ConditionRel.Between == condition.getRel()) {
+                if (CompareOperator.Between == compareOperator) {
                     condition.setSecondVariable(state.getMatch(variableB).val());
                 }
             }
@@ -250,13 +242,13 @@ public class JpaParser extends BaseParser {
 
         conditionList.set(
                 join(condition, optional(join(choice(keyword("And"), keyword("Or")), conditionList)), action(state -> {
-                    ConditionTerm c = state.getMatch(condition).val();
+                    Condition c = state.getMatch(condition).val();
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         if (state.getMatch("And") != null) {
-                            state.setReturn(new ConditionList(c, _conditionList.val(), ConditionCompRel.AND));
+                            state.setReturn(new ConditionList(c, _conditionList.val(), LogicalOperator.AND));
                         } else {
-                            state.setReturn(new ConditionList(c, _conditionList.val(), ConditionCompRel.OR));
+                            state.setReturn(new ConditionList(c, _conditionList.val(), LogicalOperator.OR));
                         }
                     } else {
                         state.setReturn(new ConditionList(c));
@@ -265,23 +257,23 @@ public class JpaParser extends BaseParser {
 
         condition.set(join(property, choice(
                 join(optional(keyword("Ignorecase")), optional(keyword("Not")), choice(
-                        join(keyword("Is"), optional(variable), conditionAction(ConditionRel.Equals)),
-                        join(keyword("Equals"), optional(variable), conditionAction(ConditionRel.Equals)),
-                        join(keyword("LessThan"), optional(variable), conditionAction(ConditionRel.LessThan)),
-                        join(keyword("LessThanEqual"), optional(variable), conditionAction(ConditionRel.LessThanEqual)),
-                        join(keyword("GreaterThan"), optional(variable), conditionAction(ConditionRel.GreaterThan)),
-                        join(keyword("GreaterThanEqual"), optional(variable), conditionAction(ConditionRel.GreaterThanEqual)),
-                        join(keyword("Like"), optional(variable), conditionAction(ConditionRel.Like)),
-                        join(keyword("StartWith"), optional(variable), conditionAction(ConditionRel.StartWith)),
-                        join(keyword("EndWith"), optional(variable), conditionAction(ConditionRel.EndWith)),
-                        join(keyword("Between"), optional(join(variable, keyword("To"), variableB)), conditionAction(ConditionRel.Between)),
-                        join(keyword("In"), optional(variable), conditionAction(ConditionRel.In)),
-                        conditionAction(ConditionRel.Equals))),
+                        join(keyword("Is"), optional(variable), conditionAction(CompareOperator.Equals)),
+                        join(keyword("Equals"), optional(variable), conditionAction(CompareOperator.Equals)),
+                        join(keyword("LessThan"), optional(variable), conditionAction(CompareOperator.LessThan)),
+                        join(keyword("LessThanEqual"), optional(variable), conditionAction(CompareOperator.LessThanEqual)),
+                        join(keyword("GreaterThan"), optional(variable), conditionAction(CompareOperator.GreaterThan)),
+                        join(keyword("GreaterThanEqual"), optional(variable), conditionAction(CompareOperator.GreaterThanEqual)),
+                        join(keyword("Like"), optional(variable), conditionAction(CompareOperator.Like)),
+                        join(keyword("StartWith"), optional(variable), conditionAction(CompareOperator.StartWith)),
+                        join(keyword("EndWith"), optional(variable), conditionAction(CompareOperator.EndWith)),
+                        join(keyword("Between"), optional(join(variable, keyword("To"), variableB)), conditionAction(CompareOperator.Between)),
+                        join(keyword("In"), optional(variable), conditionAction(CompareOperator.In)),
+                        conditionAction(CompareOperator.Equals))),
                 join(optional(keyword("Not")), choice(
-                        join(keyword("IsNull"), conditionAction(ConditionRel.IsNull)),
-                        join(keyword("IsNotNull"), conditionAction(ConditionRel.IsNotNull)),
-                        join(keyword("IsTrue"), conditionAction(ConditionRel.IsTrue)),
-                        join(keyword("IsFalse"), conditionAction(ConditionRel.IsFalse)))))));
+                        join(keyword("IsNull"), conditionAction(CompareOperator.IsNull)),
+                        join(keyword("IsNotNull"), conditionAction(CompareOperator.IsNotNull)),
+                        join(keyword("IsTrue"), conditionAction(CompareOperator.IsTrue)),
+                        join(keyword("IsFalse"), conditionAction(CompareOperator.IsFalse)))))));
 
         orderByList.set(join(property, optional(choice(keyword("Asc"), keyword("Desc"))), optional(join(keyword("And"), orderByList)), action(state -> {
             OrderByElement orderByElement = new OrderByElement();
@@ -292,11 +284,11 @@ public class JpaParser extends BaseParser {
                 orderByElement.setType(OrderByType.DESC);
             }
             List<OrderByElement> orderByElements = new ArrayList<>();
+            orderByElements.add(orderByElement);
             MatchResult _orderByList = state.getMatch(orderByList);
             if (_orderByList != null) {
                 orderByElements.addAll(_orderByList.val());
             }
-            orderByElements.add(orderByElement);
             state.setReturn(orderByElements);
         })));
 
@@ -331,12 +323,11 @@ public class JpaParser extends BaseParser {
         propertyList.set(
                 join(property, optional(join(keyword("And"), propertyList)), action(state -> {
                     List<PropertyInfo> propertyInfos = new ArrayList<>();
-                    PropertyInfo propertyInfo = state.getMatch(property).val();
+                    propertyInfos.add(state.getMatch(property).val());
                     MatchResult _propertyList = state.getMatch(propertyList);
                     if (_propertyList != null) {
                         propertyInfos.addAll(_propertyList.val());
                     }
-                    propertyInfos.add(propertyInfo);
                     state.setReturn(propertyInfos);
                 })));
 
@@ -378,36 +369,33 @@ public class JpaParser extends BaseParser {
                 Param param = parameters[0].getAnnotation(Param.class);
                 OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
                 if (tableInfo.getTableClass().getType().isArray()) {
-                    return ConditionFactory.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "__array__item");
+                    return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "__array__item");
                 }
-                return ConditionFactory.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "");
+                return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "");
             }
             if (Collection.class.isAssignableFrom(parameters[0].getType()) && tableInfo.getTableClass().isAssignableFrom(TypeArgumentResolver.resolveTypeArgument(parameters[0].getGenericType(), Collection.class, 0))) {
                 OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
                 if (List.class.isAssignableFrom(parameters[0].getType())) {
-                    return ConditionFactory.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, "__list__item");
+                    return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, "__list__item");
                 }
-                return ConditionFactory.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, "__collection__item");
-            }
-            if (parameters[0].getType().isAnnotationPresent(Criteria.class)) {
-                Param param = parameters[0].getAnnotation(Param.class);
-                return ConditionFactory.fromCriteria(configuration, parameters[0].getType(), param != null ? param.value() : "");
+                return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, "__collection__item");
             }
         }
-        ConditionComp conditionComp = new ConditionComp(ConditionCompRel.AND);
+        Condition condition = new Condition(ConditionType.COMPLEX);
+        condition.setLogicalOperator(LogicalOperator.AND);
         for (GenericParameter parameter : parameters) {
             Param param = parameter.getAnnotation(Param.class);
             if (param == null || !configuration.getTypeHandlerRegistry().hasTypeHandler(parameter.getType())) {
                 throw new MybatisExtException("Unsupported parameter type: " + parameter.getType().getName() + ". Method: " + jpaTokenizer.getText());
             }
             PropertyInfo propertyInfo = parseProperty(configuration, jpaTokenizer.getTableInfo(), param.value());
-            ConditionTerm condition = new ConditionTerm();
-            condition.setPropertyInfo(propertyInfo);
-            condition.setRel(ConditionRel.Equals);
-            condition.setVariable(new Variable(param.value(), parameter.getGenericType()));
-            conditionComp.getConditions().add(condition);
+            Condition subCondition = new Condition(ConditionType.BASIC);
+            subCondition.setPropertyInfo(propertyInfo);
+            subCondition.setCompareOperator(CompareOperator.Equals);
+            subCondition.setVariable(new Variable(param.value(), parameter.getGenericType()));
+            condition.getSubConditions().add(subCondition);
         }
-        return conditionComp;
+        return condition;
     }
 
     private Condition ensureConditionVariable(State state, ConditionList conditionList) {
@@ -416,7 +404,7 @@ public class JpaParser extends BaseParser {
         int i = 0;
         Set<String> set = new HashSet<>();
         for (ConditionList list = conditionList; list != null; list = list.getTailList()) {
-            ConditionTerm condition = list.getCondition();
+            Condition condition = list.getCondition();
             if (condition.getVariable() == null) {
                 if (i >= parameters.length) {
                     throw new MybatisExtException("Insufficient parameters for method: " + jpaTokenizer.getText());
@@ -431,7 +419,7 @@ public class JpaParser extends BaseParser {
                     i++;
                 }
             }
-            if (condition.getRel() == ConditionRel.Between) {
+            if (condition.getCompareOperator() == CompareOperator.Between) {
                 if (condition.getSecondVariable() == null) {
                     if (i >= parameters.length) {
                         throw new MybatisExtException("Insufficient parameters for method: " + jpaTokenizer.getText());
@@ -448,7 +436,7 @@ public class JpaParser extends BaseParser {
                 }
             }
         }
-        return ConditionFactory.fromConditionList(conditionList);
+        return ConditionHelper.fromConditionList(conditionList);
     }
 
     private final Symbol propertyEnd = join(property, end);
