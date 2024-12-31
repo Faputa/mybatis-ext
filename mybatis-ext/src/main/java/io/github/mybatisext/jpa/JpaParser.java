@@ -301,7 +301,7 @@ public class JpaParser extends BaseParser {
         })));
 
         limit.set(join(keyword("Limit"), choice(
-                choice(integer, variable), keyword("To"), choice(integerB, join(variableB)), action(state -> {
+                choice(integer, variable), keyword("To"), choice(integerB, variableB), action(state -> {
                     Limit limit = new Limit();
                     MatchResult _integer = state.getMatch(integer);
                     if (_integer != null) {
