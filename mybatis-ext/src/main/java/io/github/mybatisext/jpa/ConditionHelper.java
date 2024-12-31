@@ -3,6 +3,7 @@ package io.github.mybatisext.jpa;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.dialect.Dialect;
@@ -12,6 +13,20 @@ import io.github.mybatisext.util.SimpleStringTemplate;
 import io.github.mybatisext.util.StringUtils;
 
 public class ConditionHelper {
+
+    public static void collectUsedTableAliases(Condition condition, Set<String> tableAliases) {
+        if (StringUtils.isNotBlank(condition.getExprTemplate())) {
+            ConditionHook conditionHook = new ConditionHook(condition);
+            SimpleStringTemplate.build(condition.getExprTemplate(), conditionHook, false);
+            tableAliases.addAll(conditionHook.getUsedTableAliases());
+        } else if (condition.getType() == ConditionType.COMPLEX) {
+            for (Condition subCondition : condition.getSubConditions()) {
+                collectUsedTableAliases(subCondition, tableAliases);
+            }
+        } else {
+            tableAliases.add(condition.getPropertyInfo().getJoinTableInfo().getAlias());
+        }
+    }
 
     public static String toWhere(Condition condition, Dialect dialect) {
         if (condition.hasTest()) {
