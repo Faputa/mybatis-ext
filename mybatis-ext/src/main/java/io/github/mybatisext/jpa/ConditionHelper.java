@@ -3,16 +3,140 @@ package io.github.mybatisext.jpa;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Nullable;
 
 import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.metadata.PropertyInfo;
+import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.ognl.Ognl;
+import io.github.mybatisext.resultmap.ResultType;
 import io.github.mybatisext.util.SimpleStringTemplate;
 import io.github.mybatisext.util.StringUtils;
 
 public class ConditionHelper {
+
+    private static final Map<TableInfo, Map<Boolean, Map<IfTest, Map<String, Condition>>>> fromTableInfoCache = new ConcurrentHashMap<>();
+
+    public static Condition fromTableInfo(TableInfo tableInfo, boolean onlyById, IfTest test, String param) {
+        Map<Boolean, Map<IfTest, Map<String, Condition>>> map = fromTableInfoCache.computeIfAbsent(tableInfo, k -> new ConcurrentHashMap<>());
+        Map<IfTest, Map<String, Condition>> map2 = map.computeIfAbsent(onlyById, k -> new ConcurrentHashMap<>());
+        Map<String, Condition> map3 = map2.computeIfAbsent(test, k -> new ConcurrentHashMap<>());
+        return map3.computeIfAbsent(param, k -> {
+            Condition condition = buildFromTableInfo(tableInfo, onlyById, test, param);
+            if (condition.getSubConditions().isEmpty() && onlyById) {
+                condition = buildFromTableInfo(tableInfo, false, test, param);
+            }
+            return simplifyCondition(condition);
+        });
+    }
+
+    public static Condition fromConditionList(ConditionList conditionList) {
+        List<Condition> andConditions = new ArrayList<>();
+        List<Condition> orConditions = new ArrayList<>();
+        for (; conditionList != null; conditionList = conditionList.getTailList()) {
+            andConditions.add(conditionList.getCondition());
+            if (conditionList.getLogicalOperator() == LogicalOperator.OR) {
+                Condition condition = new Condition(ConditionType.COMPLEX);
+                condition.setLogicalOperator(LogicalOperator.AND);
+                condition.getSubConditions().addAll(andConditions);
+                andConditions.clear();
+                orConditions.add(condition);
+            }
+        }
+        if (!andConditions.isEmpty()) {
+            Condition condition = new Condition(ConditionType.COMPLEX);
+            condition.setLogicalOperator(LogicalOperator.AND);
+            condition.getSubConditions().addAll(andConditions);
+            orConditions.add(condition);
+        }
+        Condition condition = new Condition(ConditionType.COMPLEX);
+        condition.setLogicalOperator(LogicalOperator.OR);
+        condition.getSubConditions().addAll(orConditions);
+        return simplifyCondition(condition);
+    }
+
+    public static @Nullable Condition simplifyCondition(Condition condition) {
+        if (condition.getType() == ConditionType.COMPLEX) {
+            if (condition.getSubConditions().size() == 1 && condition.getTest() == IfTest.None) {
+                return simplifyCondition(condition.getSubConditions().iterator().next());
+            }
+            for (Condition c : new ArrayList<>(condition.getSubConditions())) {
+                condition.getSubConditions().remove(c);
+                Condition simplifyCondition = simplifyCondition(c);
+                if (simplifyCondition == null) {
+                    continue;
+                }
+                condition.getSubConditions().add(simplifyCondition);
+            }
+            if (condition.getSubConditions().isEmpty()) {
+                return null;
+            }
+            return condition;
+        }
+        return condition;
+    }
+
+    private static Condition buildFromTableInfo(TableInfo tableInfo, boolean onlyById, IfTest test, String param) {
+        Condition condition = new Condition(ConditionType.COMPLEX);
+        condition.setLogicalOperator(LogicalOperator.AND);
+        for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
+            Condition subCondition = buildFromPropertyInfo(propertyInfo, onlyById, test, param);
+            if (subCondition == null) {
+                continue;
+            }
+            condition.getSubConditions().add(subCondition);
+        }
+        return condition;
+    }
+
+    private static @Nullable Condition buildFromPropertyInfo(PropertyInfo propertyInfo, boolean onlyById, IfTest test, String prefix) {
+        if (onlyById && (propertyInfo.getResultType() == ResultType.RESULT || !propertyInfo.isOwnColumn())) {
+            return null;
+        }
+        if (propertyInfo.getResultType() == ResultType.ID || propertyInfo.getResultType() == ResultType.RESULT) {
+            Condition condition = new Condition(ConditionType.BASIC);
+            condition.setPropertyInfo(propertyInfo);
+            condition.setCompareOperator(CompareOperator.Equals);
+            condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
+            condition.setTest(test);
+            return condition;
+        }
+        if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
+            Condition condition = new Condition(ConditionType.COMPLEX);
+            condition.setLogicalOperator(LogicalOperator.AND);
+            condition.setTest(test);
+            condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
+            for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
+                Condition subCondition = buildFromPropertyInfo(subPropertyInfo, onlyById, test, condition.getVariable().getFullName());
+                if (subCondition == null) {
+                    continue;
+                }
+                condition.getSubConditions().add(subCondition);
+            }
+            return condition;
+        }
+        if (propertyInfo.getResultType() == ResultType.COLLECTION) {
+            Condition condition = new Condition(ConditionType.COMPLEX);
+            condition.setLogicalOperator(LogicalOperator.AND);
+            condition.setTest(IfTest.NotEmpty);
+            condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
+            for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
+                Condition subCondition = buildFromPropertyInfo(subPropertyInfo, onlyById, test, condition.getVariable().getFullName() + "[0]");
+                if (subCondition == null) {
+                    continue;
+                }
+                condition.getSubConditions().add(subCondition);
+            }
+            return condition;
+        }
+        return null;
+    }
 
     public static void collectUsedTableAliases(Condition condition, Set<String> tableAliases) {
         if (StringUtils.isNotBlank(condition.getExprTemplate())) {
