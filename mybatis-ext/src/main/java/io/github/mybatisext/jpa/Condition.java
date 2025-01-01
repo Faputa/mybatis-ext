@@ -1,5 +1,6 @@
 package io.github.mybatisext.jpa;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -10,7 +11,8 @@ import io.github.mybatisext.util.StringUtils;
 
 public class Condition {
 
-    private ConditionType type;
+    private final ConditionType type;
+    private final Set<Condition> subConditions = new HashSet<>();
     private LogicalOperator logicalOperator;
     private CompareOperator compareOperator;
     private PropertyInfo propertyInfo;
@@ -19,17 +21,20 @@ public class Condition {
     private boolean not;
     private Variable variable;
     private Variable secondVariable;
-    private Set<Condition> subConditions;
-    private IfTest test;
+    private IfTest test = IfTest.None;
     private String testTemplate;
     private String exprTemplate;
+
+    public Condition(ConditionType type) {
+        this.type = type;
+    }
 
     public ConditionType getType() {
         return type;
     }
 
-    public void setType(ConditionType type) {
-        this.type = type;
+    public Set<Condition> getSubConditions() {
+        return subConditions;
     }
 
     public LogicalOperator getLogicalOperator() {
@@ -94,14 +99,6 @@ public class Condition {
 
     public void setSecondVariable(Variable secondVariable) {
         this.secondVariable = secondVariable;
-    }
-
-    public Set<Condition> getSubConditions() {
-        return subConditions;
-    }
-
-    public void setSubConditions(Set<Condition> subConditions) {
-        this.subConditions = subConditions;
     }
 
     public IfTest getTest() {

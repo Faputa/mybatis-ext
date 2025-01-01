@@ -8,12 +8,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.github.mybatisext.annotation.IfTest;
-import io.github.mybatisext.condition.Condition;
-import io.github.mybatisext.condition.ConditionComp;
-import io.github.mybatisext.condition.ConditionTerm;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.jpa.Condition;
+import io.github.mybatisext.jpa.ConditionHelper;
 import io.github.mybatisext.jpa.OrderByElement;
 import io.github.mybatisext.jpa.OrderByType;
 import io.github.mybatisext.jpa.Semantic;
@@ -21,7 +19,6 @@ import io.github.mybatisext.jpa.SemanticType;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
-import io.github.mybatisext.ognl.Ognl;
 
 public class SemanticScriptBuilder {
 
@@ -133,103 +130,11 @@ public class SemanticScriptBuilder {
     }
 
     private String buildWhere(Condition condition) {
-        List<String> ss = new ArrayList<>();
-        if (condition instanceof ConditionTerm) {
-            if (condition.getTest() == IfTest.NotNull) {
-                ss.add("<if test=\"" + condition.getVariable() + " != null\">");
-                ss.add("WHERE");
-                ss.add(condition.toScriptlet(dialect));
-                ss.add("</if>");
-            } else if (condition.getTest() == IfTest.NotEmpty) {
-                ss.add("<if test=\"" + Ognl.IsNotEmpty + "(" + condition.getVariable() + ")\">");
-                ss.add("WHERE");
-                ss.add(condition.toScriptlet(dialect));
-                ss.add("</if>");
-            } else {
-                ss.add("WHERE");
-                ss.add(condition.toScriptlet(dialect));
-            }
-            return String.join(" ", ss);
-        }
-        if (condition instanceof ConditionComp) {
-            ConditionComp conditionComp = (ConditionComp) condition;
-            if (!conditionComp.hasTest()) {
-                for (Condition c : conditionComp.getConditions()) {
-                    ss.add(c.toScriptlet(dialect));
-                }
-                return "WHERE " + String.join(" " + conditionComp.getRel() + " ", ss);
-            }
-            ss.add("<where>");
-            for (Condition c : conditionComp.getConditions()) {
-                if (c.getTest() == IfTest.NotNull) {
-                    ss.add("<if test=\"" + c.getVariable() + " != null\">");
-                    ss.add(conditionComp.getRel().toString());
-                    ss.add(c.toScriptlet(dialect));
-                    ss.add("</if>");
-                } else if (c.getTest() == IfTest.NotEmpty) {
-                    ss.add("<if test=\"" + Ognl.IsNotEmpty + "(" + c.getVariable() + ")\">");
-                    ss.add(conditionComp.getRel().toString());
-                    ss.add(c.toScriptlet(dialect));
-                    ss.add("</if>");
-                } else {
-                    ss.add(conditionComp.getRel().toString());
-                    ss.add(c.toScriptlet(dialect));
-                }
-            }
-            ss.add("</where>");
-            return String.join(" ", ss);
-        }
-        return null;
+        return ConditionHelper.toWhere(condition, dialect);
     }
 
     private String buildHaving(Condition condition) {
-        List<String> ss = new ArrayList<>();
-        if (condition instanceof ConditionTerm) {
-            if (condition.getTest() == IfTest.NotNull) {
-                ss.add("<if test=\"" + condition.getVariable() + " != null\">");
-                ss.add("HAVING");
-                ss.add(condition.toScriptlet(dialect));
-                ss.add("</if>");
-            } else if (condition.getTest() == IfTest.NotEmpty) {
-                ss.add("<if test=\"" + Ognl.IsNotEmpty + "(" + condition.getVariable() + ")\">");
-                ss.add("HAVING");
-                ss.add(condition.toScriptlet(dialect));
-                ss.add("</if>");
-            } else {
-                ss.add("HAVING");
-                ss.add(condition.toScriptlet(dialect));
-            }
-            return String.join(" ", ss);
-        }
-        if (condition instanceof ConditionComp) {
-            ConditionComp conditionComp = (ConditionComp) condition;
-            if (!conditionComp.hasTest()) {
-                for (Condition c : conditionComp.getConditions()) {
-                    ss.add(c.toScriptlet(dialect));
-                }
-                return "HAVING " + String.join(" " + conditionComp.getRel() + " ", ss);
-            }
-            ss.add("<trim prefix=\"HAVING\" prefixOverrides=\"" + conditionComp.getRel() + "\" >");
-            for (Condition c : conditionComp.getConditions()) {
-                if (c.getTest() == IfTest.NotNull) {
-                    ss.add("<if test=\"" + c.getVariable() + " != null\">");
-                    ss.add(conditionComp.getRel().toString());
-                    ss.add(c.toScriptlet(dialect));
-                    ss.add("</if>");
-                } else if (c.getTest() == IfTest.NotEmpty) {
-                    ss.add("<if test=\"" + Ognl.IsNotEmpty + "(" + condition.getVariable() + ")\">");
-                    ss.add(conditionComp.getRel().toString());
-                    ss.add(c.toScriptlet(dialect));
-                    ss.add("</if>");
-                } else {
-                    ss.add(conditionComp.getRel().toString());
-                    ss.add(c.toScriptlet(dialect));
-                }
-            }
-            ss.add("</trim>");
-            return String.join(" ", ss);
-        }
-        return null;
+        return ConditionHelper.toHaving(condition, dialect);
     }
 
     private String buildTableAndJoin(Semantic semantic) {
@@ -309,7 +214,7 @@ public class SemanticScriptBuilder {
         } else {
             directAliases.add(semantic.getTableInfo().getJoinTableInfo().getAlias());
             if (semantic.getWhere() != null) {
-                semantic.getWhere().collectDirectTableAliases(directAliases);
+                ConditionHelper.collectUsedTableAliases(semantic.getWhere(), directAliases);
             }
             if (semantic.getGroupBy() != null) {
                 for (PropertyInfo propertyInfo : semantic.getGroupBy()) {
