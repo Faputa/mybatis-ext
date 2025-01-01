@@ -18,4 +18,6 @@ public interface JpaParserExample extends BaseMapper<PrivilegeTable> {
     PrivilegeTable getByTableIdIsPtDotTableId(@Param("pt") PrivilegeTable query);
 
     PrivilegeTable getByTableIdOrderByIdAndTableId(PrivilegeTable query);
+
+    PrivilegeTable getByTableIdGroupByIdAndTableId(PrivilegeTable query);
 }

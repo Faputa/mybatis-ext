@@ -32,13 +32,7 @@ public class JpaParser extends BaseParser {
     Symbol propertyName = new Symbol("propertyName").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         int cursor = jpaTokenizer.getCursor();
-        Object result = state.getResult();
-        List<PropertyInfo> propertyInfos;
-        if (result instanceof PropertyInfo) {
-            propertyInfos = jpaTokenizer.property((PropertyInfo) result);
-        } else {
-            propertyInfos = jpaTokenizer.property();
-        }
+        List<PropertyInfo> propertyInfos = jpaTokenizer.property();
         for (PropertyInfo propertyInfo : propertyInfos) {
             jpaTokenizer.setCursor(cursor + propertyInfo.getName().length());
             jpaTokenizer.getTokenMarker().record(jpaTokenizer.getCursor());
@@ -48,6 +42,22 @@ public class JpaParser extends BaseParser {
             jpaTokenizer.setCursor(cursor);
         }
         jpaTokenizer.getExpectedTokens().record(cursor, "propertyName");
+        return false;
+    });
+
+    Symbol subPropertyName = new Symbol("subPropertyName").set((state, continuation) -> {
+        JpaTokenizer jpaTokenizer = state.getTokenizer();
+        int cursor = jpaTokenizer.getCursor();
+        List<PropertyInfo> propertyInfos = jpaTokenizer.property((PropertyInfo) state.getResult());
+        for (PropertyInfo propertyInfo : propertyInfos) {
+            jpaTokenizer.setCursor(cursor + propertyInfo.getName().length());
+            jpaTokenizer.getTokenMarker().record(jpaTokenizer.getCursor());
+            if (state.setResult(propertyInfo) && continuation.test(state)) {
+                return true;
+            }
+            jpaTokenizer.setCursor(cursor);
+        }
+        jpaTokenizer.getExpectedTokens().record(cursor, "subPropertyName");
         return false;
     });
 
@@ -66,13 +76,7 @@ public class JpaParser extends BaseParser {
     Symbol variableName = new Symbol("variableName").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         int cursor = jpaTokenizer.getCursor();
-        Object result = state.getResult();
-        List<Variable> variables;
-        if (result instanceof Variable) {
-            variables = jpaTokenizer.variable((Variable) result);
-        } else {
-            variables = jpaTokenizer.variable();
-        }
+        List<Variable> variables = jpaTokenizer.variable();
         for (Variable v : variables) {
             jpaTokenizer.setCursor(cursor + v.getName().length());
             jpaTokenizer.getTokenMarker().record(jpaTokenizer.getCursor());
@@ -82,6 +86,22 @@ public class JpaParser extends BaseParser {
             jpaTokenizer.setCursor(cursor);
         }
         jpaTokenizer.getExpectedTokens().record(cursor, "variableName");
+        return false;
+    });
+
+    Symbol subVariableName = new Symbol("subVariableName").set((state, continuation) -> {
+        JpaTokenizer jpaTokenizer = state.getTokenizer();
+        int cursor = jpaTokenizer.getCursor();
+        List<Variable> variables = jpaTokenizer.variable((Variable) state.getResult());
+        for (Variable v : variables) {
+            jpaTokenizer.setCursor(cursor + v.getName().length());
+            jpaTokenizer.getTokenMarker().record(jpaTokenizer.getCursor());
+            if (state.setResult(v) && continuation.test(state)) {
+                return true;
+            }
+            jpaTokenizer.setCursor(cursor);
+        }
+        jpaTokenizer.getExpectedTokens().record(cursor, "subVariableName");
         return false;
     });
 
@@ -331,8 +351,8 @@ public class JpaParser extends BaseParser {
                     state.setReturn(propertyInfos);
                 })));
 
-        property.set(join(propertyName, star(join(keyword("Dot"), propertyName))));
-        variable.set(join(variableName, star(join(keyword("Dot"), variableName))));
+        property.set(join(propertyName, star(join(keyword("Dot"), subPropertyName))));
+        variable.set(join(variableName, star(join(keyword("Dot"), subVariableName))));
     }
 
     private Variable getParamTargetVariable(State state) {
