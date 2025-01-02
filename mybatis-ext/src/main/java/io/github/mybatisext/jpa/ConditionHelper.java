@@ -15,7 +15,7 @@ import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.ognl.Ognl;
-import io.github.mybatisext.resultmap.ResultType;
+import io.github.mybatisext.statement.ResultType;
 import io.github.mybatisext.util.SimpleStringTemplate;
 import io.github.mybatisext.util.StringUtils;
 

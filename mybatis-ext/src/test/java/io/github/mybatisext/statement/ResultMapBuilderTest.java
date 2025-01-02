@@ -1,4 +1,4 @@
-package io.github.mybatisext.resultmap;
+package io.github.mybatisext.statement;
 
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.mapping.ResultMap;

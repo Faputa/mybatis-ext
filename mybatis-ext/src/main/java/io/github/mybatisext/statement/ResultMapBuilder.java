@@ -1,4 +1,4 @@
-package io.github.mybatisext.resultmap;
+package io.github.mybatisext.statement;
 
 import java.util.ArrayList;
 import java.util.List;
