@@ -215,23 +215,10 @@ public class ConditionHelper {
     }
 
     private static String toScript(Condition condition, LogicalOperator prefix, Dialect dialect) {
-        List<String> ss = new ArrayList<>();
         if (condition.hasTest()) {
-            ss.add("<if test=\"" + toTestOgnl(condition) + "\">");
-            if (prefix != null) {
-                ss.add(prefix.toString());
-            }
-            ss.add(toExpr(condition, dialect));
-            ss.add("</if>");
-            return String.join(" ", ss);
+            return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(condition, prefix, dialect) + "</if>";
         }
-        {
-            if (prefix != null) {
-                ss.add(prefix.toString());
-            }
-            ss.add(toExpr(condition, dialect));
-            return String.join(" ", ss);
-        }
+        return toExprWithPrefix(condition, prefix, dialect);
     }
 
     private static String toTestOgnl(Condition condition) {
@@ -245,6 +232,16 @@ public class ConditionHelper {
             return condition.getVariable() + " != null";
         }
         return null;
+    }
+
+    private static String toExprWithPrefix(Condition condition, LogicalOperator prefix, Dialect dialect) {
+        if (LogicalOperator.AND == prefix) {
+            return "AND " + toExpr(condition, dialect);
+        }
+        if (LogicalOperator.OR == prefix) {
+            return "OR " + toExpr(condition, dialect);
+        }
+        return toExpr(condition, dialect);
     }
 
     private static String toExpr(Condition condition, Dialect dialect) {
