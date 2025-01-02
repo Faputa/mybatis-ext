@@ -12,8 +12,8 @@ import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.idgenerator.IdGenerator;
 import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.resultmap.ResultMapBuilder;
-import io.github.mybatisext.resultmap.ResultType;
+import io.github.mybatisext.statement.ResultMapBuilder;
+import io.github.mybatisext.statement.ResultType;
 
 public class PropertyInfo extends HashMap<String, PropertyInfo> {
 

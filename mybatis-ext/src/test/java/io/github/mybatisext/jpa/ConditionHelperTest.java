@@ -10,29 +10,11 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.mybatisext.adapter.ExtConfiguration;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.annotation.IfTest;
-import io.github.mybatisext.condition.Condition;
-import io.github.mybatisext.condition.ConditionFactory;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.table.PrivilegeTable;
 
-public class ConditionFactoryTest {
-
-    @Test
-    public void testFromCriteria() {
-        MysqlDataSource dataSource = new MysqlDataSource();
-        dataSource.setServerName("localhost");
-        dataSource.setPort(3306);
-        dataSource.setDatabaseName("visual");
-        dataSource.setUser("root");
-        dataSource.setPassword("root");
-
-        TransactionFactory transactionFactory = new JdbcTransactionFactory();
-        Environment environment = new Environment("development", transactionFactory, dataSource);
-        ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
-        Condition condition = ConditionFactory.fromCriteria(configuration, PrivilegeTable.class, "pt");
-        System.out.println(condition);
-    }
+public class ConditionHelperTest {
 
     @Test
     public void testFromTableInfo() {
@@ -47,7 +29,7 @@ public class ConditionFactoryTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        Condition condition = ConditionFactory.fromTableInfo(tableInfo, false, IfTest.NotNull, "pt");
+        Condition condition = ConditionHelper.fromTableInfo(tableInfo, false, IfTest.NotNull, "pt");
         System.out.println(condition);
     }
 }

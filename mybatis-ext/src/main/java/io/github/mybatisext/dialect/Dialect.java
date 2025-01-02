@@ -1,20 +1,27 @@
 package io.github.mybatisext.dialect;
 
+import java.util.List;
+
+import io.github.mybatisext.jpa.Condition;
 import io.github.mybatisext.jpa.Limit;
+import io.github.mybatisext.jpa.OrderByElement;
 import io.github.mybatisext.jpa.Variable;
+import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 
 public interface Dialect {
 
-    String insert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull);
+    String count(TableInfo tableInfo, Condition where);
 
-    String update(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull, boolean join, String tableAndJoin, String where);
+    String exists(TableInfo tableInfo, Condition where);
 
-    String delete(TableInfo tableInfo, Variable variable, boolean batch, boolean join, String tableAndJoin, String where);
+    String select(TableInfo tableInfo, Condition where, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit);
 
-    String limit(Limit limit, String select);
+    String delete(TableInfo tableInfo, Variable parameter, Condition where);
 
-    String exists(String select);
+    String insert(TableInfo tableInfo, Variable parameter, boolean ignoreNull);
+
+    String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull);
 
     String upper(String expr);
 

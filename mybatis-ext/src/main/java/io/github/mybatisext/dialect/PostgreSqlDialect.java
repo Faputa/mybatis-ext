@@ -8,7 +8,7 @@ import java.util.List;
 public class PostgreSqlDialect extends MySqlDialect {
 
     @Override
-    public String limit(Limit limit, String select) {
+    public String buildLimit(Limit limit, String select) {
         List<String> ss = new ArrayList<>();
         ss.add(select);
         if (limit.getOffset() == null && limit.getOffsetVariable() != null) {

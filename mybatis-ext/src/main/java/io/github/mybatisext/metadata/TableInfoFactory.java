@@ -35,7 +35,7 @@ import io.github.mybatisext.reflect.GenericField;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
-import io.github.mybatisext.resultmap.ResultType;
+import io.github.mybatisext.statement.ResultType;
 import io.github.mybatisext.util.StringUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 

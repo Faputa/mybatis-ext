@@ -7,16 +7,16 @@ import io.github.mybatisext.jpa.Limit;
 import io.github.mybatisext.jpa.Variable;
 import io.github.mybatisext.metadata.TableInfo;
 
-public class MySqlDialect extends BaseDialect {
+public class MySqlDialect extends BaseSimpleDialect {
 
     @Override
-    public String insert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
+    public String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
             if (ignoreNull) {
                 ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
-                ss.add(insert(tableInfo, itemVariable, false, true));
+                ss.add(buildInsert(tableInfo, itemVariable, false, true));
                 ss.add("</foreach>");
                 return String.join(" ", ss);
             }
@@ -32,12 +32,12 @@ public class MySqlDialect extends BaseDialect {
     }
 
     @Override
-    public String update(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull, boolean join, String tableAndJoin, String where) {
+    public String buildUpdate(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull, boolean join, String tableAndJoin, String where) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
             ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + "__" + variable.getName() + "__item\" open=\"begin\" close=\"; end;\" separator=\";\">");
-            ss.add(update(tableInfo, itemVariable, false, ignoreNull, join, tableAndJoin, where));
+            ss.add(buildUpdate(tableInfo, itemVariable, false, ignoreNull, join, tableAndJoin, where));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -45,12 +45,12 @@ public class MySqlDialect extends BaseDialect {
     }
 
     @Override
-    public String delete(TableInfo tableInfo, Variable variable, boolean batch, boolean join, String tableAndJoin, String where) {
+    public String buildDelete(TableInfo tableInfo, Variable variable, boolean batch, boolean join, String tableAndJoin, String where) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
-            ss.add(delete(tableInfo, itemVariable, false, join, tableAndJoin, where));
+            ss.add(buildDelete(tableInfo, itemVariable, false, join, tableAndJoin, where));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -58,7 +58,7 @@ public class MySqlDialect extends BaseDialect {
     }
 
     @Override
-    public String limit(Limit limit, String select) {
+    public String buildLimit(Limit limit, String select) {
         List<String> ss = new ArrayList<>();
         ss.add(select);
         if (limit.getOffset() == null && limit.getOffsetVariable() != null) {
@@ -74,7 +74,7 @@ public class MySqlDialect extends BaseDialect {
     }
 
     @Override
-    public String exists(String select) {
+    public String buildExists(String select) {
         return "SELECT EXISTS (" + select + ")";
     }
 
