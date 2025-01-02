@@ -27,7 +27,7 @@ public class Ognl {
         if (o == null) {
             return true;
         }
-        if (o instanceof String && ((String) o).trim().length() == 0) {
+        if (o instanceof String && ((String) o).trim().isEmpty()) {
             return true;
         }
         if (o instanceof Map && ((Map<?, ?>) o).isEmpty()) {
