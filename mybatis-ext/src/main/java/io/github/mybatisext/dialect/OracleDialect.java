@@ -8,15 +8,15 @@ import io.github.mybatisext.jpa.Variable;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.util.StringUtils;
 
-public class OracleDialect extends BaseDialect {
+public class OracleDialect extends BaseSimpleDialect {
 
     @Override
-    public String insert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
+    public String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
             ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
-            ss.add(insert(tableInfo, itemVariable, false, ignoreNull));
+            ss.add(buildInsert(tableInfo, itemVariable, false, ignoreNull));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -24,12 +24,12 @@ public class OracleDialect extends BaseDialect {
     }
 
     @Override
-    public String update(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull, boolean join, String tableAndJoin, String where) {
+    public String buildUpdate(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull, boolean join, String tableAndJoin, String where) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
             ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
-            ss.add(update(tableInfo, itemVariable, false, ignoreNull, join, tableAndJoin, where));
+            ss.add(buildUpdate(tableInfo, itemVariable, false, ignoreNull, join, tableAndJoin, where));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -49,12 +49,12 @@ public class OracleDialect extends BaseDialect {
     }
 
     @Override
-    public String delete(TableInfo tableInfo, Variable variable, boolean batch, boolean join, String tableAndJoin, String where) {
+    public String buildDelete(TableInfo tableInfo, Variable variable, boolean batch, boolean join, String tableAndJoin, String where) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
             ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
-            ss.add(delete(tableInfo, itemVariable, false, join, tableAndJoin, where));
+            ss.add(buildDelete(tableInfo, itemVariable, false, join, tableAndJoin, where));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -73,7 +73,7 @@ public class OracleDialect extends BaseDialect {
     }
 
     @Override
-    public String limit(Limit limit, String select) {
+    public String buildLimit(Limit limit, String select) {
         String startRow;
         String endRow;
         if (limit.getOffset() != null || limit.getOffsetVariable() != null) {
@@ -101,7 +101,7 @@ public class OracleDialect extends BaseDialect {
     }
 
     @Override
-    public String exists(String select) {
+    public String buildExists(String select) {
         return "SELECT CASE WHEN EXISTS (" + select + ") THEN 1 ELSE 0 END FROM DUAL";
     }
 

@@ -1,4 +1,4 @@
-package io.github.mybatisext.resultmap;
+package io.github.mybatisext.statement;
 
 public enum ResultType {
 
