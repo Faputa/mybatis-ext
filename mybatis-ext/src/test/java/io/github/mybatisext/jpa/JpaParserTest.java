@@ -1,11 +1,7 @@
 package io.github.mybatisext.jpa;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.transaction.TransactionFactory;
@@ -23,6 +19,8 @@ import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
+import io.github.mybatisext.statement.ParameterSignature;
+import io.github.mybatisext.statement.ParameterSignatureHelper;
 import io.github.mybatisext.statement.SemanticScriptHelper;
 import io.github.mybatisext.table.PrivilegeTable;
 
@@ -48,18 +46,19 @@ public class JpaParserTest {
     public void testParse() {
         JpaParser jpaParser = new JpaParser();
         GenericType genericType = GenericTypeFactory.build(JpaParserExample.class);
-        Map<String, Set<Semantic>> map = new HashMap<>();
+        Map<String, Map<String, Semantic>> map = new HashMap<>();
         for (GenericMethod method : genericType.getMethods()) {
             Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters());
-            map.computeIfAbsent(method.getName(), k -> new HashSet<>()).add(semantic);
+            ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(configuration, method.getMethod());
+            String s = ParameterSignatureHelper.toString(parameterSignature);
+            map.computeIfAbsent(method.getName(), k -> new HashMap<>()).put(s, semantic);
         }
-        // Dialect dialect = new H2Dialect();
-        // map.forEach((k, v) -> {
-        //     assertEquals(1, v.size(), k);
-        //     String script = SemanticScriptHelper.buildScript(v.iterator().next(), dialect);
-        //     System.out.println(k + "================================");
-        //     System.out.println(script);
-        //     System.out.println();
-        // });
+        Dialect dialect = new H2Dialect();
+        map.forEach((k, v) -> {
+            String script = SemanticScriptHelper.buildScript(v, dialect);
+            System.out.println(k + "================================" + v.size());
+            System.out.println(script);
+            System.out.println();
+        });
     }
 }

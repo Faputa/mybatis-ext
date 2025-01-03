@@ -28,7 +28,6 @@ import io.github.mybatisext.jpa.SemanticType;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericMethod;
-import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.reflect.GenericType;
 
 public class MappedStatementHelper {
@@ -60,15 +59,15 @@ public class MappedStatementHelper {
         Map<String, Semantic> map = new HashMap<>();
         for (GenericMethod method : methods) {
             Semantic semantic = jpaParser.parse(originConfiguration, tableInfo, method.getName(), method.getParameters());
-            String signature = buildParameterSignature(method.getParameters());
+            String signature = buildParameterSignature(method);
             map.put(signature, semantic);
         }
         return map;
     }
 
-    private String buildParameterSignature(GenericParameter[] parameters) {
-        // TODO
-        return "";
+    private String buildParameterSignature(GenericMethod method) {
+        ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(originConfiguration, method.getMethod());
+        return ParameterSignatureHelper.toString(parameterSignature);
     }
 
     private String buildScript(Map<String, Semantic> signatureToSemantic) {
