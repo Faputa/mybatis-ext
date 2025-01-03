@@ -8,6 +8,8 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 
+import io.github.mybatisext.statement.ParameterSignatureHelper;
+
 public class Ognl {
 
     public static final String IsEmpty = "@io.github.mybatisext.ognl.Ognl@isEmpty";
@@ -127,12 +129,12 @@ public class Ognl {
 
     /**
      * 校验参数是否匹配
+     *
      * @param _parameter 参数对象
-     * @param signature 签名
+     * @param signature  签名
      * @return 是否匹配
      */
     public static boolean isParameterSignatureMatch(Object _parameter, String signature) {
-        // TODO
-        return false;
+        return ParameterSignatureHelper.isParameterSignatureMatch(_parameter, signature);
     }
 }
