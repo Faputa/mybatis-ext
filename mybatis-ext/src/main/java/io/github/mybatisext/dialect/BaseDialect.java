@@ -2,10 +2,19 @@ package io.github.mybatisext.dialect;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import io.github.mybatisext.jpa.Condition;
+import io.github.mybatisext.jpa.ConditionHelper;
+import io.github.mybatisext.jpa.OrderByElement;
+import io.github.mybatisext.jpa.OrderByType;
 import io.github.mybatisext.jpa.Variable;
+import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.util.StringUtils;
@@ -21,10 +30,11 @@ public abstract class BaseDialect implements Dialect {
         return String.join(" ", ss);
     }
 
-    protected String buildSimpleUpdate(TableInfo tableInfo, Variable variable, boolean ignoreNull, String tableAndJoin, String where) {
+    protected String buildSimpleUpdate(TableInfo tableInfo, Variable variable, boolean ignoreNull, String where) {
         List<String> ss = new ArrayList<>();
         ss.add("UPDATE");
-        ss.add(tableAndJoin);
+        ss.add(tableInfo.getName());
+        ss.add(tableInfo.getJoinTableInfo().getAlias());
         ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, variable, ignoreNull));
         if (StringUtils.isNotBlank(where)) {
             ss.add(where);
@@ -32,10 +42,11 @@ public abstract class BaseDialect implements Dialect {
         return String.join(" ", ss);
     }
 
-    protected String buildSimpleDelete(String tableAndJoin, String where) {
+    protected String buildSimpleDelete(TableInfo tableInfo, String where) {
         List<String> ss = new ArrayList<>();
-        ss.add("DELETE");
-        ss.add(tableAndJoin);
+        ss.add("DELETE FROM");
+        ss.add(tableInfo.getName());
+        ss.add(tableInfo.getJoinTableInfo().getAlias());
         if (StringUtils.isNotBlank(where)) {
             ss.add(where);
         }
@@ -43,17 +54,15 @@ public abstract class BaseDialect implements Dialect {
     }
 
     protected String buildInsertValues(TableInfo tableInfo, Variable variable, boolean ignoreNull) {
-        List<String> ss = new ArrayList<>();
+        String s;
         if (ignoreNull) {
-            ss.add("<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\" >");
-            ss.add(buildInsertValues(tableInfo.getNameToPropertyInfo().values(), variable, true, true));
-            ss.add("</trim>");
+            s = "<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\" >";
+            s += buildInsertValues(tableInfo.getNameToPropertyInfo().values(), variable, true, true);
+            s += "</trim>";
         } else {
-            ss.add("(");
-            ss.add(buildInsertValues(tableInfo.getNameToPropertyInfo().values(), variable, false, false));
-            ss.add(")");
+            s = "(" + buildInsertValues(tableInfo.getNameToPropertyInfo().values(), variable, false, false) + ")";
         }
-        return String.join(" ", ss);
+        return s;
     }
 
     private String buildInsertValues(Collection<PropertyInfo> propertyInfos, Variable variable, boolean ignoreNull, boolean hasNext) {
@@ -79,17 +88,15 @@ public abstract class BaseDialect implements Dialect {
     }
 
     protected String buildInsertItems(TableInfo tableInfo, Variable variable, boolean ignoreNull) {
-        List<String> ss = new ArrayList<>();
+        String s;
         if (ignoreNull) {
-            ss.add("<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\" >");
-            ss.add(buildInsertItems(tableInfo.getNameToPropertyInfo().values(), variable, true, true));
-            ss.add("</trim>");
+            s = "<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\" >";
+            s += buildInsertItems(tableInfo.getNameToPropertyInfo().values(), variable, true, true);
+            s += "</trim>";
         } else {
-            ss.add("(");
-            ss.add(buildInsertItems(tableInfo.getNameToPropertyInfo().values(), variable, false, false));
-            ss.add(")");
+            s = "(" + buildInsertItems(tableInfo.getNameToPropertyInfo().values(), variable, false, false) + ")";
         }
-        return String.join(" ", ss);
+        return s;
     }
 
     private String buildInsertItems(Collection<PropertyInfo> propertyInfos, Variable variable, boolean ignoreNull, boolean hasNext) {
@@ -115,16 +122,16 @@ public abstract class BaseDialect implements Dialect {
     }
 
     protected String buildUpdateSet(String tableAlias, TableInfo tableInfo, Variable variable, boolean ignoreNull) {
-        List<String> ss = new ArrayList<>();
+        String s;
         if (ignoreNull) {
-            ss.add("<set>");
-            ss.add(buildUpdateSet(tableAlias, tableInfo.getNameToPropertyInfo().values(), variable, true, true));
-            ss.add("</set>");
+            s = "<set>";
+            s += buildUpdateSet(tableAlias, tableInfo.getNameToPropertyInfo().values(), variable, true, true);
+            s += "</set>";
         } else {
-            ss.add("SET");
-            ss.add(buildUpdateSet(tableAlias, tableInfo.getNameToPropertyInfo().values(), variable, false, false));
+            s = "SET ";
+            s += buildUpdateSet(tableAlias, tableInfo.getNameToPropertyInfo().values(), variable, false, false);
         }
-        return String.join(" ", ss);
+        return s;
     }
 
     private String buildUpdateSet(String tableAlias, Collection<PropertyInfo> propertyInfos, Variable variable, boolean ignoreNull, boolean hasNext) {
@@ -147,5 +154,104 @@ public abstract class BaseDialect implements Dialect {
             }
         }
         return String.join(" ", ss);
+    }
+
+    protected String buildTableAndJoin(TableInfo tableInfo, Condition where, List<PropertyInfo> groupBy, List<OrderByElement> orderBy) {
+        List<String> ss = new ArrayList<>();
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, groupBy, orderBy);
+        ss.add(joinTableInfos.get(0).getTableInfo().getName());
+        ss.add(joinTableInfos.get(0).getAlias());
+        for (int i = 1; i < joinTableInfos.size(); i++) {
+            JoinTableInfo joinTableInfo = joinTableInfos.get(i);
+            ss.add("LEFT JOIN");
+            ss.add(joinTableInfo.getTableInfo().getName());
+            ss.add(joinTableInfo.getAlias());
+            ss.add("ON");
+            List<String> conditions = new ArrayList<>();
+            joinTableInfo.getLeftJoinTableInfos().forEach(((joinColumnInfo, leftJoinTableInfo) -> {
+                conditions.add(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn());
+            }));
+            ss.add(String.join(" AND ", conditions));
+        }
+        return String.join(" ", ss);
+    }
+
+    protected List<JoinTableInfo> collectJoinTableInfo(TableInfo tableInfo, Condition where, List<PropertyInfo> groupBy, List<OrderByElement> orderBy) {
+        Set<String> directAliases = new HashSet<>();
+        directAliases.add(tableInfo.getJoinTableInfo().getAlias());
+        if (where != null) {
+            ConditionHelper.collectUsedTableAliases(where, directAliases);
+        }
+        if (groupBy != null) {
+            for (PropertyInfo propertyInfo : groupBy) {
+                directAliases.add(propertyInfo.getJoinTableInfo().getAlias());
+            }
+        }
+        if (orderBy != null) {
+            for (OrderByElement orderByElement : orderBy) {
+                directAliases.add(orderByElement.getPropertyInfo().getJoinTableInfo().getAlias());
+            }
+        }
+        LinkedHashSet<String> orderAliases = new LinkedHashSet<>();
+        for (String alias : directAliases) {
+            tableInfo.getAliasToJoinTableInfo().get(alias).collectTableAliases(orderAliases);
+        }
+        return orderAliases.stream().map(v -> tableInfo.getAliasToJoinTableInfo().get(v)).collect(Collectors.toList());
+    }
+
+    protected String buildSelectItems(TableInfo tableInfo) {
+        List<String> selectItems = new ArrayList<>();
+        tableInfo.getAliasToJoinTableInfo().forEach((alias, joinTableInfo) -> {
+            joinTableInfo.getTableInfo().getNameToColumnInfo().forEach((name, columnInfo) -> {
+                if (!columnInfo.isReadonly()) {
+                    selectItems.add(alias + "." + name + " AS " + alias + "_" + name);
+                }
+            });
+        });
+        return String.join(", ", selectItems);
+    }
+
+    protected String buildSelectItems(List<PropertyInfo> propertyInfos) {
+        List<String> selectItems = new ArrayList<>();
+        for (PropertyInfo propertyInfo : propertyInfos) {
+            if (propertyInfo.getColumnName() != null) {
+                if (!propertyInfo.getJoinTableInfo().getTableInfo().getNameToColumnInfo().get(propertyInfo.getColumnName()).isReadonly()) {
+                    return propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " " + propertyInfo.getJoinTableInfo().getAlias() + "_" + propertyInfo.getColumnName();
+                }
+            } else {
+                selectItems.add(buildSelectItems(new ArrayList<>(propertyInfo.values())));
+            }
+        }
+        return String.join(", ", selectItems);
+    }
+
+    protected String buildGroupBy(List<PropertyInfo> groupBy) {
+        List<String> columns = new ArrayList<>();
+        for (PropertyInfo propertyInfo : groupBy) {
+            columns.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName());
+        }
+        return "GROUP BY " + String.join(", ", columns);
+    }
+
+    protected String buildOrderBy(List<OrderByElement> orderBy) {
+        List<String> ss = new ArrayList<>();
+        for (OrderByElement orderByElement : orderBy) {
+            String s = orderByElement.getPropertyInfo().getJoinTableInfo().getAlias() + "." + orderByElement.getPropertyInfo().getColumnName();
+            if (OrderByType.ASC == orderByElement.getType()) {
+                s += " ASC";
+            } else if (OrderByType.DESC == orderByElement.getType()) {
+                s += " DESC";
+            }
+            ss.add(s);
+        }
+        return "ORDER BY " + String.join(", ", ss);
+    }
+
+    protected String buildWhere(Condition condition) {
+        return ConditionHelper.toWhere(condition, this);
+    }
+
+    protected String buildHaving(Condition condition) {
+        return ConditionHelper.toHaving(condition, this);
     }
 }

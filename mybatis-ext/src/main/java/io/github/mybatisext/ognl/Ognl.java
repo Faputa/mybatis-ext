@@ -16,6 +16,7 @@ public class Ognl {
     public static final String IsNotNumber = "@io.github.mybatisext.ognl.Ognl@isNotNumber";
     public static final String HasProperty = "@io.github.mybatisext.ognl.Ognl@hasProperty";
     public static final String ToUpperCase = "@io.github.mybatisext.ognl.Ognl@toUpperCase";
+    public static final String IsParameterSignatureMatch = "@io.github.mybatisext.ognl.Ognl@isParameterSignatureMatch";
 
     /**
      * 可以用于判断String,Long,Integer,Map,Array,Collection是否为空
@@ -122,5 +123,16 @@ public class Ognl {
      */
     public static String toUpperCase(Object o) {
         return o.toString().toUpperCase();
+    }
+
+    /**
+     * 校验参数是否匹配
+     * @param _parameter 参数对象
+     * @param signature 签名
+     * @return 是否匹配
+     */
+    public static boolean isParameterSignatureMatch(Object _parameter, String signature) {
+        // TODO
+        return false;
     }
 }

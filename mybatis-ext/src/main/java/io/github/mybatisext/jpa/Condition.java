@@ -138,11 +138,11 @@ public class Condition {
             return false;
         }
         Condition condition = (Condition) o;
-        return ignorecase == condition.ignorecase && not == condition.not && type == condition.type && logicalOperator == condition.logicalOperator && compareOperator == condition.compareOperator && Objects.equals(propertyInfo, condition.propertyInfo) && Objects.equals(propertyInfos, condition.propertyInfos) && Objects.equals(variable, condition.variable) && Objects.equals(secondVariable, condition.secondVariable) && Objects.equals(subConditions, condition.subConditions) && test == condition.test && Objects.equals(testTemplate, condition.testTemplate) && Objects.equals(exprTemplate, condition.exprTemplate);
+        return ignorecase == condition.ignorecase && not == condition.not && type == condition.type && Objects.equals(subConditions, condition.subConditions) && logicalOperator == condition.logicalOperator && compareOperator == condition.compareOperator && Objects.equals(propertyInfo, condition.propertyInfo) && Objects.equals(variable, condition.variable) && Objects.equals(secondVariable, condition.secondVariable) && test == condition.test && Objects.equals(testTemplate, condition.testTemplate) && Objects.equals(exprTemplate, condition.exprTemplate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, logicalOperator, compareOperator, propertyInfo, propertyInfos, ignorecase, not, variable, secondVariable, subConditions, test, testTemplate, exprTemplate);
+        return Objects.hash(type, subConditions, logicalOperator, compareOperator, propertyInfo, ignorecase, not, variable, secondVariable, test, testTemplate, exprTemplate);
     }
 }

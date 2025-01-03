@@ -1,4 +1,4 @@
-package io.github.mybatisext.statement;
+package io.github.mybatisext.metadata;
 
 public enum ResultType {
 
@@ -10,5 +10,5 @@ public enum ResultType {
 
     COLLECTION,
 
-    DISCRIMINATOR
+    DISCRIMINATOR,
 }

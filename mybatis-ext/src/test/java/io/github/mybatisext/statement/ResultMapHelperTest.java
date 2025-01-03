@@ -14,7 +14,7 @@ import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.table.PrivilegeTable;
 
-public class ResultMapBuilderTest {
+public class ResultMapHelperTest {
 
     @Test
     public void test() {
@@ -29,7 +29,7 @@ public class ResultMapBuilderTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        ResultMap resultMap = ResultMapBuilder.buildResultMap(configuration, tableInfo);
+        ResultMap resultMap = ResultMapHelper.buildResultMap(configuration, tableInfo);
         System.out.println(resultMap);
     }
 }

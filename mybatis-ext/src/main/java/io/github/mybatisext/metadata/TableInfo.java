@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.util.StringUtils;
 
 public class TableInfo {
 
@@ -79,6 +80,6 @@ public class TableInfo {
 
     @Override
     public String toString() {
-        return name;
+        return StringUtils.isNotBlank(schema) ? schema + "." + name : name;
     }
 }
