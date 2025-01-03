@@ -19,20 +19,20 @@ import io.github.mybatisext.mapper.ExtMapper;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
-import io.github.mybatisext.statement.MappedStatementBuilder;
+import io.github.mybatisext.statement.MappedStatementHelper;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class ExtEnhancer {
 
     private final Configuration originConfiguration;
-    private final MappedStatementBuilder statementBuilder;
+    private final MappedStatementHelper statementBuilder;
     private final Object lock = new Object();
 
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
 
     public ExtEnhancer(Configuration originConfiguration, ExtContext extContext) {
         this.originConfiguration = originConfiguration;
-        this.statementBuilder = new MappedStatementBuilder(originConfiguration, extContext);
+        this.statementBuilder = new MappedStatementHelper(originConfiguration, extContext);
     }
 
     public MappedStatement getMappedStatement(String id) {

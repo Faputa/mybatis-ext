@@ -11,7 +11,7 @@ import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.reflect.GenericType;
 
-public class ResultMapBuilder {
+public class ResultMapHelper {
 
     public static ResultMap buildResultMap(Configuration configuration, TableInfo tableInfo) {
         GenericType tableClass = tableInfo.getTableClass();
@@ -35,7 +35,7 @@ public class ResultMapBuilder {
             resultMappings.add(subPropertyInfo.getResultMapping(configuration, id));
         }
         ResultMap resultMap = new ResultMap.Builder(configuration, id, propertyInfo.getJavaType().getType(), resultMappings).build();
-        synchronized (ResultMapBuilder.class) {
+        synchronized (ResultMapHelper.class) {
             if (!configuration.hasResultMap(id)) {
                 configuration.addResultMap(resultMap);
             }

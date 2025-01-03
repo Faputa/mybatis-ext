@@ -12,8 +12,7 @@ import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.idgenerator.IdGenerator;
 import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.statement.ResultMapBuilder;
-import io.github.mybatisext.statement.ResultType;
+import io.github.mybatisext.statement.ResultMapHelper;
 
 public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
@@ -142,7 +141,7 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         }
         if (ResultType.ASSOCIATION == resultType) {
             String nestedResultMapId = resultMapId + "[association" + "=" + name + "]";
-            ResultMapBuilder.addNestedResultMap(configuration, nestedResultMapId, this);
+            ResultMapHelper.addNestedResultMap(configuration, nestedResultMapId, this);
             return new ResultMapping.Builder(configuration, name)
                     .javaType(javaType.getType())
                     .nestedResultMapId(nestedResultMapId)
@@ -150,7 +149,7 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         }
         if (ResultType.COLLECTION == resultType) {
             String nestedResultMapId = resultMapId + "[collection" + "=" + name + "]";
-            ResultMapBuilder.addNestedResultMap(configuration, nestedResultMapId, this);
+            ResultMapHelper.addNestedResultMap(configuration, nestedResultMapId, this);
             return new ResultMapping.Builder(configuration, name)
                     .javaType(ofType.getType())
                     .nestedResultMapId(nestedResultMapId)

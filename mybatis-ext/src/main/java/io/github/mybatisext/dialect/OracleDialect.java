@@ -45,7 +45,7 @@ public class OracleDialect extends BaseSimpleDialect {
             ss.add(buildUpdateSet("x", tableInfo, variable, ignoreNull));
             return String.join(" ", ss);
         }
-        return buildSimpleUpdate(tableInfo, variable, ignoreNull, tableAndJoin, where);
+        return buildSimpleUpdate(tableInfo, variable, ignoreNull, where);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class OracleDialect extends BaseSimpleDialect {
             ss.add(") x");
             return String.join(" ", ss);
         }
-        return buildSimpleDelete(tableAndJoin, where);
+        return buildSimpleDelete(tableInfo, where);
     }
 
     @Override

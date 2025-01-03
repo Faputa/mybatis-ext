@@ -2,8 +2,9 @@ package io.github.mybatisext.statement;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -27,16 +28,17 @@ import io.github.mybatisext.jpa.SemanticType;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericMethod;
+import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.reflect.GenericType;
 
-public class MappedStatementBuilder {
+public class MappedStatementHelper {
 
-    private static final Log log = LogFactory.getLog(MappedStatementBuilder.class);
+    private static final Log log = LogFactory.getLog(MappedStatementHelper.class);
     private final Configuration originConfiguration;
     private final ExtContext extContext;
     private final JpaParser jpaParser = new JpaParser();
 
-    public MappedStatementBuilder(Configuration originConfiguration, ExtContext extContext) {
+    public MappedStatementHelper(Configuration originConfiguration, ExtContext extContext) {
         this.originConfiguration = originConfiguration;
         this.extContext = extContext;
     }
@@ -44,27 +46,33 @@ public class MappedStatementBuilder {
     public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType) {
         log.debug(id);
         TableInfo tableInfo = TableInfoFactory.getTableInfo(originConfiguration, tableType);
-        Semantic semantic = buildSemantic(tableInfo, methods);
-        String script = buildScript(semantic);
+        Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(tableInfo, methods);
+        String script = buildScript(signatureToSemantic);
         log.debug(script);
-        SqlCommandType sqlCommandType = resolveSqlCommandType(semantic);
+        SqlCommandType sqlCommandType = resolveSqlCommandType(signatureToSemantic.values().iterator().next());
         List<ResultMap> resultMaps = getResultMaps(id, tableInfo, tableType, returnType);
         SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(originConfiguration, script, Object.class);
         Builder builder = new MappedStatement.Builder(originConfiguration, id, sqlSource, sqlCommandType);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }
 
-    private Semantic buildSemantic(TableInfo tableInfo, List<GenericMethod> methods) {
-        Semantic semantic = null;
+    private Map<String, Semantic> buildSignatureToSemantic(TableInfo tableInfo, List<GenericMethod> methods) {
+        Map<String, Semantic> map = new HashMap<>();
         for (GenericMethod method : methods) {
-            Semantic sem = jpaParser.parse(originConfiguration, tableInfo, method.getName(), method.getParameters());
-            if (semantic == null) {
-                semantic = sem;
-            } else if (!Objects.equals(semantic, sem)) {
-                throw new MybatisExtException("Inconsistent semantics for method: " + method.getName());
-            }
+            Semantic semantic = jpaParser.parse(originConfiguration, tableInfo, method.getName(), method.getParameters());
+            String signature = buildParameterSignature(method.getParameters());
+            map.put(signature, semantic);
         }
-        return semantic;
+        return map;
+    }
+
+    private String buildParameterSignature(GenericParameter[] parameters) {
+        // TODO
+        return "";
+    }
+
+    private String buildScript(Map<String, Semantic> signatureToSemantic) {
+        return SemanticScriptHelper.buildScript(signatureToSemantic, selectDialect());
     }
 
     private SqlCommandType resolveSqlCommandType(Semantic semantic) {
@@ -83,33 +91,10 @@ public class MappedStatementBuilder {
         throw new MybatisExtException("Unsupported semantic type: " + semantic.getType());
     }
 
-    private String buildScript(Semantic semantic) {
-        Dialect dialect = selectDialect();
-        if (semantic.getType() == SemanticType.COUNT) {
-            return dialect.count(semantic.getTableInfo(), semantic.getWhere());
-        }
-        if (semantic.getType() == SemanticType.EXISTS) {
-            return dialect.exists(semantic.getTableInfo(), semantic.getWhere());
-        }
-        if (semantic.getType() == SemanticType.SELECT) {
-            return dialect.select(semantic.getTableInfo(), semantic.getWhere(), semantic.isDistinct(), semantic.getOrderBy(), semantic.getGroupBy(), semantic.getHaving(), semantic.getLimit());
-        }
-        if (semantic.getType() == SemanticType.DELETE) {
-            return dialect.delete(semantic.getTableInfo(), semantic.getParameter(), semantic.getWhere());
-        }
-        if (semantic.getType() == SemanticType.INSERT) {
-            return dialect.insert(semantic.getTableInfo(), semantic.getParameter(), semantic.isIgnoreNull());
-        }
-        if (semantic.getType() == SemanticType.UPDATE) {
-            return dialect.update(semantic.getTableInfo(), semantic.getParameter(), semantic.getWhere(), semantic.isIgnoreNull());
-        }
-        throw new MybatisExtException("Unsupported semantic type: " + semantic.getType());
-    }
-
     private List<ResultMap> getResultMaps(String id, TableInfo tableInfo, GenericType tableType, GenericType returnType) {
         List<ResultMap> resultMaps = new ArrayList<>();
         if (tableType.isAssignableFrom(returnType)) {
-            resultMaps.add(ResultMapBuilder.buildResultMap(originConfiguration, tableInfo));
+            resultMaps.add(ResultMapHelper.buildResultMap(originConfiguration, tableInfo));
         } else {
             resultMaps.add(new ResultMap.Builder(originConfiguration, id + "-Inline", returnType.getType(), new ArrayList<>(0)).build());
         }
