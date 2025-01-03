@@ -56,7 +56,7 @@ public class SemanticScriptHelper {
 
     private static void checkIsCompatibleWithTableClass(GenericType parameterType, GenericType tableClass) {
         if (parameterType.getType().isArray()) {
-            if (tableClass.isAssignableFrom(parameterType.getType())) {
+            if (tableClass.isAssignableFrom(parameterType.getType().getComponentType())) {
                 return;
             }
         }

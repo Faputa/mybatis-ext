@@ -23,5 +23,7 @@ public interface JpaParserExample extends BaseMapper<PrivilegeTable> {
 
     int deleteByDbName(String dbName);
 
+    int deleteByDbName(PrivilegeTable query);
+
     int updateIgnoreNullByDbName(PrivilegeTable query);
 }
