@@ -20,4 +20,8 @@ public interface JpaParserExample extends BaseMapper<PrivilegeTable> {
     PrivilegeTable getByTableIdOrderByIdAndTableId(PrivilegeTable query);
 
     PrivilegeTable getByTableIdGroupByIdAndTableId(PrivilegeTable query);
+
+    int deleteByDbName(String dbName);
+
+    int updateIgnoreNullByDbName(PrivilegeTable query);
 }

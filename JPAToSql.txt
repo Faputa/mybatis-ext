@@ -239,5 +239,61 @@ count
 exists
     是否连接
 
+/////////////////////////////
 
+参数签名
+    T|类型
+    N|名字:类型,名字:类型
+    类型
+        ParamMap
+            Param注解
+            多参数
+            Collection
+            Array
+        原始类型
+    名字:类型
+
+参考 ParamNameResolver.java
+    new ParamNameResolver
+    ParamNameResolver.getNames
+    模仿getNamedParams
+
+参数签名匹配算法
+    如果非ParamMap直接匹配类型
+    否则匹配名字
+    考虑实参为空的情况，存在可能匹配错误的隐患
+
+int testParameterObject1(int a);
+class java.lang.Integer
+1
+
+int testParameterObject2(@Param("a") int a);
+class org.apache.ibatis.binding.MapperMethod$ParamMap
+{"a":1,"param1":1}
+N|a&param1:java.lang.Integer
+
+int testParameterObject3(@Param("a") int a, @Param("b") int b);
+class org.apache.ibatis.binding.MapperMethod$ParamMap
+{"a":1,"b":2,"param1":1,"param2":2}
+N|a&param1:java.lang.Integer,b&param2:java.lang.Integer
+
+int testParameterObject4(Org a);
+class io.github.mybatisext.test.spring.Org
+{"fastCode":""}
+
+int testParameterObject5(Map<String, Object> a);
+class java.util.HashMap
+{}
+
+int testParameterObject6(List<Object> a);
+class org.apache.ibatis.binding.MapperMethod$ParamMap
+{"a":[],"collection":[],"list":[]}
+
+int testParameterObject7(Set<Object> a);
+class org.apache.ibatis.binding.MapperMethod$ParamMap
+{"a":[],"collection":[]}
+
+int testParameterObject8(Object[] a);
+class org.apache.ibatis.binding.MapperMethod$ParamMap
+{"a":[],"array":[]}
 

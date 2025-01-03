@@ -7,15 +7,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
+import io.github.mybatisext.metadata.ResultType;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.ognl.Ognl;
-import io.github.mybatisext.statement.ResultType;
 import io.github.mybatisext.util.SimpleStringTemplate;
 import io.github.mybatisext.util.StringUtils;
 
@@ -36,13 +37,14 @@ public class ConditionHelper {
         });
     }
 
-    public static Condition fromConditionList(ConditionList conditionList) {
+    public static Condition fromConditionList(@Nonnull ConditionList conditionList) {
         List<Condition> andConditions = new ArrayList<>();
         List<Condition> orConditions = new ArrayList<>();
-        for (; conditionList != null; conditionList = conditionList.getTailList()) {
+        for (ConditionList list = conditionList; list != null; list = list.getTailList()) {
             andConditions.add(conditionList.getCondition());
             if (conditionList.getLogicalOperator() == LogicalOperator.OR) {
                 Condition condition = new Condition(ConditionType.COMPLEX);
+                condition.setPropertyInfos(conditionList.getCondition().getPropertyInfos());
                 condition.setLogicalOperator(LogicalOperator.AND);
                 condition.getSubConditions().addAll(andConditions);
                 andConditions.clear();
@@ -51,11 +53,13 @@ public class ConditionHelper {
         }
         if (!andConditions.isEmpty()) {
             Condition condition = new Condition(ConditionType.COMPLEX);
+            condition.setPropertyInfos(conditionList.getCondition().getPropertyInfos());
             condition.setLogicalOperator(LogicalOperator.AND);
             condition.getSubConditions().addAll(andConditions);
             orConditions.add(condition);
         }
         Condition condition = new Condition(ConditionType.COMPLEX);
+        condition.setPropertyInfos(conditionList.getCondition().getPropertyInfos());
         condition.setLogicalOperator(LogicalOperator.OR);
         condition.getSubConditions().addAll(orConditions);
         return simplifyCondition(condition);
@@ -84,6 +88,7 @@ public class ConditionHelper {
 
     private static Condition buildFromTableInfo(TableInfo tableInfo, boolean onlyById, IfTest test, String param) {
         Condition condition = new Condition(ConditionType.COMPLEX);
+        condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setLogicalOperator(LogicalOperator.AND);
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
             Condition subCondition = buildFromPropertyInfo(propertyInfo, onlyById, test, param);
@@ -101,6 +106,7 @@ public class ConditionHelper {
         }
         if (propertyInfo.getResultType() == ResultType.ID || propertyInfo.getResultType() == ResultType.RESULT) {
             Condition condition = new Condition(ConditionType.BASIC);
+            condition.setPropertyInfos(propertyInfo.getTableInfo().getNameToPropertyInfo());
             condition.setPropertyInfo(propertyInfo);
             condition.setCompareOperator(CompareOperator.Equals);
             condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
@@ -109,6 +115,7 @@ public class ConditionHelper {
         }
         if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
             Condition condition = new Condition(ConditionType.COMPLEX);
+            condition.setPropertyInfos(propertyInfo.getTableInfo().getNameToPropertyInfo());
             condition.setLogicalOperator(LogicalOperator.AND);
             condition.setTest(test);
             condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
@@ -123,6 +130,7 @@ public class ConditionHelper {
         }
         if (propertyInfo.getResultType() == ResultType.COLLECTION) {
             Condition condition = new Condition(ConditionType.COMPLEX);
+            condition.setPropertyInfos(propertyInfo.getTableInfo().getNameToPropertyInfo());
             condition.setLogicalOperator(LogicalOperator.AND);
             condition.setTest(IfTest.NotEmpty);
             condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
