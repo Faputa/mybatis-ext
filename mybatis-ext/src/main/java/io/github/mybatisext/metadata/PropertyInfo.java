@@ -1,18 +1,14 @@
 package io.github.mybatisext.metadata;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.Objects;
 
-import org.apache.ibatis.mapping.ResultFlag;
-import org.apache.ibatis.mapping.ResultMapping;
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 
 import io.github.mybatisext.annotation.IdType;
-import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.idgenerator.IdGenerator;
 import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.statement.ResultMapHelper;
 
 public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
@@ -31,6 +27,7 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
     private IdType idType;
     private IdGenerator<?> customIdGenerator;
 
+    private LoadType loadType;
     // resultType=COLLECTION
     private GenericType ofType;
 
@@ -106,6 +103,14 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         this.customIdGenerator = customIdGenerator;
     }
 
+    public LoadType getLoadType() {
+        return loadType;
+    }
+
+    public void setLoadType(LoadType loadType) {
+        this.loadType = loadType;
+    }
+
     public GenericType getOfType() {
         return ofType;
     }
@@ -119,42 +124,24 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
     }
 
     @Override
-    public String toString() {
-        return joinTableInfo.getAlias() + "." + columnName;
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PropertyInfo propertyInfo = (PropertyInfo) o;
+        return Objects.equals(name, propertyInfo.name) && Objects.equals(tableInfo, propertyInfo.tableInfo);
     }
 
-    public ResultMapping getResultMapping(Configuration configuration, String resultMapId) {
-        if (ResultType.ID == resultType) {
-            return new ResultMapping.Builder(configuration, name)
-                    .column(joinTableInfo.getAlias() + "_" + columnName)
-                    .javaType(javaType.getType())
-                    .jdbcType(jdbcType)
-                    .flags(Collections.singletonList(ResultFlag.ID))
-                    .build();
-        }
-        if (ResultType.RESULT == resultType) {
-            return new ResultMapping.Builder(configuration, name)
-                    .column(joinTableInfo.getAlias() + "_" + columnName)
-                    .javaType(javaType.getType())
-                    .jdbcType(jdbcType)
-                    .build();
-        }
-        if (ResultType.ASSOCIATION == resultType) {
-            String nestedResultMapId = resultMapId + "[association" + "=" + name + "]";
-            ResultMapHelper.addNestedResultMap(configuration, nestedResultMapId, this);
-            return new ResultMapping.Builder(configuration, name)
-                    .javaType(javaType.getType())
-                    .nestedResultMapId(nestedResultMapId)
-                    .build();
-        }
-        if (ResultType.COLLECTION == resultType) {
-            String nestedResultMapId = resultMapId + "[collection" + "=" + name + "]";
-            ResultMapHelper.addNestedResultMap(configuration, nestedResultMapId, this);
-            return new ResultMapping.Builder(configuration, name)
-                    .javaType(ofType.getType())
-                    .nestedResultMapId(nestedResultMapId)
-                    .build();
-        }
-        throw new MybatisExtException("Unknown resultType: " + resultType);
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), name, tableInfo);
+    }
+
+    @Override
+    public String toString() {
+        return joinTableInfo.getAlias() + "." + columnName;
     }
 }

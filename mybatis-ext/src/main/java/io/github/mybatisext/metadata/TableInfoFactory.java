@@ -28,6 +28,8 @@ import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
+import io.github.mybatisext.annotation.LoadStrategy;
+import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.idgenerator.IdGenerator;
@@ -88,14 +90,14 @@ public class TableInfoFactory {
                 Column column = field.getAnnotation(Column.class);
                 if (column != null) {
                     if (inJoinParent) {
-                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, field.getName(), field.getGenericType(), featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, field.getAnnotation(LoadStrategy.class), field.getName(), field.getGenericType(), featureToJoinTableInfo, aliasCount);
                     } else {
                         processColumn(configuration, tableInfo, column, field.getAnnotation(Id.class), field.getName(), field.getGenericType(), false);
                     }
                 } else {
                     JoinRelation[] joinRelations = field.getAnnotationsByType(JoinRelation.class);
                     if (joinRelations.length > 0) {
-                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, field.getName(), field.getGenericType(), featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, field.getAnnotation(LoadStrategy.class), field.getName(), field.getGenericType(), featureToJoinTableInfo, aliasCount);
                     }
                 }
             }
@@ -122,14 +124,14 @@ public class TableInfoFactory {
                 Column column = readMethod.getAnnotation(Column.class);
                 if (column != null) {
                     if (inJoinParent) {
-                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, propertyDescriptor.getName(), readMethod.getGenericReturnType(), featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, readMethod.getAnnotation(LoadStrategy.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), featureToJoinTableInfo, aliasCount);
                     } else {
                         processColumn(configuration, tableInfo, column, readMethod.getAnnotation(Id.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null);
                     }
                 } else {
                     JoinRelation[] joinRelations = readMethod.getAnnotationsByType(JoinRelation.class);
                     if (joinRelations.length > 0) {
-                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, propertyDescriptor.getName(), readMethod.getGenericReturnType(), featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, readMethod.getAnnotation(LoadStrategy.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), featureToJoinTableInfo, aliasCount);
                     }
                 }
             }
@@ -252,7 +254,7 @@ public class TableInfoFactory {
         propertyInfo.setResultType(ResultType.ID);
     }
 
-    private static void processJoinProperty(Configuration configuration, TableInfo tableInfo, GenericType currentClass, JoinRelation[] joinRelations, @Nullable Column column, String propertyName, GenericType propertyType, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
+    private static void processJoinProperty(Configuration configuration, TableInfo tableInfo, GenericType currentClass, JoinRelation[] joinRelations, @Nullable Column column, @Nullable LoadStrategy loadStrategy, String propertyName, GenericType propertyType, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         PropertyInfo propertyInfo = buildPropertyInfo(configuration, propertyType);
         propertyInfo.setName(propertyName);
         propertyInfo.setTableInfo(tableInfo);
@@ -266,13 +268,21 @@ public class TableInfoFactory {
                 propertyInfo.setColumnName(StringUtils.isNotBlank(joinRelation.column()) ? joinRelation.column() : StringUtils.camelToSnake(propertyName));
             }
         }
+        if (loadStrategy != null) {
+            propertyInfo.setLoadType(loadStrategy.value());
+            if (propertyInfo.getResultType() == ResultType.RESULT && propertyInfo.getLoadType() != LoadType.JOIN) {
+                propertyInfo.setResultType(ResultType.ASSOCIATION);
+            }
+        }
 
         Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
         buildJoinTableInfos(configuration, tableInfo, currentClass, propertyInfo, joinRelations, aliasToJoinTableInfo);
         checkJoinTableInfos(aliasToJoinTableInfo);
         mergeJoinTableInfos(tableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
 
-        if (propertyInfo.getResultType() == ResultType.ASSOCIATION || propertyInfo.getResultType() == ResultType.COLLECTION) {
+        if (propertyInfo.getColumnName() == null &&
+                (propertyInfo.getResultType() == ResultType.ASSOCIATION || propertyInfo.getResultType() == ResultType.COLLECTION) &&
+                (propertyInfo.getLoadType() == null || propertyInfo.getLoadType() == LoadType.JOIN)) {
             propertyInfo.putAll(collectJoinTablePropertyInfos(tableInfo, propertyInfo.getJoinTableInfo()));
         }
     }

@@ -15,7 +15,7 @@ public interface Dialect {
 
     String exists(TableInfo tableInfo, Condition where);
 
-    String select(TableInfo tableInfo, Condition where, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit);
+    String select(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit);
 
     String delete(TableInfo tableInfo, Variable parameter, Condition where);
 

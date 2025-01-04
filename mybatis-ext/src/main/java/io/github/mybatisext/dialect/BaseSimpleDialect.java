@@ -26,9 +26,9 @@ public abstract class BaseSimpleDialect extends BaseDialect {
 
     @Override
     public String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull) {
-        String tableAndJoin = buildTableAndJoin(tableInfo, where, null, null);
+        String tableAndJoin = buildTableAndJoin(tableInfo, where, null, null, null);
         String whereSql = where != null ? buildWhere(where) : null;
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
         return buildUpdate(
                 tableInfo,
                 parameter,
@@ -50,9 +50,9 @@ public abstract class BaseSimpleDialect extends BaseDialect {
 
     @Override
     public String delete(TableInfo tableInfo, Variable parameter, Condition where) {
-        String tableAndJoin = buildTableAndJoin(tableInfo, where, null, null);
+        String tableAndJoin = buildTableAndJoin(tableInfo, where, null, null, null);
         String whereSql = where != null ? buildWhere(where) : null;
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
         return buildDelete(
                 tableInfo,
                 parameter,
@@ -63,16 +63,16 @@ public abstract class BaseSimpleDialect extends BaseDialect {
     }
 
     @Override
-    public String select(TableInfo tableInfo, Condition where, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
+    public String select(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (groupBy != null) {
             ss.add(buildSelectItems(groupBy));
         } else {
-            ss.add(buildSelectItems(tableInfo));
+            ss.add(buildSelectItems(selectItems));
         }
         ss.add("FROM");
-        ss.add(buildTableAndJoin(tableInfo, where, groupBy, orderBy));
+        ss.add(buildTableAndJoin(tableInfo, where, selectItems, groupBy, orderBy));
         if (where != null) {
             ss.add(buildWhere(where));
         }
@@ -95,7 +95,7 @@ public abstract class BaseSimpleDialect extends BaseDialect {
     public String exists(TableInfo tableInfo, Condition where) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT 1 FROM");
-        ss.add(buildTableAndJoin(tableInfo, where, null, null));
+        ss.add(buildTableAndJoin(tableInfo, where, null, null, null));
         if (where != null) {
             ss.add(buildWhere(where));
         }
@@ -106,7 +106,7 @@ public abstract class BaseSimpleDialect extends BaseDialect {
     public String count(TableInfo tableInfo, Condition where) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT COUNT(1) FROM");
-        ss.add(buildTableAndJoin(tableInfo, where, null, null));
+        ss.add(buildTableAndJoin(tableInfo, where, null, null, null));
         if (where != null) {
             ss.add(buildWhere(where));
         }
