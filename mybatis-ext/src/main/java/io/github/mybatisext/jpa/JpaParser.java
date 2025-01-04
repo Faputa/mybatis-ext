@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
@@ -14,6 +15,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.annotation.IfTest;
+import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.OnlyById;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
@@ -169,6 +171,7 @@ public class JpaParser extends BaseParser {
         grammar.set(choice(
                 join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(join(groupBy, optional(having))), optional(orderBy), optional(limit), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.SELECT);
+                    semantic.setSelectItems(state.<JpaTokenizer>getTokenizer().getTableInfo().getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList()));
                     if (state.getMatch("Distinct") != null) {
                         semantic.setDistinct(true);
                     }

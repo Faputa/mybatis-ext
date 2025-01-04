@@ -33,6 +33,7 @@ public class GenericTypeFactory {
         } else if (type instanceof TypeVariable) {
             return build(typeMap.get(type), typeMap);
         } else if (type instanceof GenericArrayType) {
+            // TODO
             GenericArrayType genericArrayType = (GenericArrayType) type;
             return build(genericArrayType.getGenericComponentType(), typeMap);
         }

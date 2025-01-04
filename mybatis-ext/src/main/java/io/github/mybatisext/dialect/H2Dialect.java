@@ -21,7 +21,7 @@ public class H2Dialect extends BaseDialect {
     public String count(TableInfo tableInfo, Condition where) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT COUNT(1) FROM");
-        ss.add(buildTableAndJoin(tableInfo, where, null, null));
+        ss.add(buildTableAndJoin(tableInfo, where, null, null, null));
         if (where != null) {
             ss.add(buildWhere(where));
         }
@@ -33,7 +33,7 @@ public class H2Dialect extends BaseDialect {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT EXISTS (");
         ss.add("SELECT 1 FROM");
-        ss.add(buildTableAndJoin(tableInfo, where, null, null));
+        ss.add(buildTableAndJoin(tableInfo, where, null, null, null));
         if (where != null) {
             ss.add(buildWhere(where));
         }
@@ -42,16 +42,16 @@ public class H2Dialect extends BaseDialect {
     }
 
     @Override
-    public String select(TableInfo tableInfo, Condition where, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
+    public String select(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (groupBy != null) {
             ss.add(buildSelectItems(groupBy));
         } else {
-            ss.add(buildSelectItems(tableInfo));
+            ss.add(buildSelectItems(selectItems));
         }
         ss.add("FROM");
-        ss.add(buildTableAndJoin(tableInfo, where, groupBy, orderBy));
+        ss.add(buildTableAndJoin(tableInfo, where, selectItems, groupBy, orderBy));
         if (where != null) {
             ss.add(buildWhere(where));
         }
@@ -72,7 +72,7 @@ public class H2Dialect extends BaseDialect {
 
     @Override
     public String delete(TableInfo tableInfo, Variable parameter, Condition where) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
         if (joinTableInfos.size() == 1) {
             return buildSimpleDelete(tableInfo, buildWhere(where));
         }
@@ -95,7 +95,7 @@ public class H2Dialect extends BaseDialect {
 
     @Override
     public String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
         if (joinTableInfos.size() == 1) {
             return buildSimpleUpdate(tableInfo, parameter, ignoreNull, buildWhere(where));
         }
@@ -116,12 +116,12 @@ public class H2Dialect extends BaseDialect {
         List<String> tables = new ArrayList<>();
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
-            tables.add(joinTableInfo.getTableInfo().getName() + " " + joinTableInfo.getAlias());
-            joinTableInfo.getLeftJoinTableInfos().forEach(((joinColumnInfo, leftJoinTableInfo) -> {
+            tables.add(joinTableInfo.getTableInfo() + " " + joinTableInfo.getAlias());
+            joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
                 Condition condition = new Condition(ConditionType.BASIC);
                 condition.setExprTemplate(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn());
                 conditions.add(condition);
-            }));
+            });
         }
         conditions.add(where);
         ss.add(String.join(", ", tables));

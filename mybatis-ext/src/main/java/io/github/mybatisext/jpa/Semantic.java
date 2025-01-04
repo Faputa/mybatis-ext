@@ -13,6 +13,7 @@ public class Semantic {
     private boolean ignoreNull;
     private Limit limit;
     private Condition where;
+    private List<PropertyInfo> selectItems;
     private List<OrderByElement> orderBy;
     private List<PropertyInfo> groupBy;
     private Condition having;
@@ -57,6 +58,14 @@ public class Semantic {
 
     public void setWhere(Condition where) {
         this.where = where;
+    }
+
+    public List<PropertyInfo> getSelectItems() {
+        return selectItems;
+    }
+
+    public void setSelectItems(List<PropertyInfo> selectItems) {
+        this.selectItems = selectItems;
     }
 
     public List<OrderByElement> getOrderBy() {
@@ -108,11 +117,11 @@ public class Semantic {
             return false;
         }
         Semantic semantic = (Semantic) o;
-        return distinct == semantic.distinct && ignoreNull == semantic.ignoreNull && type == semantic.type && Objects.equals(limit, semantic.limit) && Objects.equals(where, semantic.where) && Objects.equals(orderBy, semantic.orderBy) && Objects.equals(groupBy, semantic.groupBy) && Objects.equals(having, semantic.having) && Objects.equals(tableInfo, semantic.tableInfo) && Objects.equals(parameter, semantic.parameter);
+        return distinct == semantic.distinct && ignoreNull == semantic.ignoreNull && type == semantic.type && Objects.equals(limit, semantic.limit) && Objects.equals(where, semantic.where) && Objects.equals(selectItems, semantic.selectItems) && Objects.equals(orderBy, semantic.orderBy) && Objects.equals(groupBy, semantic.groupBy) && Objects.equals(having, semantic.having) && Objects.equals(tableInfo, semantic.tableInfo) && Objects.equals(parameter, semantic.parameter);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, distinct, ignoreNull, limit, where, orderBy, groupBy, having, tableInfo, parameter);
+        return Objects.hash(type, distinct, ignoreNull, limit, where, selectItems, orderBy, groupBy, having, tableInfo, parameter);
     }
 }
