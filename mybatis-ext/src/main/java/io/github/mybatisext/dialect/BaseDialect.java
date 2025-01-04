@@ -156,29 +156,34 @@ public abstract class BaseDialect implements Dialect {
         return String.join(" ", ss);
     }
 
-    protected String buildTableAndJoin(TableInfo tableInfo, Condition where, List<PropertyInfo> groupBy, List<OrderByElement> orderBy) {
+    protected String buildTableAndJoin(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, List<PropertyInfo> groupBy, List<OrderByElement> orderBy) {
         List<String> ss = new ArrayList<>();
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, groupBy, orderBy);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, selectItems, groupBy, orderBy);
         ss.add(joinTableInfos.get(0).getTableInfo().getName());
         ss.add(joinTableInfos.get(0).getAlias());
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             ss.add("LEFT JOIN");
-            ss.add(joinTableInfo.getTableInfo().getName());
+            ss.add(joinTableInfo.getTableInfo().toString());
             ss.add(joinTableInfo.getAlias());
             ss.add("ON");
             List<String> conditions = new ArrayList<>();
-            joinTableInfo.getLeftJoinTableInfos().forEach(((joinColumnInfo, leftJoinTableInfo) -> {
+            joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
                 conditions.add(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn());
-            }));
+            });
             ss.add(String.join(" AND ", conditions));
         }
         return String.join(" ", ss);
     }
 
-    protected List<JoinTableInfo> collectJoinTableInfo(TableInfo tableInfo, Condition where, List<PropertyInfo> groupBy, List<OrderByElement> orderBy) {
+    protected List<JoinTableInfo> collectJoinTableInfo(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, List<PropertyInfo> groupBy, List<OrderByElement> orderBy) {
         Set<String> directAliases = new HashSet<>();
         directAliases.add(tableInfo.getJoinTableInfo().getAlias());
+        if (selectItems != null) {
+            for (PropertyInfo selectItem : selectItems) {
+                directAliases.add(selectItem.getJoinTableInfo().getAlias());
+            }
+        }
         if (where != null) {
             ConditionHelper.collectUsedTableAliases(where, directAliases);
         }
@@ -199,23 +204,11 @@ public abstract class BaseDialect implements Dialect {
         return orderAliases.stream().map(v -> tableInfo.getAliasToJoinTableInfo().get(v)).collect(Collectors.toList());
     }
 
-    protected String buildSelectItems(TableInfo tableInfo) {
-        List<String> selectItems = new ArrayList<>();
-        tableInfo.getAliasToJoinTableInfo().forEach((alias, joinTableInfo) -> {
-            joinTableInfo.getTableInfo().getNameToColumnInfo().forEach((name, columnInfo) -> {
-                if (!columnInfo.isReadonly()) {
-                    selectItems.add(alias + "." + name + " AS " + alias + "_" + name);
-                }
-            });
-        });
-        return String.join(", ", selectItems);
-    }
-
     protected String buildSelectItems(List<PropertyInfo> propertyInfos) {
         List<String> selectItems = new ArrayList<>();
         for (PropertyInfo propertyInfo : propertyInfos) {
             if (propertyInfo.getColumnName() != null) {
-                if (!propertyInfo.getJoinTableInfo().getTableInfo().getNameToColumnInfo().get(propertyInfo.getColumnName()).isReadonly()) {
+                if (!propertyInfo.getTableInfo().getNameToColumnInfo().get(propertyInfo.getColumnName()).isReadonly()) {
                     return propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " " + propertyInfo.getJoinTableInfo().getAlias() + "_" + propertyInfo.getColumnName();
                 }
             } else {

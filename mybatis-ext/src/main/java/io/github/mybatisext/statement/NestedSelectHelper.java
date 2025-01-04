@@ -1,0 +1,126 @@
+package io.github.mybatisext.statement;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.ibatis.session.Configuration;
+
+import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.metadata.ColumnInfo;
+import io.github.mybatisext.metadata.JoinTableInfo;
+import io.github.mybatisext.metadata.PropertyInfo;
+import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.metadata.TableInfoFactory;
+
+public class NestedSelectHelper {
+
+    public static NestedSelect buildNestedSelect(PropertyInfo propertyInfo) {
+        if (propertyInfo.isOwnColumn()) {
+            throw new MybatisExtException("Property '" + propertyInfo.getName() + "' is an own column");
+        }
+        NestedSelect nestedSelect = new NestedSelect();
+        nestedSelect.setPropertyInfo(propertyInfo);
+        nestedSelect.setTableInfo(propertyInfo.getTableInfo());
+        return nestedSelect;
+    }
+
+    public static String buildResultMappingColumn(NestedSelect nestedSelect) {
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo());
+        List<String> ss = new ArrayList<>();
+        for (int i = 1; i < joinTableInfos.size(); i++) {
+            JoinTableInfo joinTableInfo = joinTableInfos.get(i);
+            joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
+                if (leftJoinTableInfo.getTableInfo() == nestedSelect.getTableInfo()) {
+                    ss.add(joinColumnInfo.getLeftColumn() + "=" + joinColumnInfo.getLeftColumn());
+                }
+            });
+        }
+        return "{" + String.join(",", ss) + "}";
+    }
+
+    public static String buildNestedSelectScript(NestedSelect nestedSelect) {
+        List<String> ss = new ArrayList<>();
+        ss.add("SELECT");
+        ss.add(buildSelectItems(nestedSelect.getPropertyInfo()));
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo());
+        ss.add(buildFrom(joinTableInfos));
+        ss.add(buildWhere(nestedSelect.getTableInfo(), joinTableInfos));
+        return "<script>" + String.join(" ", ss) + "</script>";
+    }
+
+    private static String buildFrom(List<JoinTableInfo> joinTableInfos) {
+        List<String> tables = new ArrayList<>();
+        for (int i = 1; i < joinTableInfos.size(); i++) {
+            JoinTableInfo joinTableInfo = joinTableInfos.get(i);
+            tables.add(joinTableInfo.getTableInfo() + " " + joinTableInfo.getAlias());
+        }
+        return "FROM " + String.join(", ", tables);
+    }
+
+    public static String buildWhere(TableInfo tableInfo, List<JoinTableInfo> joinTableInfos) {
+        List<String> conditions = new ArrayList<>();
+        for (int i = 1; i < joinTableInfos.size(); i++) {
+            JoinTableInfo joinTableInfo = joinTableInfos.get(i);
+            joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
+                if (leftJoinTableInfo.getTableInfo() == tableInfo) {
+                    conditions.add("#{" + joinColumnInfo.getLeftColumn() + "} = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn());
+                } else {
+                    conditions.add(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn());
+                }
+            });
+        }
+        return "WHERE " + String.join(" AND ", conditions);
+    }
+
+    private static List<JoinTableInfo> collectJoinTableInfo(TableInfo tableInfo, PropertyInfo propertyInfo) {
+        LinkedHashSet<String> orderAliases = new LinkedHashSet<>();
+        propertyInfo.getJoinTableInfo().collectTableAliases(orderAliases);
+        return orderAliases.stream().map(v -> tableInfo.getAliasToJoinTableInfo().get(v)).collect(Collectors.toList());
+    }
+
+    private static String buildSelectItems(PropertyInfo propertyInfo) {
+        List<String> selectItems = new ArrayList<>();
+        JoinTableInfo joinTableInfo = propertyInfo.getJoinTableInfo();
+        if (propertyInfo.getColumnName() != null) {
+            return joinTableInfo.getAlias() + "." + propertyInfo.getColumnName();
+        }
+        for (ColumnInfo columnInfo : propertyInfo.getTableInfo().getNameToColumnInfo().values()) {
+            if (!columnInfo.isReadonly()) {
+                selectItems.add(joinTableInfo.getAlias() + "." + columnInfo.getName() + "AS" + joinTableInfo.getTableInfo().getJoinTableInfo().getAlias() + "_" + columnInfo.getName());
+            }
+        }
+        return String.join(", ", selectItems);
+    }
+
+    public static String toString(NestedSelect nestedSelect) {
+        return NestedSelect.PREFIX + nestedSelect.getTableInfo().getTableClass().getName() + "|" + nestedSelect.getPropertyInfo().getName();
+    }
+
+    public static NestedSelect fromString(Configuration configuration, String s) {
+        if (!s.startsWith(NestedSelect.PREFIX)) {
+            throw new MybatisExtException("String does not start with required prefix: " + NestedSelect.PREFIX);
+        }
+        s = s.substring(NestedSelect.PREFIX.length());
+        String[] ss = s.split("\\|");
+        if (ss.length != 2) {
+            throw new MybatisExtException("Expected exactly two parts separated by '|'.");
+        }
+        try {
+            NestedSelect nestedSelect = new NestedSelect();
+            Class<?> tableClass = Class.forName(ss[0]);
+            TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, tableClass);
+            PropertyInfo propertyInfo = tableInfo.getNameToPropertyInfo().get(ss[1]);
+            if (propertyInfo == null) {
+                throw new MybatisExtException("Property '" + ss[1] + "' not found in tableClass " + ss[0] + ".");
+            }
+            nestedSelect.setTableInfo(tableInfo);
+            nestedSelect.setPropertyInfo(propertyInfo);
+            return nestedSelect;
+        } catch (ClassNotFoundException e) {
+            throw new MybatisExtException(e);
+        }
+    }
+}
+

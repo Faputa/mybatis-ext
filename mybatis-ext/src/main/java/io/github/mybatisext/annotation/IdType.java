@@ -9,5 +9,5 @@ public enum IdType {
     /** 自定义 @see {@link io.github.mybatisext.idgenerator.IdGenerator} */
     CUSTOM,
     /** 无 */
-    NONE
+    NONE,
 }

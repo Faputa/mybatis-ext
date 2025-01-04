@@ -20,24 +20,34 @@ import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
 import io.github.mybatisext.statement.MappedStatementHelper;
+import io.github.mybatisext.statement.NestedSelect;
+import io.github.mybatisext.statement.NestedSelectHelper;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class ExtEnhancer {
 
     private final Configuration originConfiguration;
-    private final MappedStatementHelper statementBuilder;
-    private final Object lock = new Object();
+    private final MappedStatementHelper mappedStatementHelper;
 
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
 
     public ExtEnhancer(Configuration originConfiguration, ExtContext extContext) {
         this.originConfiguration = originConfiguration;
-        this.statementBuilder = new MappedStatementHelper(originConfiguration, extContext);
+        this.mappedStatementHelper = new MappedStatementHelper(originConfiguration, extContext);
     }
 
     public MappedStatement getMappedStatement(String id) {
         if (originConfiguration.hasStatement(id)) {
             return originConfiguration.getMappedStatement(id);
+        }
+        if (id.startsWith(NestedSelect.PREFIX)) {
+            NestedSelect nestedSelect = NestedSelectHelper.fromString(originConfiguration, id);
+            MappedStatement ms = mappedStatementHelper.buildForNestedSelect(id, nestedSelect);
+            synchronized (originConfiguration) {
+                if (!originConfiguration.hasStatement(id)) {
+                    originConfiguration.addMappedStatement(ms);
+                }
+            }
         }
         int lastIndexOf = id.lastIndexOf(".");
         if (lastIndexOf < 0) {
@@ -55,7 +65,7 @@ public class ExtEnhancer {
         }
         ms = buildMappedStatement(id, mapperClass, methodName);
         if (ms != null) {
-            synchronized (lock) {
+            synchronized (originConfiguration) {
                 if (!originConfiguration.hasStatement(id)) {
                     originConfiguration.addMappedStatement(ms);
                 }
@@ -142,7 +152,7 @@ public class ExtEnhancer {
         if (methods.isEmpty()) {
             return null;
         }
-        return statementBuilder.build(id, tableType, methods, returnType);
+        return mappedStatementHelper.build(id, tableType, methods, returnType);
     }
 
     private boolean isNotEnhancedMapper(Class<?> mapperClass) {
