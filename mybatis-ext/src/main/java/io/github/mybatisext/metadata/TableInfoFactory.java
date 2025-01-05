@@ -243,12 +243,7 @@ public class TableInfoFactory {
             if (!IdGenerator.class.isAssignableFrom(id.customIdGenerator())) {
                 throw new MybatisExtException("customIdGenerator must implement the IdGenerator");
             }
-            try {
-                IdGenerator<?> customIdGenerator = (IdGenerator<?>) id.customIdGenerator().newInstance();
-                propertyInfo.setCustomIdGenerator(customIdGenerator);
-            } catch (Exception e) {
-                throw new MybatisExtException(e);
-            }
+            propertyInfo.setCustomIdGenerator(id.customIdGenerator());
         }
         propertyInfo.setIdType(id.idType());
         propertyInfo.setResultType(ResultType.ID);

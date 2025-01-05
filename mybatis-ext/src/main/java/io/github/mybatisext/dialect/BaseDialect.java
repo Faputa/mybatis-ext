@@ -2,13 +2,16 @@ package io.github.mybatisext.dialect;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.jpa.Condition;
 import io.github.mybatisext.jpa.ConditionHelper;
 import io.github.mybatisext.jpa.OrderByElement;
@@ -16,7 +19,9 @@ import io.github.mybatisext.jpa.OrderByType;
 import io.github.mybatisext.jpa.Variable;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
+import io.github.mybatisext.metadata.ResultType;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.ognl.Ognl;
 import io.github.mybatisext.util.StringUtils;
 
 public abstract class BaseDialect implements Dialect {
@@ -54,104 +59,131 @@ public abstract class BaseDialect implements Dialect {
     }
 
     protected String buildInsertValues(TableInfo tableInfo, Variable variable, boolean ignoreNull) {
-        String s;
+        Map<PropertyInfo, Variable> map = collectInsertColumns(tableInfo.getNameToPropertyInfo().values(), variable);
         if (ignoreNull) {
-            s = "<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\" >";
-            s += buildInsertValues(tableInfo.getNameToPropertyInfo().values(), variable, true, true);
-            s += "</trim>";
-        } else {
-            s = "(" + buildInsertValues(tableInfo.getNameToPropertyInfo().values(), variable, false, false) + ")";
+            return "<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\" >" + buildInsertValues(map, true) + "</trim>";
         }
-        return s;
+        {
+            return "(" + buildInsertValues(map, false) + ")";
+        }
     }
 
-    private String buildInsertValues(Collection<PropertyInfo> propertyInfos, Variable variable, boolean ignoreNull, boolean hasNext) {
-        List<String> ss = new ArrayList<>();
-        Iterator<PropertyInfo> iterator = propertyInfos.stream().filter(PropertyInfo::isOwnColumn).iterator();
-        while (iterator.hasNext()) {
-            PropertyInfo propertyInfo = iterator.next();
+    private Map<PropertyInfo, Variable> collectInsertColumns(Collection<PropertyInfo> propertyInfos, Variable variable) {
+        Map<PropertyInfo, Variable> map = new HashMap<>();
+        for (PropertyInfo propertyInfo : propertyInfos) {
+            if (!propertyInfo.isOwnColumn()) {
+                continue;
+            }
             Variable subVariable = new Variable(variable.getFullName(), propertyInfo.getName(), propertyInfo.getJavaType());
             if (propertyInfo.getColumnName() != null) {
-                String value = "#{" + subVariable + "}";
-                if (hasNext || iterator.hasNext()) {
-                    value += ",";
+                if (propertyInfo.getResultType() != ResultType.ID || propertyInfo.getIdType() != IdType.AUTO) {
+                    map.put(propertyInfo, subVariable);
                 }
-                if (ignoreNull) {
-                    value = "<if test=\"" + subVariable + " != null\">" + value + "</if>";
-                }
-                ss.add(value);
             } else {
-                ss.add(buildInsertValues(propertyInfo.values(), subVariable, ignoreNull, hasNext || iterator.hasNext()));
+                map.putAll(collectInsertColumns(propertyInfo.values(), subVariable));
             }
+        }
+        return map;
+    }
+
+    private String buildInsertValues(Map<PropertyInfo, Variable> map, boolean ignoreNull) {
+        List<String> ss = new ArrayList<>();
+        Iterator<Map.Entry<PropertyInfo, Variable>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<PropertyInfo, Variable> entry = iterator.next();
+            PropertyInfo propertyInfo = entry.getKey();
+            Variable variable = entry.getValue();
+            String value;
+            if (propertyInfo.getResultType() == ResultType.ID && propertyInfo.getIdType() == IdType.UUID) {
+                value = "<bind name=\"__" + variable.getName() + "__bind\" value=\"" + Ognl.GetUuid + "('" + variable + "')\"/>#{__" + variable.getName() + "__bind}";
+            } else if (propertyInfo.getResultType() == ResultType.ID && propertyInfo.getIdType() == IdType.CUSTOM) {
+                value = "<bind name=\"__" + variable.getName() + "__bind\" value=\"" + Ognl.GetUuid + "('" + propertyInfo.getCustomIdGenerator().getName() + "','" + variable + "')\"/>#{__" + variable.getName() + "__bind}";
+            } else {
+                value = "#{" + variable + "}";
+            }
+            if (iterator.hasNext()) {
+                value += ",";
+            }
+            if (ignoreNull && propertyInfo.getResultType() != ResultType.ID) {
+                value = "<if test=\"" + variable + " != null\">" + value + "</if>";
+            }
+            ss.add(value);
         }
         return String.join(" ", ss);
     }
 
     protected String buildInsertItems(TableInfo tableInfo, Variable variable, boolean ignoreNull) {
-        String s;
+        Map<PropertyInfo, Variable> map = collectInsertColumns(tableInfo.getNameToPropertyInfo().values(), variable);
         if (ignoreNull) {
-            s = "<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\" >";
-            s += buildInsertItems(tableInfo.getNameToPropertyInfo().values(), variable, true, true);
-            s += "</trim>";
-        } else {
-            s = "(" + buildInsertItems(tableInfo.getNameToPropertyInfo().values(), variable, false, false) + ")";
+            return "<trim prefix=\"(\" suffix=\")\" suffixOverrides=\",\" >" + buildInsertItems(map, true) + "</trim>";
         }
-        return s;
+        {
+            return "(" + buildInsertItems(map, false) + ")";
+        }
     }
 
-    private String buildInsertItems(Collection<PropertyInfo> propertyInfos, Variable variable, boolean ignoreNull, boolean hasNext) {
+    private String buildInsertItems(Map<PropertyInfo, Variable> map, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
-        Iterator<PropertyInfo> iterator = propertyInfos.stream().filter(PropertyInfo::isOwnColumn).iterator();
+        Iterator<Map.Entry<PropertyInfo, Variable>> iterator = map.entrySet().iterator();
         while (iterator.hasNext()) {
-            PropertyInfo propertyInfo = iterator.next();
-            Variable subVariable = new Variable(variable.getFullName(), propertyInfo.getName(), propertyInfo.getJavaType());
-            if (propertyInfo.getColumnName() != null) {
-                String columnName = propertyInfo.getColumnName();
-                if (hasNext || iterator.hasNext()) {
-                    columnName += ",";
-                }
-                if (ignoreNull) {
-                    columnName = "<if test=\"" + subVariable + " != null\">" + columnName + "</if>";
-                }
-                ss.add(columnName);
-            } else {
-                ss.add(buildInsertItems(propertyInfo.values(), subVariable, ignoreNull, hasNext || iterator.hasNext()));
+            Map.Entry<PropertyInfo, Variable> entry = iterator.next();
+            PropertyInfo propertyInfo = entry.getKey();
+            Variable variable = entry.getValue();
+            String columnName = propertyInfo.getColumnName();
+            if (iterator.hasNext()) {
+                columnName += ",";
             }
+            if (ignoreNull && propertyInfo.getResultType() != ResultType.ID) {
+                columnName = "<if test=\"" + variable + " != null\">" + columnName + "</if>";
+            }
+            ss.add(columnName);
         }
         return String.join(" ", ss);
     }
 
     protected String buildUpdateSet(String tableAlias, TableInfo tableInfo, Variable variable, boolean ignoreNull) {
-        String s;
+        Map<PropertyInfo, Variable> map = collectUpdateColumns(tableInfo.getNameToPropertyInfo().values(), variable);
         if (ignoreNull) {
-            s = "<set>";
-            s += buildUpdateSet(tableAlias, tableInfo.getNameToPropertyInfo().values(), variable, true, true);
-            s += "</set>";
-        } else {
-            s = "SET ";
-            s += buildUpdateSet(tableAlias, tableInfo.getNameToPropertyInfo().values(), variable, false, false);
+            return "<set>" + buildUpdateSet(map, true, tableAlias) + "</set>";
         }
-        return s;
+        {
+            return "SET " + buildUpdateSet(map, false, tableAlias);
+        }
     }
 
-    private String buildUpdateSet(String tableAlias, Collection<PropertyInfo> propertyInfos, Variable variable, boolean ignoreNull, boolean hasNext) {
-        List<String> ss = new ArrayList<>();
-        Iterator<PropertyInfo> iterator = propertyInfos.stream().filter(PropertyInfo::isOwnColumn).iterator();
-        while (iterator.hasNext()) {
-            PropertyInfo propertyInfo = iterator.next();
+    private Map<PropertyInfo, Variable> collectUpdateColumns(Collection<PropertyInfo> propertyInfos, Variable variable) {
+        Map<PropertyInfo, Variable> map = new HashMap<>();
+        for (PropertyInfo propertyInfo : propertyInfos) {
+            if (!propertyInfo.isOwnColumn()) {
+                continue;
+            }
             Variable subVariable = new Variable(variable.getFullName(), propertyInfo.getName(), propertyInfo.getJavaType());
             if (propertyInfo.getColumnName() != null) {
-                String updateItem = tableAlias + "." + propertyInfo.getColumnName() + " = #{" + subVariable + "}";
-                if (hasNext || iterator.hasNext()) {
-                    updateItem += ",";
+                if (propertyInfo.getResultType() != ResultType.ID) {
+                    map.put(propertyInfo, subVariable);
                 }
-                if (ignoreNull) {
-                    updateItem = "<if test=\"" + subVariable + " != null\">" + updateItem + "</if>";
-                }
-                ss.add(updateItem);
             } else {
-                ss.add(buildUpdateSet(tableAlias, propertyInfo.values(), subVariable, ignoreNull, hasNext || iterator.hasNext()));
+                map.putAll(collectInsertColumns(propertyInfo.values(), subVariable));
             }
+        }
+        return map;
+    }
+
+    private String buildUpdateSet(Map<PropertyInfo, Variable> map, boolean ignoreNull, String tableAlias) {
+        List<String> ss = new ArrayList<>();
+        Iterator<Map.Entry<PropertyInfo, Variable>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<PropertyInfo, Variable> entry = iterator.next();
+            PropertyInfo propertyInfo = entry.getKey();
+            Variable variable = entry.getValue();
+            String updateItem = tableAlias + "." + propertyInfo.getColumnName() + " = #{" + propertyInfo + "}";
+            if (iterator.hasNext()) {
+                updateItem += ",";
+            }
+            if (ignoreNull) {
+                updateItem = "<if test=\"" + variable + " != null\">" + updateItem + "</if>";
+            }
+            ss.add(updateItem);
         }
         return String.join(" ", ss);
     }
