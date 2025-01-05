@@ -1,5 +1,8 @@
 package io.github.mybatisext.ognl;
 
+import io.github.mybatisext.idgenerator.IdGenerator;
+import io.github.mybatisext.statement.ParameterSignatureHelper;
+
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -7,8 +10,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
-
-import io.github.mybatisext.statement.ParameterSignatureHelper;
+import java.util.UUID;
 
 public class Ognl {
 
@@ -19,6 +21,10 @@ public class Ognl {
     public static final String HasProperty = "@io.github.mybatisext.ognl.Ognl@hasProperty";
     public static final String ToUpperCase = "@io.github.mybatisext.ognl.Ognl@toUpperCase";
     public static final String IsParameterSignatureMatch = "@io.github.mybatisext.ognl.Ognl@isParameterSignatureMatch";
+    public static final String GetUuid = "@io.github.mybatisext.ognl.Ognl@getUuid";
+    ;
+    public static final String GetCustomId = "@io.github.mybatisext.ognl.Ognl@getCustomId";
+    ;
 
     /**
      * 可以用于判断String,Long,Integer,Map,Array,Collection是否为空
@@ -136,5 +142,35 @@ public class Ognl {
      */
     public static boolean isParameterSignatureMatch(Object _parameter, String signature) {
         return ParameterSignatureHelper.isParameterSignatureMatch(_parameter, signature);
+    }
+
+    /**
+     * 获取UUID
+     *
+     * @param defaultValue 预设值
+     * @return UUID
+     */
+    public static String getUuid(String defaultValue) {
+        if (isNotEmpty(defaultValue)) {
+            return defaultValue;
+        }
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    /**
+     * 获取自定义ID
+     *
+     * @param idGeneratorClass ID生成器类名
+     * @param defaultValue     预设值
+     * @param <T>              ID类型
+     * @return 自定义ID
+     * @throws InstantiationException 实例化异常
+     * @throws IllegalAccessException 非法访问异常
+     */
+    public static <T> T getCustomId(Class<IdGenerator<T>> idGeneratorClass, T defaultValue) throws InstantiationException, IllegalAccessException {
+        if (isNotEmpty(defaultValue)) {
+            return defaultValue;
+        }
+        return idGeneratorClass.newInstance().getId();
     }
 }

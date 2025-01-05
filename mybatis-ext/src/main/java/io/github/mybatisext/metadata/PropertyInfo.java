@@ -7,7 +7,6 @@ import org.apache.ibatis.type.JdbcType;
 
 import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.annotation.LoadType;
-import io.github.mybatisext.idgenerator.IdGenerator;
 import io.github.mybatisext.reflect.GenericType;
 
 public class PropertyInfo extends HashMap<String, PropertyInfo> {
@@ -26,7 +25,7 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
     // resultType=ID
     private IdType idType;
-    private IdGenerator<?> customIdGenerator;
+    private Class<?> customIdGenerator;
 
     private LoadType loadType;
     // resultType=COLLECTION
@@ -104,14 +103,6 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         this.idType = idType;
     }
 
-    public IdGenerator<?> getCustomIdGenerator() {
-        return customIdGenerator;
-    }
-
-    public void setCustomIdGenerator(IdGenerator<?> customIdGenerator) {
-        this.customIdGenerator = customIdGenerator;
-    }
-
     public LoadType getLoadType() {
         return loadType;
     }
@@ -122,6 +113,14 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
     public GenericType getOfType() {
         return ofType;
+    }
+
+    public Class<?> getCustomIdGenerator() {
+        return customIdGenerator;
+    }
+
+    public void setCustomIdGenerator(Class<?> customIdGenerator) {
+        this.customIdGenerator = customIdGenerator;
     }
 
     public void setOfType(GenericType ofType) {

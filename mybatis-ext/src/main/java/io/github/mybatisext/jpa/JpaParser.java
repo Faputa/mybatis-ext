@@ -434,7 +434,7 @@ public class JpaParser extends BaseParser {
                 return new Variable(param != null ? param.value() : "collection", parameters[0].getGenericType());
             }
         }
-        return new Variable(param != null ? param.value() : "param1", parameters[0].getGenericType());
+        return new Variable(param != null ? param.value() : "", parameters[0].getGenericType());
     }
 
     private Condition resolveDefaultCondition(State state, Set<String> usedParamNames) {
