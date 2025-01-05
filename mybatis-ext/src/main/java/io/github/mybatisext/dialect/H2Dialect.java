@@ -46,9 +46,9 @@ public class H2Dialect extends BaseDialect {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (groupBy != null) {
-            ss.add(buildSelectItems(groupBy));
+            ss.add(buildSelectItems(tableInfo, groupBy));
         } else {
-            ss.add(buildSelectItems(selectItems));
+            ss.add(buildSelectItems(tableInfo, selectItems));
         }
         ss.add("FROM");
         ss.add(buildTableAndJoin(tableInfo, where, selectItems, groupBy, orderBy));

@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.exception.MybatisExtException;
-import io.github.mybatisext.metadata.ColumnInfo;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
@@ -16,13 +15,13 @@ import io.github.mybatisext.metadata.TableInfoFactory;
 
 public class NestedSelectHelper {
 
-    public static NestedSelect buildNestedSelect(PropertyInfo propertyInfo) {
+    public static NestedSelect buildNestedSelect(TableInfo tableInfo, PropertyInfo propertyInfo) {
         if (propertyInfo.isOwnColumn()) {
             throw new MybatisExtException("Property '" + propertyInfo.getName() + "' is an own column");
         }
         NestedSelect nestedSelect = new NestedSelect();
+        nestedSelect.setTableInfo(tableInfo);
         nestedSelect.setPropertyInfo(propertyInfo);
-        nestedSelect.setTableInfo(propertyInfo.getTableInfo());
         return nestedSelect;
     }
 
@@ -86,9 +85,9 @@ public class NestedSelectHelper {
         if (propertyInfo.getColumnName() != null) {
             return joinTableInfo.getAlias() + "." + propertyInfo.getColumnName();
         }
-        for (ColumnInfo columnInfo : propertyInfo.getTableInfo().getNameToColumnInfo().values()) {
-            if (!columnInfo.isReadonly()) {
-                selectItems.add(joinTableInfo.getAlias() + "." + columnInfo.getName() + "AS" + joinTableInfo.getTableInfo().getJoinTableInfo().getAlias() + "_" + columnInfo.getName());
+        for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
+            if (!subPropertyInfo.isReadonly()) {
+                selectItems.add(buildSelectItems(subPropertyInfo));
             }
         }
         return String.join(", ", selectItems);
@@ -123,4 +122,3 @@ public class NestedSelectHelper {
         }
     }
 }
-

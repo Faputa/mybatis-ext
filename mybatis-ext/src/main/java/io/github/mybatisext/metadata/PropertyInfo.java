@@ -15,10 +15,11 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
     private String name;
     // 如果是简单类型属性
     private String columnName;
-    private TableInfo tableInfo;
     private JoinTableInfo joinTableInfo;
     private GenericType javaType;
     private JdbcType jdbcType;
+    private boolean ownColumn;
+    private boolean readonly;
 
     // resultMap项的类型
     private ResultType resultType;
@@ -47,14 +48,6 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         this.columnName = columnName;
     }
 
-    public TableInfo getTableInfo() {
-        return tableInfo;
-    }
-
-    public void setTableInfo(TableInfo tableInfo) {
-        this.tableInfo = tableInfo;
-    }
-
     public JoinTableInfo getJoinTableInfo() {
         return joinTableInfo;
     }
@@ -77,6 +70,22 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
     public void setJdbcType(JdbcType jdbcType) {
         this.jdbcType = jdbcType;
+    }
+
+    public boolean isOwnColumn() {
+        return ownColumn;
+    }
+
+    public void setOwnColumn(boolean ownColumn) {
+        this.ownColumn = ownColumn;
+    }
+
+    public boolean isReadonly() {
+        return readonly;
+    }
+
+    public void setReadonly(boolean readonly) {
+        this.readonly = readonly;
     }
 
     public ResultType getResultType() {
@@ -119,10 +128,6 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         this.ofType = ofType;
     }
 
-    public boolean isOwnColumn() {
-        return joinTableInfo.getTableInfo() == tableInfo;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -131,13 +136,13 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        PropertyInfo propertyInfo = (PropertyInfo) o;
-        return Objects.equals(name, propertyInfo.name) && Objects.equals(tableInfo, propertyInfo.tableInfo);
+        PropertyInfo that = (PropertyInfo) o;
+        return ownColumn == that.ownColumn && readonly == that.readonly && Objects.equals(name, that.name) && Objects.equals(columnName, that.columnName) && Objects.equals(joinTableInfo, that.joinTableInfo) && Objects.equals(javaType, that.javaType) && jdbcType == that.jdbcType && resultType == that.resultType && idType == that.idType && Objects.equals(customIdGenerator, that.customIdGenerator) && loadType == that.loadType && Objects.equals(ofType, that.ofType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), name, tableInfo);
+        return Objects.hash(name, columnName, joinTableInfo, javaType, jdbcType, ownColumn, readonly, resultType, idType, customIdGenerator, loadType, ofType);
     }
 
     @Override
