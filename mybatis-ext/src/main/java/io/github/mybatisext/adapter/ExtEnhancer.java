@@ -42,12 +42,7 @@ public class ExtEnhancer {
         }
         if (id.startsWith(NestedSelect.PREFIX)) {
             NestedSelect nestedSelect = NestedSelectHelper.fromString(originConfiguration, id);
-            MappedStatement ms = mappedStatementHelper.buildForNestedSelect(id, nestedSelect);
-            synchronized (originConfiguration) {
-                if (!originConfiguration.hasStatement(id)) {
-                    originConfiguration.addMappedStatement(ms);
-                }
-            }
+            return addNestedSelectStatement(id, nestedSelect);
         }
         int lastIndexOf = id.lastIndexOf(".");
         if (lastIndexOf < 0) {
@@ -122,6 +117,16 @@ public class ExtEnhancer {
             }
         }
         return null;
+    }
+
+    private MappedStatement addNestedSelectStatement(String id, NestedSelect nestedSelect) {
+        MappedStatement ms = mappedStatementHelper.buildForNestedSelect(id, nestedSelect);
+        synchronized (originConfiguration) {
+            if (!originConfiguration.hasStatement(id)) {
+                originConfiguration.addMappedStatement(ms);
+            }
+        }
+        return ms;
     }
 
     private MappedStatement buildMappedStatement(String id, Class<?> mapperClass, String methodName) {

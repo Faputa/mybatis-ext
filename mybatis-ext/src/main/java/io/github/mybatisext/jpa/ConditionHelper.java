@@ -91,7 +91,7 @@ public class ConditionHelper {
         condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setLogicalOperator(LogicalOperator.AND);
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            Condition subCondition = buildFromPropertyInfo(propertyInfo, onlyById, test, param);
+            Condition subCondition = buildFromPropertyInfo(tableInfo, propertyInfo, onlyById, test, param);
             if (subCondition == null) {
                 continue;
             }
@@ -100,13 +100,13 @@ public class ConditionHelper {
         return condition;
     }
 
-    private static @Nullable Condition buildFromPropertyInfo(PropertyInfo propertyInfo, boolean onlyById, IfTest test, String prefix) {
+    private static @Nullable Condition buildFromPropertyInfo(TableInfo tableInfo, PropertyInfo propertyInfo, boolean onlyById, IfTest test, String prefix) {
         if (onlyById && (propertyInfo.getResultType() == ResultType.RESULT || !propertyInfo.isOwnColumn())) {
             return null;
         }
         if (propertyInfo.getResultType() == ResultType.ID || propertyInfo.getResultType() == ResultType.RESULT) {
             Condition condition = new Condition(ConditionType.BASIC);
-            condition.setPropertyInfos(propertyInfo.getTableInfo().getNameToPropertyInfo());
+            condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
             condition.setPropertyInfo(propertyInfo);
             condition.setCompareOperator(CompareOperator.Equals);
             condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
@@ -115,12 +115,12 @@ public class ConditionHelper {
         }
         if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
             Condition condition = new Condition(ConditionType.COMPLEX);
-            condition.setPropertyInfos(propertyInfo.getTableInfo().getNameToPropertyInfo());
+            condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
             condition.setLogicalOperator(LogicalOperator.AND);
             condition.setTest(test);
             condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
             for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
-                Condition subCondition = buildFromPropertyInfo(subPropertyInfo, onlyById, test, condition.getVariable().getFullName());
+                Condition subCondition = buildFromPropertyInfo(tableInfo, subPropertyInfo, onlyById, test, condition.getVariable().getFullName());
                 if (subCondition == null) {
                     continue;
                 }
@@ -130,12 +130,12 @@ public class ConditionHelper {
         }
         if (propertyInfo.getResultType() == ResultType.COLLECTION) {
             Condition condition = new Condition(ConditionType.COMPLEX);
-            condition.setPropertyInfos(propertyInfo.getTableInfo().getNameToPropertyInfo());
+            condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
             condition.setLogicalOperator(LogicalOperator.AND);
             condition.setTest(IfTest.NotEmpty);
             condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
             for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
-                Condition subCondition = buildFromPropertyInfo(subPropertyInfo, onlyById, test, condition.getVariable().getFullName() + "[0]");
+                Condition subCondition = buildFromPropertyInfo(tableInfo, subPropertyInfo, onlyById, test, condition.getVariable().getFullName() + "[0]");
                 if (subCondition == null) {
                     continue;
                 }

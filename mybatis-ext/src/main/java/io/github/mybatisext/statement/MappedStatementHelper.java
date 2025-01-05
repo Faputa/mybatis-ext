@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
@@ -79,17 +80,16 @@ public class MappedStatementHelper {
     }
 
     private Map<String, Semantic> buildSignatureToSemantic(TableInfo tableInfo, List<GenericMethod> methods) {
-        Map<String, Semantic> map = new HashMap<>();
+        Map<Semantic, String> map = new HashMap<>();
         for (GenericMethod method : methods) {
             Semantic semantic = jpaParser.parse(originConfiguration, tableInfo, method.getName(), method.getParameters());
-            String signature = buildParameterSignature(method);
-            map.put(signature, semantic);
+            map.put(semantic, buildParameterSignature(method));
         }
-        return map;
+        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
     private String buildParameterSignature(GenericMethod method) {
-        ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(originConfiguration, method.getMethod());
+        ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(originConfiguration, method);
         return ParameterSignatureHelper.toString(parameterSignature);
     }
 

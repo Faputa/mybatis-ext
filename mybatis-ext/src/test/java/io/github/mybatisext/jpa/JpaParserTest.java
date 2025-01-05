@@ -2,6 +2,7 @@ package io.github.mybatisext.jpa;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.transaction.TransactionFactory;
@@ -46,16 +47,16 @@ public class JpaParserTest {
     public void testParse() {
         JpaParser jpaParser = new JpaParser();
         GenericType genericType = GenericTypeFactory.build(JpaParserExample.class);
-        Map<String, Map<String, Semantic>> map = new HashMap<>();
+        Map<String, Map<Semantic, String>> map = new HashMap<>();
         for (GenericMethod method : genericType.getMethods()) {
             Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters());
-            ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(configuration, method.getMethod());
+            ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(configuration, method);
             String s = ParameterSignatureHelper.toString(parameterSignature);
-            map.computeIfAbsent(method.getName(), k -> new HashMap<>()).put(s, semantic);
+            map.computeIfAbsent(method.getName(), k -> new HashMap<>()).put(semantic, s);
         }
         Dialect dialect = new H2Dialect();
         map.forEach((k, v) -> {
-            String script = SemanticScriptHelper.buildScript(v, dialect);
+            String script = SemanticScriptHelper.buildScript(v.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey)), dialect);
             System.out.println(k + "================================" + v.size());
             System.out.println(script);
             System.out.println();

@@ -1,7 +1,6 @@
 package io.github.mybatisext.statement;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,19 +13,24 @@ import org.apache.ibatis.reflection.ParamNameUtil;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.reflect.GenericMethod;
+import io.github.mybatisext.reflect.GenericParameter;
+import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.util.MybatisUtils;
 
 public class ParameterSignatureHelper {
 
-    public static ParameterSignature buildParameterSignature(Configuration configuration, Method method) {
-        Map<String, Class<?>> nameToType = buildNameToType(configuration, method);
+    public static ParameterSignature buildParameterSignature(Configuration configuration, GenericMethod method) {
+        Map<String, GenericType> nameToType = buildNameToType(configuration, method);
         if (nameToType.size() == 1) {
-            Map.Entry<String, Class<?>> entry = nameToType.entrySet().iterator().next();
-            return buildSignatureIfCollection(entry.getValue(), entry.getKey());
+            Map.Entry<String, GenericType> entry = nameToType.entrySet().iterator().next();
+            return buildSignatureIfCollection(entry.getValue().getType(), entry.getKey());
         }
         ParameterSignature parameterSignature = new ParameterSignature();
         parameterSignature.setType(MapperMethod.ParamMap.class);
-        parameterSignature.getNameToType().putAll(nameToType);
+        for (Map.Entry<String, GenericType> entry : nameToType.entrySet()) {
+            parameterSignature.getNameToType().put(entry.getKey(), entry.getValue().getType());
+        }
         return parameterSignature;
     }
 
@@ -88,14 +92,9 @@ public class ParameterSignatureHelper {
         }
     }
 
-    public static void main(String[] args) {
-        String[] ss = "".split(",");
-        System.out.println(ss.length);
-    }
-
-    private static Map<String, Class<?>> buildNameToType(Configuration configuration, Method method) {
-        Parameter[] parameters = method.getParameters();
-        Map<String, Class<?>> nameToType = new HashMap<>();
+    private static Map<String, GenericType> buildNameToType(Configuration configuration, GenericMethod method) {
+        GenericParameter[] parameters = method.getParameters();
+        Map<String, GenericType> nameToType = new HashMap<>();
         for (int i = 0; i < parameters.length; i++) {
             if (MybatisUtils.isSpecialParameter(parameters[i].getType())) {
                 continue;
@@ -106,13 +105,13 @@ public class ParameterSignatureHelper {
                 name = param.value();
             } else {
                 if (configuration.isUseActualParamName()) {
-                    name = getActualParamName(method, i);
+                    name = getActualParamName(method.getMethod(), i);
                 }
                 if (name == null) {
                     name = String.valueOf(nameToType.size());
                 }
             }
-            nameToType.put(name, parameters[i].getType());
+            nameToType.put(name, parameters[i].getGenericType());
         }
         return nameToType;
     }

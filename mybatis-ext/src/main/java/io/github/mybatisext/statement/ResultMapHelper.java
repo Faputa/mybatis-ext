@@ -26,7 +26,7 @@ public class ResultMapHelper {
         }
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            resultMappings.add(buildResultMapping(configuration, id, propertyInfo));
+            resultMappings.add(buildResultMapping(configuration, id, tableInfo, propertyInfo));
         }
         return new ResultMap.Builder(configuration, id, tableClass.getType(), resultMappings).build();
     }
@@ -44,13 +44,13 @@ public class ResultMapHelper {
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
             if (propertyInfo.isOwnColumn()) {
-                resultMappings.add(buildResultMapping(configuration, id, propertyInfo));
+                resultMappings.add(buildResultMapping(configuration, id, tableInfo, propertyInfo));
             }
         }
         return new ResultMap.Builder(configuration, id, tableClass.getType(), resultMappings).build();
     }
 
-    private static ResultMapping buildResultMapping(Configuration configuration, String resultMapId, PropertyInfo propertyInfo) {
+    private static ResultMapping buildResultMapping(Configuration configuration, String resultMapId, TableInfo tableInfo, PropertyInfo propertyInfo) {
         if (propertyInfo.getResultType() == ResultType.ID) {
             return new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(propertyInfo.getJoinTableInfo().getAlias() + "_" + propertyInfo.getColumnName())
@@ -69,48 +69,54 @@ public class ResultMapHelper {
         if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
             if (propertyInfo.getLoadType() == null || propertyInfo.getLoadType() == LoadType.JOIN) {
                 String nestedResultMapId = resultMapId + "[association" + "=" + propertyInfo.getName() + "]";
-                ResultMapHelper.addNestedResultMap(configuration, nestedResultMapId, propertyInfo);
+                ResultMapHelper.addNestedResultMap(configuration, nestedResultMapId, tableInfo, propertyInfo);
                 return new ResultMapping.Builder(configuration, propertyInfo.getName())
                         .javaType(propertyInfo.getJavaType().getType())
                         .nestedResultMapId(nestedResultMapId)
                         .build();
             }
-            NestedSelect nestedSelect = NestedSelectHelper.buildNestedSelect(propertyInfo);
-            return new ResultMapping.Builder(configuration, propertyInfo.getName())
+            NestedSelect nestedSelect = NestedSelectHelper.buildNestedSelect(tableInfo, propertyInfo);
+            ResultMapping.Builder builder = new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(NestedSelectHelper.buildResultMappingColumn(nestedSelect))
                     .nestedQueryId(NestedSelectHelper.toString(nestedSelect))
-                    .javaType(propertyInfo.getJavaType().getType())
-                    .build();
+                    .javaType(propertyInfo.getJavaType().getType());
+            if (propertyInfo.getLoadType() == LoadType.FETCH_LAZY) {
+                builder.lazy(true);
+            }
+            return builder.build();
         }
         if (propertyInfo.getResultType() == ResultType.COLLECTION) {
             if (propertyInfo.getLoadType() == null || propertyInfo.getLoadType() == LoadType.JOIN) {
                 String nestedResultMapId = resultMapId + "[collection" + "=" + propertyInfo.getName() + "]";
-                ResultMapHelper.addNestedResultMap(configuration, nestedResultMapId, propertyInfo);
+                ResultMapHelper.addNestedResultMap(configuration, nestedResultMapId, tableInfo, propertyInfo);
                 return new ResultMapping.Builder(configuration, propertyInfo.getName())
                         .javaType(propertyInfo.getOfType().getType())
                         .nestedResultMapId(nestedResultMapId)
                         .build();
             }
-            NestedSelect nestedSelect = NestedSelectHelper.buildNestedSelect(propertyInfo);
-            return new ResultMapping.Builder(configuration, propertyInfo.getName())
+            NestedSelect nestedSelect = NestedSelectHelper.buildNestedSelect(tableInfo, propertyInfo);
+            ResultMapping.Builder builder = new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(NestedSelectHelper.buildResultMappingColumn(nestedSelect))
                     .nestedQueryId(NestedSelectHelper.toString(nestedSelect))
-                    .javaType(propertyInfo.getOfType().getType())
-                    .build();
+                    .javaType(propertyInfo.getOfType().getType());
+            if (propertyInfo.getLoadType() == LoadType.FETCH_LAZY) {
+                builder.lazy(true);
+            }
+            return builder.build();
         }
         throw new MybatisExtException("Unknown resultType: " + propertyInfo.getResultType());
     }
 
-    private static void addNestedResultMap(Configuration configuration, String id, PropertyInfo propertyInfo) {
+    private static void addNestedResultMap(Configuration configuration, String id, TableInfo tableInfo, PropertyInfo propertyInfo) {
         if (configuration.hasResultMap(id)) {
             return;
         }
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
-            resultMappings.add(buildResultMapping(configuration, id, subPropertyInfo));
+            resultMappings.add(buildResultMapping(configuration, id, tableInfo, subPropertyInfo));
         }
         ResultMap resultMap = new ResultMap.Builder(configuration, id, propertyInfo.getJavaType().getType(), resultMappings).build();
-        synchronized (configuration) {
+        synchronized (ResultMapHelper.class) {
             if (!configuration.hasResultMap(id)) {
                 configuration.addResultMap(resultMap);
             }

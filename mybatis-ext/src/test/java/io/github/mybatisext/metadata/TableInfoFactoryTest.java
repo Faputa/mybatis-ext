@@ -28,6 +28,6 @@ public class TableInfoFactoryTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        assertTrue(tableInfo.getNameToColumnInfo().get("table_id2").isReadonly());
+        assertTrue(tableInfo.getNameToPropertyInfo().get("tableId2").isReadonly());
     }
 }
