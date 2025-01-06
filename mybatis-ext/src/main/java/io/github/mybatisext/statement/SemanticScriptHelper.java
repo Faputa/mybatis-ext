@@ -1,7 +1,6 @@
 package io.github.mybatisext.statement;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -10,8 +9,6 @@ import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.jpa.Semantic;
 import io.github.mybatisext.jpa.SemanticType;
 import io.github.mybatisext.ognl.Ognl;
-import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class SemanticScriptHelper {
 
@@ -44,30 +41,11 @@ public class SemanticScriptHelper {
             return dialect.delete(semantic.getTableInfo(), semantic.getParameter(), semantic.getWhere());
         }
         if (semantic.getType() == SemanticType.INSERT) {
-            checkIsCompatibleWithTableClass(semantic.getParameter().getJavaType(), semantic.getTableInfo().getTableClass());
             return dialect.insert(semantic.getTableInfo(), semantic.getParameter(), semantic.isIgnoreNull());
         }
         if (semantic.getType() == SemanticType.UPDATE) {
-            checkIsCompatibleWithTableClass(semantic.getParameter().getJavaType(), semantic.getTableInfo().getTableClass());
             return dialect.update(semantic.getTableInfo(), semantic.getParameter(), semantic.getWhere(), semantic.isIgnoreNull());
         }
         throw new MybatisExtException("Unsupported semantic type: " + semantic.getType());
-    }
-
-    private static void checkIsCompatibleWithTableClass(GenericType parameterType, GenericType tableClass) {
-        if (parameterType.getType().isArray()) {
-            if (tableClass.isAssignableFrom(parameterType.getType().getComponentType())) {
-                return;
-            }
-        }
-        if (Collection.class.isAssignableFrom(parameterType.getType())) {
-            if (tableClass.isAssignableFrom(TypeArgumentResolver.resolveTypeArgument(parameterType, Collection.class, 0))) {
-                return;
-            }
-        }
-        if (tableClass.isAssignableFrom(parameterType.getType())) {
-            return;
-        }
-        throw new MybatisExtException("Invalid parameter type. Expected: " + tableClass + ", but was: " + parameterType);
     }
 }
