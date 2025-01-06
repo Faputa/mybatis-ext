@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
-import io.github.mybatisext.metadata.TableInfoFactory;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
@@ -381,12 +380,7 @@ public class JpaParser extends BaseParser {
 
     private List<PropertyInfo> collectSelectItems(State state) {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
-        GenericType returnType = jpaTokenizer.getReturnType();
         TableInfo tableInfo = jpaTokenizer.getTableInfo();
-        if (!tableInfo.getTableClass().isAssignableFrom(returnType)) {
-            // 处理TableRef
-            tableInfo = TableInfoFactory.getTableInfo(jpaTokenizer.getConfiguration(), returnType);
-        }
         return tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList());
     }
 
