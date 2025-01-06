@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.github.mybatisext.reflect.GenericType;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
@@ -18,19 +19,21 @@ public class JpaTokenizer implements Tokenizer {
     private final String text;
     private final Configuration configuration;
     private final GenericParameter[] parameters;
+    private final GenericType returnType;
     private final List<Variable> variables;
     private final ExpectedTokens expectedTokens;
     private final TokenMarker tokenMarker;
     private int cursor = 0;
 
     public JpaTokenizer(TableInfo tableInfo, String text, Configuration configuration) {
-        this(tableInfo, text, configuration, new GenericParameter[0]);
+        this(tableInfo, text, configuration, new GenericParameter[0], null);
     }
 
-    public JpaTokenizer(TableInfo tableInfo, String text, Configuration configuration, GenericParameter[] parameters) {
+    public JpaTokenizer(TableInfo tableInfo, String text, Configuration configuration, GenericParameter[] parameters, GenericType returnType) {
         this.tableInfo = tableInfo;
         this.text = text;
         this.configuration = configuration;
+        this.returnType = returnType;
         this.parameters = Arrays.stream(parameters).filter(v -> !MybatisUtils.isSpecialParameter(v.getType())).toArray(GenericParameter[]::new);
         this.variables = buildVariables(configuration, parameters);
         this.expectedTokens = new ExpectedTokens(text);
@@ -209,6 +212,10 @@ public class JpaTokenizer implements Tokenizer {
 
     public GenericParameter[] getParameters() {
         return parameters;
+    }
+
+    public GenericType getReturnType() {
+        return returnType;
     }
 
     public List<Variable> getVariables() {

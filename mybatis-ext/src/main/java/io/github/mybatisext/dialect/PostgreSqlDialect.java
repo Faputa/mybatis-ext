@@ -11,7 +11,7 @@ public class PostgreSqlDialect extends MySqlDialect {
     public String buildLimit(Limit limit, String select) {
         List<String> ss = new ArrayList<>();
         ss.add(select);
-        if (limit.getOffset() == null && limit.getOffsetVariable() != null) {
+        if (limit.getOffset() == null && limit.getOffsetVariable() == null) {
             ss.add("LIMIT");
             ss.add(limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}");
         } else {

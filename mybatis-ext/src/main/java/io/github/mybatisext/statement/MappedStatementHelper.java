@@ -47,7 +47,7 @@ public class MappedStatementHelper {
     public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType) {
         log.debug(id);
         TableInfo tableInfo = TableInfoFactory.getTableInfo(originConfiguration, tableType);
-        Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(tableInfo, methods);
+        Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(tableInfo, methods, returnType);
         String script = SemanticScriptHelper.buildScript(signatureToSemantic, selectDialect());
         log.debug(script);
         SqlCommandType sqlCommandType = resolveSqlCommandType(signatureToSemantic.values().iterator().next());
@@ -79,10 +79,10 @@ public class MappedStatementHelper {
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }
 
-    private Map<String, Semantic> buildSignatureToSemantic(TableInfo tableInfo, List<GenericMethod> methods) {
+    private Map<String, Semantic> buildSignatureToSemantic(TableInfo tableInfo, List<GenericMethod> methods, GenericType returnType) {
         Map<Semantic, String> map = new HashMap<>();
         for (GenericMethod method : methods) {
-            Semantic semantic = jpaParser.parse(originConfiguration, tableInfo, method.getName(), method.getParameters());
+            Semantic semantic = jpaParser.parse(originConfiguration, tableInfo, method.getName(), method.getParameters(), returnType);
             map.put(semantic, buildParameterSignature(method));
         }
         return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
