@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
+import io.github.mybatisext.metadata.TableInfoFactory;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
@@ -172,7 +173,7 @@ public class JpaParser extends BaseParser {
         grammar.set(choice(
                 join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(join(groupBy, optional(having))), optional(orderBy), optional(limit), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.SELECT);
-                    semantic.setSelectItems(state.<JpaTokenizer>getTokenizer().getTableInfo().getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList()));
+                    semantic.setSelectItems(collectSelectItems(state));
                     if (state.getMatch("Distinct") != null) {
                         semantic.setDistinct(true);
                     }
@@ -378,6 +379,17 @@ public class JpaParser extends BaseParser {
         variable.set(join(variableName, star(join(keyword("Dot"), subVariableName))));
     }
 
+    private List<PropertyInfo> collectSelectItems(State state) {
+        JpaTokenizer jpaTokenizer = state.getTokenizer();
+        GenericType returnType = jpaTokenizer.getReturnType();
+        TableInfo tableInfo = jpaTokenizer.getTableInfo();
+        if (!tableInfo.getTableClass().isAssignableFrom(returnType)) {
+            // 处理TableRef
+            tableInfo = TableInfoFactory.getTableInfo(jpaTokenizer.getConfiguration(), returnType);
+        }
+        return tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList());
+    }
+
     private Set<String> collectUsedParamNames(Limit limit) {
         Set<String> set = new HashSet<>();
         if (limit.getOffsetVariable() != null) {
@@ -564,10 +576,10 @@ public class JpaParser extends BaseParser {
         return reference.get();
     }
 
-    public Semantic parse(Configuration configuration, TableInfo tableInfo, String methodName, GenericParameter[] parameters) {
+    public Semantic parse(Configuration configuration, TableInfo tableInfo, String methodName, GenericParameter[] parameters, GenericType returnType) {
         AtomicReference<Semantic> reference = new AtomicReference<>();
         List<TokenMarker> tokenMarkers = new ArrayList<>();
-        JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, configuration, parameters);
+        JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, configuration, parameters, returnType);
         grammar.match(jpaTokenizer, state -> {
             Semantic semantic = (Semantic) state.getResult();
             reference.set(semantic);

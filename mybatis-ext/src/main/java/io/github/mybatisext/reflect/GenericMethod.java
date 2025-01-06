@@ -49,6 +49,11 @@ public class GenericMethod {
         return method.getName();
     }
 
+    public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
+        return method.isAnnotationPresent(annotationClass);
+    }
+
+
     public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         return method.getAnnotation(annotationClass);
     }

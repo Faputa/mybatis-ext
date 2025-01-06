@@ -76,14 +76,14 @@ public class OracleDialect extends BaseSimpleDialect {
     public String buildLimit(Limit limit, String select) {
         String startRow;
         String endRow;
-        if (limit.getOffset() != null || limit.getOffsetVariable() != null) {
+        if (limit.getOffset() == null && limit.getOffsetVariable() == null) {
+            startRow = null;
+            endRow = limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}";
+        } else {
             startRow = limit.getOffset() != null ? limit.getOffset().toString() : "#{" + limit.getOffsetVariable() + "}";
             String offset = limit.getOffset() != null ? limit.getOffset().toString() : limit.getOffsetVariable().toString();
             String rowCount = limit.getRowCount() != null ? limit.getRowCount().toString() : limit.getRowCountVariable().toString();
             endRow = "<bind name=\"__endRow\" value=\"" + offset + " + " + rowCount + "\"/> #{__endRow}";
-        } else {
-            startRow = null;
-            endRow = limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}";
         }
         List<String> ss = new ArrayList<>();
         if (startRow != null) {

@@ -49,7 +49,7 @@ public class JpaParserTest {
         GenericType genericType = GenericTypeFactory.build(JpaParserExample.class);
         Map<String, Map<Semantic, String>> map = new HashMap<>();
         for (GenericMethod method : genericType.getMethods()) {
-            Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters());
+            Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters(), method.getGenericReturnType());
             ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(configuration, method);
             String s = ParameterSignatureHelper.toString(parameterSignature);
             map.computeIfAbsent(method.getName(), k -> new HashMap<>()).put(semantic, s);
