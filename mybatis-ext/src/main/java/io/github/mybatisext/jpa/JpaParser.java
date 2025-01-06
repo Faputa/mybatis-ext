@@ -21,6 +21,7 @@ import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.reflect.GenericParameter;
+import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class JpaParser extends BaseParser {
@@ -250,7 +251,7 @@ public class JpaParser extends BaseParser {
                 })),
                 join(choice(keyword("update"), keyword("modify")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.UPDATE);
-                    semantic.setParameter(resolveSemanticParameter(state));
+                    semantic.setParameter(resolveSemanticParameter(state, true));
                     if (state.getMatch("IgnoreNull") != null) {
                         semantic.setIgnoreNull(true);
                     }
@@ -264,7 +265,7 @@ public class JpaParser extends BaseParser {
                 })),
                 join(choice(keyword("delete"), keyword("remove")), optional(keyword("Batch")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.DELETE);
-                    semantic.setParameter(resolveSemanticParameter(state));
+                    semantic.setParameter(resolveSemanticParameter(state, false));
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setWhere(ensureConditionVariable(state, collectUsedParamNames(_conditionList.<ConditionList>val()), _conditionList.val()));
@@ -275,7 +276,7 @@ public class JpaParser extends BaseParser {
                 })),
                 join(choice(keyword("save"), keyword("insert")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.INSERT);
-                    semantic.setParameter(resolveSemanticParameter(state));
+                    semantic.setParameter(resolveSemanticParameter(state, true));
                     if (state.getMatch("IgnoreNull") != null) {
                         semantic.setIgnoreNull(true);
                     }
@@ -416,25 +417,31 @@ public class JpaParser extends BaseParser {
         return false;
     }
 
-    private Variable resolveSemanticParameter(State state) {
+    private Variable resolveSemanticParameter(State state, boolean required) {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         GenericParameter[] parameters = jpaTokenizer.getParameters();
         if (parameters.length == 0) {
             throw new MybatisExtException("No parameters provided in the query.");
         }
+        GenericType tableClass = jpaTokenizer.getTableInfo().getTableClass();
+        GenericType parameterType = parameters[0].getGenericType();
         Param param = parameters[0].getAnnotation(Param.class);
-        if (parameters.length == 1) {
-            if (parameters[0].getType().isArray()) {
-                return new Variable(param != null ? param.value() : "array", parameters[0].getGenericType());
-            }
-            if (Collection.class.isAssignableFrom(parameters[0].getType())) {
-                if (List.class.isAssignableFrom(parameters[0].getType())) {
-                    return new Variable(param != null ? param.value() : "list", parameters[0].getGenericType());
-                }
-                return new Variable(param != null ? param.value() : "collection", parameters[0].getGenericType());
-            }
+        if (parameterType.getType().isArray() && tableClass.isAssignableFrom(parameterType.getType().getComponentType())) {
+            return new Variable(param != null ? param.value() : (parameters.length == 1 ? "array" : "param1"), parameterType);
         }
-        return new Variable(param != null ? param.value() : "", parameters[0].getGenericType());
+        if (Collection.class.isAssignableFrom(parameterType.getType()) && tableClass.isAssignableFrom(TypeArgumentResolver.resolveTypeArgument(parameterType, Collection.class, 0))) {
+            if (List.class.isAssignableFrom(parameterType.getType())) {
+                return new Variable(param != null ? param.value() : (parameters.length == 1 ? "list" : "param1"), parameterType);
+            }
+            return new Variable(param != null ? param.value() : (parameters.length == 1 ? "collection" : "param1"), parameterType);
+        }
+        if (tableClass.isAssignableFrom(parameterType.getType())) {
+            return new Variable(param != null ? param.value() : (parameters.length == 1 ? "" : "param1"), parameterType);
+        }
+        if (required) {
+            throw new MybatisExtException("Invalid parameter type. Expected: " + tableClass + ", but was: " + parameterType);
+        }
+        return null;
     }
 
     private Condition resolveDefaultCondition(State state, Set<String> usedParamNames) {
