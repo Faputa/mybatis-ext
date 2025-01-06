@@ -1,5 +1,6 @@
 package io.github.mybatisext.metadata;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.ibatis.mapping.Environment;
@@ -28,6 +29,7 @@ public class TableInfoFactoryTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
+        assertEquals(5, tableInfo.getAliasToJoinTableInfo().size());
         assertTrue(tableInfo.getNameToPropertyInfo().get("tableId2").isReadonly());
     }
 }

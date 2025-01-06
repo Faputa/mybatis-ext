@@ -272,9 +272,7 @@ public class TableInfoFactory {
             }
         }
 
-        Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
-        buildJoinTableInfos(configuration, tableInfo, currentClass, propertyInfo, joinRelations, aliasToJoinTableInfo);
-        checkJoinTableInfos(aliasToJoinTableInfo);
+        buildJoinTableInfos(configuration, tableInfo, currentClass, propertyInfo, joinRelations);
         mergeJoinTableInfos(tableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
 
         if (propertyInfo.getColumnName() == null &&
@@ -284,12 +282,13 @@ public class TableInfoFactory {
         }
     }
 
-    private static void buildJoinTableInfos(Configuration configuration, TableInfo rootTableInfo, GenericType currentClass, PropertyInfo propertyInfo, JoinRelation[] joinRelations, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
+    private static void buildJoinTableInfos(Configuration configuration, TableInfo rootTableInfo, GenericType currentClass, PropertyInfo propertyInfo, JoinRelation[] joinRelations) {
         JoinTableInfo lastJoinTableInfo = rootTableInfo.getJoinTableInfo();
-        JoinTableInfo parentJoinTableInfo = lastJoinTableInfo;
+        JoinTableInfo parentJoinTableInfo = rootTableInfo.getJoinTableInfo();
         GenericType tableClass = rootTableInfo.getTableClass();
 
         for (GenericType c = tableClass; currentClass.isAssignableFrom(c) && c.getType() != Object.class; c = c.getGenericSuperclass()) {
+            lastJoinTableInfo = parentJoinTableInfo;
             if (c.isAnnotationPresent(EmbedParent.class)) {
                 continue;
             }
@@ -298,7 +297,6 @@ public class TableInfoFactory {
             }
             JoinParent joinParent = c.getAnnotation(JoinParent.class);
             TableInfo tableInfo = getTableInfo(configuration, c.getGenericSuperclass());
-            lastJoinTableInfo = parentJoinTableInfo;
             parentJoinTableInfo = new JoinTableInfo();
             parentJoinTableInfo.setTableInfo(tableInfo);
             parentJoinTableInfo.setAlias(joinParent.alias());
@@ -312,21 +310,19 @@ public class TableInfoFactory {
             }
         }
 
+        Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
         if (StringUtils.isNotBlank(lastJoinTableInfo.getAlias())) {
             aliasToJoinTableInfo.put(lastJoinTableInfo.getAlias(), lastJoinTableInfo);
         }
-        if (parentJoinTableInfo != lastJoinTableInfo && StringUtils.isNotBlank(parentJoinTableInfo.getAlias())) {
-            if (aliasToJoinTableInfo.containsKey(parentJoinTableInfo.getAlias())) {
+        if (parentJoinTableInfo != lastJoinTableInfo && !parentJoinTableInfo.getAlias().isEmpty()) {
+            if (parentJoinTableInfo.getAlias().equals(lastJoinTableInfo.getAlias())) {
                 throw new MybatisExtException("Duplicate table alias: " + parentJoinTableInfo.getAlias());
             }
             aliasToJoinTableInfo.put(parentJoinTableInfo.getAlias(), parentJoinTableInfo);
         }
 
-        if (joinRelations.length > 0) {
-            processJoinRelations(configuration, lastJoinTableInfo, propertyInfo, joinRelations, aliasToJoinTableInfo);
-        } else {
-            propertyInfo.setJoinTableInfo(parentJoinTableInfo);
-        }
+        processJoinRelations(configuration, lastJoinTableInfo, propertyInfo, joinRelations, aliasToJoinTableInfo);
+        checkJoinTableInfos(aliasToJoinTableInfo);
     }
 
     private static void processJoinRelations(Configuration configuration, JoinTableInfo lastJoinTableInfo, PropertyInfo propertyInfo, JoinRelation[] joinRelations, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
