@@ -129,7 +129,6 @@ public class GenericType implements Type {
         return type.isAssignableFrom(cls.type);
     }
 
-    @SuppressWarnings("hiding")
     public <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
         return type.getAnnotation(annotationClass);
     }

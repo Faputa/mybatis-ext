@@ -33,6 +33,10 @@ public class GenericField {
         return field.getName();
     }
 
+    public boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
+        return field.isAnnotationPresent(annotationClass);
+    }
+
     public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         return field.getAnnotation(annotationClass);
     }

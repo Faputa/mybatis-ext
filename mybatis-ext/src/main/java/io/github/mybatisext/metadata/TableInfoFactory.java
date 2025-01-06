@@ -49,6 +49,15 @@ public class TableInfoFactory {
     }
 
     public static TableInfo getTableInfo(Configuration configuration, GenericType tableClass) {
+        for (GenericType c = tableClass; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
+            if (c.isAnnotationPresent(Table.class)) {
+                return processTable(configuration, c, c.getAnnotation(Table.class));
+            }
+        }
+        throw new MybatisExtException("Class [" + tableClass.getTypeName() + "] lacks @" + Table.class.getSimpleName() + " annotation.");
+    }
+
+    private static TableInfo processTable(Configuration configuration, GenericType tableClass, Table table) {
         if (tableInfoCache.containsKey(tableClass)) {
             return tableInfoCache.get(tableClass);
         }
@@ -56,17 +65,12 @@ public class TableInfoFactory {
         tableInfoCache.put(tableClass, tableInfo);
         JoinTableInfo joinTableInfo = new JoinTableInfo();
         joinTableInfo.setTableInfo(tableInfo);
+        joinTableInfo.setAlias(table.alias());
         tableInfo.setJoinTableInfo(joinTableInfo);
         tableInfo.setTableClass(tableClass);
-
-        Table table = tableClass.getAnnotation(Table.class);
-        if (table != null) {
-            tableInfo.setName(table.name());
-            tableInfo.setComment(table.comment());
-            tableInfo.setSchema(table.schema());
-            joinTableInfo.setAlias(table.alias());
-        }
-
+        tableInfo.setName(table.name());
+        tableInfo.setComment(table.comment());
+        tableInfo.setSchema(table.schema());
         if (StringUtils.isBlank(tableInfo.getName())) {
             tableInfo.setName(StringUtils.camelToSnake(tableClass.getSimpleName()));
         }
@@ -115,10 +119,7 @@ public class TableInfoFactory {
                     continue;
                 }
                 GenericMethod readMethod = methodMap.get(propertyDescriptor.getReadMethod());
-                if (readMethod == null) {
-                    continue;
-                }
-                if (readMethod.getDeclaringClass() != c.getType()) {
+                if (readMethod == null || readMethod.getDeclaringClass() != c.getType()) {
                     continue;
                 }
                 Column column = readMethod.getAnnotation(Column.class);
@@ -292,7 +293,7 @@ public class TableInfoFactory {
             if (c.isAnnotationPresent(EmbedParent.class)) {
                 continue;
             }
-            if (!c.isAnnotationPresent(JoinParent.class)) {
+            if (!c.isAnnotationPresent(JoinParent.class) || !c.isAnnotationPresent(Table.class)) {
                 break;
             }
             JoinParent joinParent = c.getAnnotation(JoinParent.class);
@@ -445,7 +446,7 @@ public class TableInfoFactory {
             propertyInfo.setOfType(TypeArgumentResolver.resolveGenericTypeArgument(propertyType, Collection.class, 0));
             propertyInfo.setResultType(ResultType.COLLECTION);
         } else if (propertyType.getType() == Optional.class) {
-            propertyInfo.setJavaType(propertyType.getTypeParameters()[0]);
+            propertyInfo.setJavaType(TypeArgumentResolver.resolveGenericTypeArgument(propertyType, Collection.class, 0));
         } else if (propertyType.getTypeParameters().length == 0) {
             propertyInfo.setJavaType(propertyType);
         }
