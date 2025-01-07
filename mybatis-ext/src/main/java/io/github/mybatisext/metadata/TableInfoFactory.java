@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -68,23 +69,74 @@ public class TableInfoFactory {
         joinTableInfo.setAlias(table.alias());
         tableInfo.setJoinTableInfo(joinTableInfo);
         tableInfo.setTableClass(tableClass);
-        tableInfo.setName(table.name());
+        tableInfo.setName(!table.name().isEmpty() ? table.name() : StringUtils.camelToSnake(tableClass.getSimpleName()));
         tableInfo.setComment(table.comment());
         tableInfo.setSchema(table.schema());
-        if (StringUtils.isBlank(tableInfo.getName())) {
-            tableInfo.setName(StringUtils.camelToSnake(tableClass.getSimpleName()));
+
+        AtomicInteger aliasCount = new AtomicInteger(1);
+        Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo = new HashMap<>();
+        processParentJoinRelations(configuration, tableClass, tableInfo, featureToJoinTableInfo);
+        processProperty(configuration, tableClass, tableInfo, featureToJoinTableInfo, aliasCount);
+
+        aliasCount.set(0);
+        String alias = joinTableInfo.getAlias();
+        while (!tableClass.isAnnotationPresent(EmbedParent.class) && (StringUtils.isBlank(alias) || tableInfo.getAliasToJoinTableInfo().containsKey(alias))) {
+            alias = "t" + aliasCount.getAndIncrement();
         }
-        if (StringUtils.isNotBlank(joinTableInfo.getAlias())) {
-            tableInfo.getAliasToJoinTableInfo().put(joinTableInfo.getAlias(), joinTableInfo);
-        }
-        processProperty(configuration, tableClass, tableInfo);
+        joinTableInfo.setAlias(alias);
+        tableInfo.getAliasToJoinTableInfo().put(alias, joinTableInfo);
         return tableInfo;
     }
 
-    private static void processProperty(Configuration configuration, GenericType tableClass, TableInfo tableInfo) {
-        AtomicInteger aliasCount = new AtomicInteger(1);
-        Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo = new HashMap<>();
+    private static void processParentJoinRelations(Configuration configuration, GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
+        if (tableClass.isAnnotationPresent(EmbedParent.class)) {
+            TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
+            tableInfo.getJoinTableInfo().setAlias(parentTableInfo.getJoinTableInfo().getAlias());
+            tableInfo.getAliasToJoinTableInfo().put(parentTableInfo.getJoinTableInfo().getAlias(), tableInfo.getJoinTableInfo());
+            tableInfo.getJoinTableInfo().getRightJoinTableInfos().putAll(parentTableInfo.getJoinTableInfo().getRightJoinTableInfos());
+            stripParentJoinRelations(tableInfo, featureToJoinTableInfo);
+        }
+        if (tableClass.isAnnotationPresent(JoinParent.class)) {
+            TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
+            JoinParent joinParent = tableClass.getAnnotation(JoinParent.class);
+            for (JoinColumn joinColumn : joinParent.joinColumn()) {
+                JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
+                joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
+                joinColumnInfo.setRightColumn(joinColumn.rightColumn());
+                tableInfo.getJoinTableInfo().getRightJoinTableInfos().put(joinColumnInfo, parentTableInfo.getJoinTableInfo());
+            }
+            stripParentJoinRelations(tableInfo, featureToJoinTableInfo);
+        }
+    }
 
+    private static void stripParentJoinRelations(TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
+        List<JoinTableInfo> queue = new ArrayList<>();
+        queue.add(tableInfo.getJoinTableInfo());
+        for (int i = 0; i < queue.size(); i++) {
+            JoinTableInfo leftJoinTableInfo = queue.get(i);
+            for (JoinTableInfo rightJoinTableInfo : leftJoinTableInfo.getRightJoinTableInfos().values()) {
+                if (tableInfo.getAliasToJoinTableInfo().containsKey(rightJoinTableInfo.getAlias())) {
+                    continue;
+                }
+                JoinTableInfo joinTableInfo = new JoinTableInfo();
+                joinTableInfo.setAlias(rightJoinTableInfo.getAlias());
+                joinTableInfo.setTableInfo(rightJoinTableInfo.getTableInfo());
+                tableInfo.getAliasToJoinTableInfo().put(rightJoinTableInfo.getAlias(), joinTableInfo);
+                queue.add(joinTableInfo);
+
+                for (JoinColumnInfo joinColumnInfo : leftJoinTableInfo.getRightJoinTableInfos().keySet()) {
+                    leftJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
+                    joinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, leftJoinTableInfo);
+                }
+                joinTableInfo.getRightJoinTableInfos().putAll(rightJoinTableInfo.getRightJoinTableInfos());
+
+                Set<JoinColumnFeature> joinColumnFeatures = joinTableInfo.getLeftJoinTableInfos().entrySet().stream().map(v -> buildJoinColumnFeature(v.getKey(), v.getValue(), joinTableInfo)).collect(Collectors.toSet());
+                featureToJoinTableInfo.put(joinColumnFeatures, joinTableInfo);
+            }
+        }
+    }
+
+    private static void processProperty(Configuration configuration, GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         boolean inJoinParent = false;
         for (GenericType c = tableClass; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             for (GenericField field : c.getDeclaredFields()) {
@@ -145,15 +197,6 @@ public class TableInfoFactory {
             }
             inJoinParent = true;
         }
-
-        String alias = tableInfo.getJoinTableInfo().getAlias();
-        if (StringUtils.isBlank(alias)) {
-            aliasCount.set(0);
-            while (tableInfo.getAliasToJoinTableInfo().containsKey(alias = "t" + aliasCount.getAndIncrement())) {
-            }
-            tableInfo.getJoinTableInfo().setAlias(alias);
-            tableInfo.getAliasToJoinTableInfo().put(alias, tableInfo.getJoinTableInfo());
-        }
     }
 
     private static void processColumn(Configuration configuration, TableInfo tableInfo, Column column, @Nullable Id id, String propertyName, GenericType propertyType, boolean readonly) {
@@ -176,7 +219,7 @@ public class TableInfoFactory {
             if (id != null) {
                 processIdType(propertyInfo, id);
             }
-            String columnName = StringUtils.isNotBlank(column.name()) ? column.name() : StringUtils.camelToSnake(propertyName);
+            String columnName = !column.name().isEmpty() ? column.name() : StringUtils.camelToSnake(propertyName);
             propertyInfo.setColumnName(columnName);
             ColumnInfo columnInfo = new ColumnInfo();
             columnInfo.setName(columnName);
@@ -258,11 +301,11 @@ public class TableInfoFactory {
         tableInfo.getNameToPropertyInfo().put(propertyName, propertyInfo);
 
         if (column != null) {
-            propertyInfo.setColumnName(StringUtils.isNotBlank(column.name()) ? column.name() : StringUtils.camelToSnake(propertyName));
+            propertyInfo.setColumnName(!column.name().isEmpty() ? column.name() : StringUtils.camelToSnake(propertyName));
         } else {
             JoinRelation joinRelation = joinRelations[joinRelations.length - 1];
             if (joinRelation.table() != void.class) {
-                propertyInfo.setColumnName(StringUtils.isNotBlank(joinRelation.column()) ? joinRelation.column() : StringUtils.camelToSnake(propertyName));
+                propertyInfo.setColumnName(!joinRelation.column().isEmpty() ? joinRelation.column() : StringUtils.camelToSnake(propertyName));
             }
         }
         if (loadStrategy != null) {
@@ -292,7 +335,7 @@ public class TableInfoFactory {
             if (c.isAnnotationPresent(EmbedParent.class)) {
                 continue;
             }
-            if (!c.isAnnotationPresent(JoinParent.class) || !c.isAnnotationPresent(Table.class)) {
+            if (!c.isAnnotationPresent(JoinParent.class) || c.getGenericSuperclass() == null || !c.getGenericSuperclass().isAnnotationPresent(Table.class)) {
                 break;
             }
             JoinParent joinParent = c.getAnnotation(JoinParent.class);
@@ -329,7 +372,7 @@ public class TableInfoFactory {
         for (JoinRelation joinRelation : joinRelations) {
             JoinTableInfo joinTableInfo;
             TableInfo tableInfo = resolveTableInfoFromJoinRelation(configuration, propertyInfo, joinRelation);
-            if (StringUtils.isNotBlank(joinRelation.tableAlias())) {
+            if (!joinRelation.tableAlias().isEmpty()) {
                 joinTableInfo = aliasToJoinTableInfo.get(joinRelation.tableAlias());
                 if (joinTableInfo != null) {
                     if (joinTableInfo.getTableInfo() != null) {
@@ -351,7 +394,7 @@ public class TableInfoFactory {
                 joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
                 joinColumnInfo.setRightColumn(joinColumn.rightColumn());
 
-                if (StringUtils.isNotBlank(joinColumn.leftTableAlias())) {
+                if (!joinColumn.leftTableAlias().isEmpty()) {
                     JoinTableInfo leftJoinTableInfo = aliasToJoinTableInfo.get(joinColumn.leftTableAlias());
                     if (leftJoinTableInfo != null) {
                         leftJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
@@ -385,9 +428,9 @@ public class TableInfoFactory {
         queue.add(rootTableInfo.getJoinTableInfo());
 
         for (int i = 0; i < queue.size(); i++) {
-            Set<JoinTableInfo> joinTableInfos = queue.get(i).getRightJoinTableInfos().values().stream().collect(Collectors.toSet());
+            Set<JoinTableInfo> joinTableInfos = new HashSet<>(queue.get(i).getRightJoinTableInfos().values());
             for (JoinTableInfo joinTableInfo : joinTableInfos) {
-                if (!queue.contains(joinTableInfo) && joinTableInfo.getLeftJoinTableInfos().values().stream().map(v -> queue.contains(v)).reduce((a, b) -> a && b).get()) {
+                if (!queue.contains(joinTableInfo) && joinTableInfo.getLeftJoinTableInfos().values().stream().map(queue::contains).reduce((a, b) -> a && b).get()) {
                     queue.add(joinTableInfo);
                 }
 
