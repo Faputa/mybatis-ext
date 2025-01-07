@@ -36,9 +36,9 @@ public class JoinTableInfo {
     }
 
     public void collectTableAliases(LinkedHashSet<String> tableAliases) {
-        leftJoinTableInfos.forEach((leftJoinColumn, leftJoinTable) -> {
-            leftJoinTable.collectTableAliases(tableAliases);
-        });
+        for (JoinTableInfo joinTableInfo : leftJoinTableInfos.values()) {
+            joinTableInfo.collectTableAliases(tableAliases);
+        }
         tableAliases.add(alias);
     }
 
