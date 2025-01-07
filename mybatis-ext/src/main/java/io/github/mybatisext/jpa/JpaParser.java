@@ -170,9 +170,14 @@ public class JpaParser extends BaseParser {
 
     public JpaParser() {
         grammar.set(choice(
-                join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(join(groupBy, optional(having))), optional(orderBy), optional(limit), end, action(state -> {
+                join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(propertyList), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(join(groupBy, optional(having))), optional(orderBy), optional(limit), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.SELECT);
-                    semantic.setSelectItems(collectSelectItems(state));
+                    MatchResult _propertyList = state.getMatch(propertyList);
+                    if (_propertyList != null) {
+                        semantic.setSelectItems(_propertyList.val());
+                    } else {
+                        semantic.setSelectItems(buildDefaultSelectItems(state.getTokenizer()));
+                    }
                     if (state.getMatch("Distinct") != null) {
                         semantic.setDistinct(true);
                     }
@@ -219,11 +224,11 @@ public class JpaParser extends BaseParser {
                     if (hasUnusedParam(state, usedParamNames)) {
                         if (_groupBy != null) {
                             if (semantic.getHaving() == null) {
-                                semantic.setHaving(resolveDefaultCondition(state, usedParamNames));
+                                semantic.setHaving(buildDefaultCondition(state, usedParamNames));
                             }
                         } else {
                             if (semantic.getWhere() == null) {
-                                semantic.setWhere(resolveDefaultCondition(state, usedParamNames));
+                                semantic.setWhere(buildDefaultCondition(state, usedParamNames));
                             }
                         }
                     }
@@ -235,7 +240,7 @@ public class JpaParser extends BaseParser {
                     if (_conditionList != null) {
                         semantic.setWhere(ensureConditionVariable(state, collectUsedParamNames(_conditionList.<ConditionList>val()), _conditionList.val()));
                     } else {
-                        semantic.setWhere(resolveDefaultCondition(state, new HashSet<>()));
+                        semantic.setWhere(buildDefaultCondition(state, new HashSet<>()));
                     }
                     state.setReturn(semantic);
                 })),
@@ -245,13 +250,13 @@ public class JpaParser extends BaseParser {
                     if (_conditionList != null) {
                         semantic.setWhere(ensureConditionVariable(state, collectUsedParamNames(_conditionList.<ConditionList>val()), _conditionList.val()));
                     } else {
-                        semantic.setWhere(resolveDefaultCondition(state, new HashSet<>()));
+                        semantic.setWhere(buildDefaultCondition(state, new HashSet<>()));
                     }
                     state.setReturn(semantic);
                 })),
                 join(choice(keyword("update"), keyword("modify")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.UPDATE);
-                    semantic.setParameter(resolveSemanticParameter(state, true));
+                    semantic.setParameter(buildSemanticParameter(state, true));
                     if (state.getMatch("IgnoreNull") != null) {
                         semantic.setIgnoreNull(true);
                     }
@@ -259,24 +264,24 @@ public class JpaParser extends BaseParser {
                     if (_conditionList != null) {
                         semantic.setWhere(ensureConditionVariable(state, collectUsedParamNames(_conditionList.<ConditionList>val()), _conditionList.val()));
                     } else {
-                        semantic.setWhere(resolveDefaultCondition(state, new HashSet<>()));
+                        semantic.setWhere(buildDefaultCondition(state, new HashSet<>()));
                     }
                     state.setReturn(semantic);
                 })),
                 join(choice(keyword("delete"), keyword("remove")), optional(keyword("Batch")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.DELETE);
-                    semantic.setParameter(resolveSemanticParameter(state, false));
+                    semantic.setParameter(buildSemanticParameter(state, false));
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
                         semantic.setWhere(ensureConditionVariable(state, collectUsedParamNames(_conditionList.<ConditionList>val()), _conditionList.val()));
                     } else {
-                        semantic.setWhere(resolveDefaultCondition(state, new HashSet<>()));
+                        semantic.setWhere(buildDefaultCondition(state, new HashSet<>()));
                     }
                     state.setReturn(semantic);
                 })),
                 join(choice(keyword("save"), keyword("insert")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.INSERT);
-                    semantic.setParameter(resolveSemanticParameter(state, true));
+                    semantic.setParameter(buildSemanticParameter(state, true));
                     if (state.getMatch("IgnoreNull") != null) {
                         semantic.setIgnoreNull(true);
                     }
@@ -378,8 +383,7 @@ public class JpaParser extends BaseParser {
         variable.set(join(variableName, star(join(keyword("Dot"), subVariableName))));
     }
 
-    private List<PropertyInfo> collectSelectItems(State state) {
-        JpaTokenizer jpaTokenizer = state.getTokenizer();
+    private List<PropertyInfo> buildDefaultSelectItems(JpaTokenizer jpaTokenizer) {
         TableInfo tableInfo = jpaTokenizer.getTableInfo();
         return tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList());
     }
@@ -423,7 +427,7 @@ public class JpaParser extends BaseParser {
         return false;
     }
 
-    private Variable resolveSemanticParameter(State state, boolean required) {
+    private Variable buildSemanticParameter(State state, boolean required) {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         GenericParameter[] parameters = jpaTokenizer.getParameters();
         if (parameters.length == 0) {
@@ -450,7 +454,7 @@ public class JpaParser extends BaseParser {
         return null;
     }
 
-    private Condition resolveDefaultCondition(State state, Set<String> usedParamNames) {
+    private Condition buildDefaultCondition(State state, Set<String> usedParamNames) {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         Configuration configuration = jpaTokenizer.getConfiguration();
         GenericParameter[] parameters = jpaTokenizer.getParameters();
@@ -490,7 +494,10 @@ public class JpaParser extends BaseParser {
             subCondition.setVariable(new Variable(param.value(), parameter.getGenericType()));
             condition.getSubConditions().add(subCondition);
         }
-        return condition;
+        if (condition.getSubConditions().isEmpty()) {
+            return null;
+        }
+        return ConditionHelper.simplifyCondition(condition);
     }
 
     private Condition ensureConditionVariable(State state, Set<String> usedParamNames, @Nonnull ConditionList conditionList) {

@@ -1,5 +1,7 @@
 package io.github.mybatisext.jpa;
 
+import java.util.List;
+
 import org.apache.ibatis.annotations.Param;
 
 import io.github.mybatisext.mapper.BaseMapper;
@@ -8,6 +10,8 @@ import io.github.mybatisext.table.PrivilegeTable;
 public interface JpaParserExample extends BaseMapper<PrivilegeTable> {
 
     PrivilegeTable get(@Param("tableId") String tableId, @Param("userId") String userId);
+
+    PrivilegeTable getDbName(@Param("tableId") String tableId, @Param("userId") String userId);
 
     PrivilegeTable getDistinctTop10ByUserId$AndTableIdAndRowPrivilegeFieldsDotFieldInXyz$OrderByCreateTime(@Param("userId") String userId, @Param("tableId") String tableId, @Param("xyz") String s);
 
@@ -26,4 +30,6 @@ public interface JpaParserExample extends BaseMapper<PrivilegeTable> {
     int deleteByDbName(PrivilegeTable query);
 
     int updateIgnoreNullByDbName(PrivilegeTable query);
+
+    List<PrivilegeTable> findAll();
 }

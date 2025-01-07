@@ -241,7 +241,7 @@ public abstract class BaseDialect implements Dialect {
         for (PropertyInfo propertyInfo : propertyInfos) {
             if (!propertyInfo.isReadonly()) {
                 if (propertyInfo.getColumnName() != null) {
-                    selectItems.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " " + propertyInfo.getJoinTableInfo().getAlias() + "_" + propertyInfo.getColumnName());
+                    selectItems.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " AS " + propertyInfo.getJoinTableInfo().getAlias() + "_" + propertyInfo.getColumnName());
                 } else {
                     selectItems.add(buildSelectItems(tableInfo, propertyInfo.values()));
                 }
