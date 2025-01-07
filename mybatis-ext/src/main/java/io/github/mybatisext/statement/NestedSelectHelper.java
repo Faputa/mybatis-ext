@@ -83,7 +83,7 @@ public class NestedSelectHelper {
         List<String> selectItems = new ArrayList<>();
         JoinTableInfo joinTableInfo = propertyInfo.getJoinTableInfo();
         if (propertyInfo.getColumnName() != null) {
-            return joinTableInfo.getAlias() + "." + propertyInfo.getColumnName();
+            selectItems.add(joinTableInfo.getAlias() + "." + propertyInfo.getColumnName());
         }
         for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
             if (!subPropertyInfo.isReadonly()) {

@@ -22,9 +22,7 @@ public class Ognl {
     public static final String ToUpperCase = "@io.github.mybatisext.ognl.Ognl@toUpperCase";
     public static final String IsParameterSignatureMatch = "@io.github.mybatisext.ognl.Ognl@isParameterSignatureMatch";
     public static final String GetUuid = "@io.github.mybatisext.ognl.Ognl@getUuid";
-    ;
     public static final String GetCustomId = "@io.github.mybatisext.ognl.Ognl@getCustomId";
-    ;
 
     /**
      * 可以用于判断String,Long,Integer,Map,Array,Collection是否为空
