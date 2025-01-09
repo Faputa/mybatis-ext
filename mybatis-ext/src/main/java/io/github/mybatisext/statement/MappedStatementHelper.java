@@ -52,7 +52,7 @@ public class MappedStatementHelper {
         log.debug(script);
         SqlCommandType sqlCommandType = resolveSqlCommandType(signatureToSemantic.values().iterator().next());
         List<ResultMap> resultMaps = new ArrayList<>();
-        if (tableType.isAssignableFrom(returnType)) {
+        if (TableInfoFactory.isAssignableEitherWithTable(tableType, returnType)) {
             resultMaps.add(ResultMapHelper.buildResultMap(originConfiguration, tableInfo));
         } else {
             resultMaps.add(ResultMapHelper.buildSimpleTypeResultMap(originConfiguration, returnType.getType()));

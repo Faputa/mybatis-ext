@@ -146,6 +146,8 @@ public class ExtEnhancer {
                 mReturnType = TypeArgumentResolver.resolveGenericTypeArgument(method.getGenericReturnType(), Collection.class, 0);
             } else if (mReturnType.getType() == Optional.class) {
                 mReturnType = TypeArgumentResolver.resolveGenericTypeArgument(method.getGenericReturnType(), Optional.class, 0);
+            } else if (mReturnType.isArray()) {
+                mReturnType = mReturnType.getComponentType();
             }
             if (returnType == null || returnType.isAssignableFrom(mReturnType)) {
                 returnType = mReturnType;

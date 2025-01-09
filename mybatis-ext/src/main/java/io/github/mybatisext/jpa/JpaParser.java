@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -20,8 +21,10 @@ import io.github.mybatisext.annotation.OnlyById;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.util.MybatisUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class JpaParser extends BaseParser {
@@ -384,7 +387,11 @@ public class JpaParser extends BaseParser {
     }
 
     private List<PropertyInfo> buildDefaultSelectItems(JpaTokenizer jpaTokenizer) {
-        TableInfo tableInfo = jpaTokenizer.getTableInfo();
+        GenericType returnType = unwrapType(jpaTokenizer.getReturnType());
+        if (!TableInfoFactory.isAssignableEitherWithTable(returnType, jpaTokenizer.getTableInfo().getTableClass())) {
+            throw new MybatisExtException("Incompatible return type: " + returnType.getTypeName() + ", expected: " + jpaTokenizer.getTableInfo().getTableClass().getName());
+        }
+        TableInfo tableInfo = TableInfoFactory.getTableInfo(jpaTokenizer.getConfiguration(), returnType);
         return tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList());
     }
 
@@ -436,16 +443,16 @@ public class JpaParser extends BaseParser {
         GenericType tableClass = jpaTokenizer.getTableInfo().getTableClass();
         GenericType parameterType = parameters[0].getGenericType();
         Param param = parameters[0].getAnnotation(Param.class);
-        if (parameterType.getType().isArray() && tableClass.isAssignableFrom(parameterType.getType().getComponentType())) {
+        if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
             return new Variable(param != null ? param.value() : (parameters.length == 1 ? "array" : "param1"), parameterType);
         }
-        if (Collection.class.isAssignableFrom(parameterType.getType()) && tableClass.isAssignableFrom(TypeArgumentResolver.resolveTypeArgument(parameterType, Collection.class, 0))) {
+        if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeArgumentResolver.resolveGenericTypeArgument(parameterType, Collection.class, 0))) {
             if (List.class.isAssignableFrom(parameterType.getType())) {
                 return new Variable(param != null ? param.value() : (parameters.length == 1 ? "list" : "param1"), parameterType);
             }
             return new Variable(param != null ? param.value() : (parameters.length == 1 ? "collection" : "param1"), parameterType);
         }
-        if (tableClass.isAssignableFrom(parameterType.getType())) {
+        if (TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType)) {
             return new Variable(param != null ? param.value() : (parameters.length == 1 ? "" : "param1"), parameterType);
         }
         if (required) {
@@ -460,25 +467,24 @@ public class JpaParser extends BaseParser {
         GenericParameter[] parameters = jpaTokenizer.getParameters();
         TableInfo tableInfo = jpaTokenizer.getTableInfo();
         if (parameters.length == 1) {
-            if (tableInfo.getTableClass().isAssignableFrom(parameters[0].getType())) {
-                Param param = parameters[0].getAnnotation(Param.class);
-                OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
-                if (tableInfo.getTableClass().getType().isArray()) {
-                    return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "__array__item");
-                }
-                return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "");
+            GenericType tableClass = tableInfo.getTableClass();
+            OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
+            GenericType parameterType = parameters[0].getGenericType();
+            Param param = parameters[0].getAnnotation(Param.class);
+            if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
+                return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "__array__item");
             }
-            if (Collection.class.isAssignableFrom(parameters[0].getType()) && tableInfo.getTableClass().isAssignableFrom(TypeArgumentResolver.resolveTypeArgument(parameters[0].getGenericType(), Collection.class, 0))) {
-                OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
-                if (List.class.isAssignableFrom(parameters[0].getType())) {
+            if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeArgumentResolver.resolveGenericTypeArgument(parameterType, Collection.class, 0))) {
+                if (List.class.isAssignableFrom(parameterType.getType())) {
                     return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, "__list__item");
                 }
                 return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, "__collection__item");
             }
+            if (TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType)) {
+                return ConditionHelper.fromTableInfo(tableInfo, onlyById != null, onlyById != null ? IfTest.None : IfTest.NotNull, param != null ? param.value() : "");
+            }
         }
-        Condition condition = new Condition(ConditionType.COMPLEX);
-        condition.setLogicalOperator(LogicalOperator.AND);
-        condition.setPropertyInfos(jpaTokenizer.getTableInfo().getNameToPropertyInfo());
+        List<Condition> conditions = new ArrayList<>();
         for (GenericParameter parameter : parameters) {
             Param param = parameter.getAnnotation(Param.class);
             if (param != null && usedParamNames.contains(param.value())) {
@@ -487,16 +493,19 @@ public class JpaParser extends BaseParser {
             if (param == null || !configuration.getTypeHandlerRegistry().hasTypeHandler(parameter.getType())) {
                 throw new MybatisExtException("Unsupported parameter type: " + parameter.getType().getName() + ". Method: " + jpaTokenizer.getText());
             }
-            Condition subCondition = new Condition(ConditionType.BASIC);
+            Condition condition = new Condition(ConditionType.BASIC);
             condition.setPropertyInfos(jpaTokenizer.getTableInfo().getNameToPropertyInfo());
-            subCondition.setPropertyInfo(parseProperty(configuration, jpaTokenizer.getTableInfo(), param.value()));
-            subCondition.setCompareOperator(CompareOperator.Equals);
-            subCondition.setVariable(new Variable(param.value(), parameter.getGenericType()));
-            condition.getSubConditions().add(subCondition);
+            condition.setPropertyInfo(parseProperty(configuration, jpaTokenizer.getTableInfo(), param.value()));
+            condition.setCompareOperator(CompareOperator.Equals);
+            condition.setVariable(new Variable(param.value(), parameter.getGenericType()));
+            conditions.add(condition);
         }
-        if (condition.getSubConditions().isEmpty()) {
+        if (conditions.isEmpty()) {
             return null;
         }
+        Condition condition = new Condition(ConditionType.COMPLEX);
+        condition.setLogicalOperator(LogicalOperator.AND);
+        condition.setPropertyInfos(jpaTokenizer.getTableInfo().getNameToPropertyInfo());
         return ConditionHelper.simplifyCondition(condition);
     }
 
@@ -577,7 +586,35 @@ public class JpaParser extends BaseParser {
         return reference.get();
     }
 
+    private GenericType unwrapType(GenericType type) {
+        if (type.isArray()) {
+            return type.getComponentType();
+        }
+        if (Collection.class.isAssignableFrom(type.getType())) {
+            return TypeArgumentResolver.resolveGenericTypeArgument(type, Collection.class, 0);
+        }
+        if (Optional.class.isAssignableFrom(type.getType())) {
+            return TypeArgumentResolver.resolveGenericTypeArgument(type, Optional.class, 0);
+        }
+        return type;
+    }
+
     public Semantic parse(Configuration configuration, TableInfo tableInfo, String methodName, GenericParameter[] parameters, GenericType returnType) {
+        GenericType unwrappedReturnType = unwrapType(returnType);
+        if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getTableClass(), unwrappedReturnType)) {
+            tableInfo = TableInfoFactory.getTableInfo(configuration, unwrappedReturnType);
+        }
+        for (GenericParameter parameter : parameters) {
+            if (MybatisUtils.isSpecialParameter(parameter.getType())) {
+                continue;
+            }
+            GenericType parameterType = unwrapType(parameter.getGenericType());
+            if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getTableClass(), parameterType)) {
+                tableInfo = TableInfoFactory.getTableInfo(configuration, parameterType);
+            }
+            break;
+        }
+
         AtomicReference<Semantic> reference = new AtomicReference<>();
         List<TokenMarker> tokenMarkers = new ArrayList<>();
         JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, methodName, configuration, parameters, returnType);

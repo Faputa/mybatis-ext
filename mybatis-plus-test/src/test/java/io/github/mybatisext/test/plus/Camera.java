@@ -7,7 +7,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
+import io.github.mybatisext.annotation.Table;
 
+@Table
 @TableName("camera")
 public class Camera {
 
