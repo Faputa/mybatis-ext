@@ -14,7 +14,7 @@ import io.github.mybatisext.annotation.Table;
 
 /**
  * 用户对象 sys_user
- * 
+ *
  * @author ruoyi
  */
 @Table
@@ -32,7 +32,7 @@ public class SysUser extends BaseEntity {
 
     /** 部门父ID */
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "dept_id", rightColumn = "dept_id"), table = SysDept.class)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parent_id", rightColumn = "dept_id"), table = SysDept.class, column = "dept_name")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parent_id", rightColumn = "dept_id"), table = SysDept.class, column = "dept_id")
     private Long parentId;
 
     /** 登录名称 */
@@ -111,14 +111,6 @@ public class SysUser extends BaseEntity {
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "user_id", rightColumn = "user_id"), table = SysUserPost.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "post_id", rightColumn = "post_id"), table = SysPost.class, column = "post_id")
     private Long[] postIds;
-
-    public SysUser() {
-
-    }
-
-    public SysUser(Long userId) {
-        this.userId = userId;
-    }
 
     public Long getUserId() {
         return userId;
@@ -265,9 +257,10 @@ public class SysUser extends BaseEntity {
     }
 
     public SysDept getDept() {
-        if (dept == null) {
-            dept = new SysDept();
-        }
+        // TODO
+        // if (dept == null) {
+        //     dept = new SysDept();
+        // }
         return dept;
     }
 

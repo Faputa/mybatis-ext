@@ -206,7 +206,7 @@ public class TableInfoFactory {
 
         aliasCount.set(0);
         String alias = joinTableInfo.getAlias();
-        while (!tableClass.isAnnotationPresent(EmbedParent.class) && (StringUtils.isBlank(alias) || tableInfo.getAliasToJoinTableInfo().containsKey(alias))) {
+        while (StringUtils.isBlank(alias) || (!tableClass.isAnnotationPresent(EmbedParent.class) && tableInfo.getAliasToJoinTableInfo().containsKey(alias))) {
             alias = "t" + aliasCount.getAndIncrement();
         }
         joinTableInfo.setAlias(alias);
@@ -214,14 +214,7 @@ public class TableInfoFactory {
         return tableInfo;
     }
 
-    private static void processParentJoinRelations(Configuration configuration, GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
-        if (tableClass.isAnnotationPresent(EmbedParent.class)) {
-            TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
-            tableInfo.getJoinTableInfo().setAlias(parentTableInfo.getJoinTableInfo().getAlias());
-            tableInfo.getAliasToJoinTableInfo().put(parentTableInfo.getJoinTableInfo().getAlias(), tableInfo.getJoinTableInfo());
-            tableInfo.getJoinTableInfo().getRightJoinTableInfos().putAll(parentTableInfo.getJoinTableInfo().getRightJoinTableInfos());
-            stripParentJoinRelations(tableInfo, featureToJoinTableInfo);
-        }
+    private static void processParentJoinRelations(Configuration configuration, @Nonnull GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
         if (tableClass.isAnnotationPresent(JoinParent.class)) {
             TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
             JoinParent joinParent = tableClass.getAnnotation(JoinParent.class);
@@ -232,6 +225,20 @@ public class TableInfoFactory {
                 tableInfo.getJoinTableInfo().getRightJoinTableInfos().put(joinColumnInfo, parentTableInfo.getJoinTableInfo());
             }
             stripParentJoinRelations(tableInfo, featureToJoinTableInfo);
+        } else {
+            for (GenericType c = tableClass; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
+                if (!c.isAnnotationPresent(EmbedParent.class)) {
+                    break;
+                }
+                if (c.getGenericSuperclass() != null && !c.getGenericSuperclass().isAnnotationPresent(Table.class)) {
+                    continue;
+                }
+                TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
+                tableInfo.getJoinTableInfo().setAlias(parentTableInfo.getJoinTableInfo().getAlias());
+                tableInfo.getAliasToJoinTableInfo().put(parentTableInfo.getJoinTableInfo().getAlias(), tableInfo.getJoinTableInfo());
+                tableInfo.getJoinTableInfo().getRightJoinTableInfos().putAll(parentTableInfo.getJoinTableInfo().getRightJoinTableInfos());
+                stripParentJoinRelations(tableInfo, featureToJoinTableInfo);
+            }
         }
     }
 
