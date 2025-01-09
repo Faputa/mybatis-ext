@@ -16,7 +16,7 @@ import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.util.MybatisUtils;
+import io.github.mybatisext.util.CommonUtils;
 
 public class ParameterSignatureHelper {
 
@@ -96,7 +96,7 @@ public class ParameterSignatureHelper {
         GenericParameter[] parameters = method.getParameters();
         Map<String, GenericType> nameToType = new HashMap<>();
         for (int i = 0; i < parameters.length; i++) {
-            if (MybatisUtils.isSpecialParameter(parameters[i].getType())) {
+            if (CommonUtils.isSpecialParameter(parameters[i].getType())) {
                 continue;
             }
             String name = null;

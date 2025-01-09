@@ -7,7 +7,7 @@ import io.github.mybatisext.reflect.GenericTypeFactory;
 
 public class TypeArgumentResolver {
 
-    public static Class<?>  resolveTypeArgument(Type type, Class<?> sourceClass, int index) {
+    public static Class<?> resolveTypeArgument(Type type, Class<?> sourceClass, int index) {
         GenericType genericType = resolveGenericTypeArgument(type, sourceClass, index);
         if (genericType == null) {
             return null;
