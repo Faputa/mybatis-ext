@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.ibatis.session.Configuration;
@@ -40,6 +41,7 @@ import io.github.mybatisext.reflect.GenericField;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
+import io.github.mybatisext.util.CommonUtils;
 import io.github.mybatisext.util.StringUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
@@ -80,7 +82,7 @@ public class TableInfoFactory {
         return getTableInfo(configuration, GenericTypeFactory.build(tableClass));
     }
 
-    public static TableInfo getTableInfo(Configuration configuration, GenericType tableClass) {
+    public static TableInfo getTableInfo(Configuration configuration, @Nonnull GenericType tableClass) {
         for (GenericType c = tableClass; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             if (c.isAnnotationPresent(Table.class)) {
                 return processTable(configuration, c, c.getAnnotation(Table.class));
@@ -89,7 +91,7 @@ public class TableInfoFactory {
                 return processTableRef(configuration, c, c.getAnnotation(TableRef.class));
             }
         }
-        throw new MybatisExtException("Class [" + tableClass.getTypeName() + "] lacks @" + Table.class.getSimpleName() + " or @" + TableRef.class.getSimpleName() + " annotation.");
+        throw new MybatisExtException("Class [" + tableClass.getName() + "] lacks @" + Table.class.getSimpleName() + " or @" + TableRef.class.getSimpleName() + " annotation.");
     }
 
     private static TableInfo processTableRef(Configuration configuration, GenericType tableClass, TableRef tableRef) {
@@ -151,9 +153,8 @@ public class TableInfoFactory {
         if (refPropertyInfo == null) {
             throw new MybatisExtException("Missing property [" + refName + "] in ref table.");
         }
-        if ((refPropertyInfo.getResultType() != ResultType.COLLECTION && !isAssignableEitherWithTable(propertyType, refPropertyInfo.getJavaType())) ||
-                (refPropertyInfo.getResultType() == ResultType.COLLECTION && (!Collection.class.isAssignableFrom(propertyType.getType()) || !isAssignableEitherWithTable(TypeArgumentResolver.resolveGenericTypeArgument(propertyType, Collection.class, 0), refPropertyInfo.getOfType())))) {
-            throw new MybatisExtException("Type mismatch for property [" + name + "]: expected [" + propertyType.getTypeName() + "], found [" + refPropertyInfo.getJavaType().getTypeName() + "].");
+        if (!isAssignableEitherWithTable(CommonUtils.unwrapType(propertyType), CommonUtils.unwrapType(refPropertyInfo.getJavaType()))) {
+            throw new MybatisExtException("Type mismatch for property [" + name + "]: expected [" + CommonUtils.unwrapType(propertyType).getTypeName() + "], found [" + CommonUtils.unwrapType(refPropertyInfo.getJavaType()).getTypeName() + "].");
         }
         PropertyInfo propertyInfo = new PropertyInfo();
         propertyInfo.setName(name);
