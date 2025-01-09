@@ -82,6 +82,8 @@ public class ResultMapHelper {
                     .javaType(propertyInfo.getJavaType().getType());
             if (propertyInfo.getLoadType() == LoadType.FETCH_LAZY) {
                 builder.lazy(true);
+            } else if (propertyInfo.getLoadType() == LoadType.FETCH_EAGER) {
+                builder.lazy(false);
             }
             return builder.build();
         }
@@ -101,6 +103,8 @@ public class ResultMapHelper {
                     .javaType(propertyInfo.getOfType().getType());
             if (propertyInfo.getLoadType() == LoadType.FETCH_LAZY) {
                 builder.lazy(true);
+            } else if (propertyInfo.getLoadType() == LoadType.FETCH_EAGER) {
+                builder.lazy(false);
             }
             return builder.build();
         }
