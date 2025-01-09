@@ -2,12 +2,12 @@ package io.github.mybatisext.test.flex;
 
 import java.sql.Timestamp;
 
-import com.mybatisflex.annotation.Table;
-
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
+import io.github.mybatisext.annotation.Table;
 
-@Table("camera")
+@Table
+@com.mybatisflex.annotation.Table("camera")
 public class Camera {
 
     @Id

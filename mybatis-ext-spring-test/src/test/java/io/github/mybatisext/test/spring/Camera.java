@@ -4,7 +4,9 @@ import java.sql.Timestamp;
 
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
+import io.github.mybatisext.annotation.Table;
 
+@Table
 public class Camera {
 
     @Id
