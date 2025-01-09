@@ -9,6 +9,7 @@ import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.LoadStrategy;
+import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.Table;
 
 /**
@@ -70,7 +71,7 @@ public class SysMenu extends BaseEntity {
     private String icon;
 
     /** 子菜单 */
-    @LoadStrategy
+    @LoadStrategy(LoadType.FETCH_EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "menu_id", rightColumn = "parent_id"))
     private List<SysMenu> children = new ArrayList<SysMenu>();
 

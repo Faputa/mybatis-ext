@@ -3,15 +3,12 @@ package io.github.mybatisext.test.spring;
 import java.util.Date;
 
 import io.github.mybatisext.annotation.Column;
-import io.github.mybatisext.annotation.Table;
 
 /**
  * Entity基类
  * 
  * @author ruoyi
  */
-// TODO
-@Table
 public class BaseEntity {
 
     /** 创建者 */

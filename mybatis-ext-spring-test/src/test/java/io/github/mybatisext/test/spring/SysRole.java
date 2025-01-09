@@ -6,6 +6,7 @@ import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.LoadStrategy;
+import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.Table;
 
 /**
@@ -47,24 +48,16 @@ public class SysRole extends BaseEntity {
     private String delFlag;
 
     /** 菜单组 */
-    @LoadStrategy
+    @LoadStrategy(LoadType.FETCH_EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "role_id", rightColumn = "role_id"), table = SysRoleMenu.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "menu_id", rightColumn = "menu_id"), table = SysMenu.class, column = "menu_id")
     private Long[] menuIds;
 
     /** 部门组（数据权限） */
-    @LoadStrategy
+    @LoadStrategy(LoadType.FETCH_EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "role_id", rightColumn = "role_id"), table = SysRoleDept.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "dept_id", rightColumn = "dept_id"), table = SysDept.class, column = "dept_id")
     private Long[] deptIds;
-
-    public SysRole() {
-
-    }
-
-    public SysRole(Long roleId) {
-        this.roleId = roleId;
-    }
 
     public Long getRoleId() {
         return roleId;
