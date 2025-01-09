@@ -9,5 +9,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface LoadStrategy {
 
-    LoadType value() default LoadType.JOIN;
+    LoadType value() default LoadType.FETCH_DEFAULT;
 }

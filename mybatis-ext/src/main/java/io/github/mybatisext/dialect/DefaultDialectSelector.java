@@ -15,6 +15,9 @@ public class DefaultDialectSelector implements DialectSelector {
         if (jdbcUrl.contains(":postgresql:")) {
             return new PostgreSqlDialect();
         }
+        if (jdbcUrl.contains(":h2:")) {
+            return new H2Dialect();
+        }
         throw new MybatisExtException("Unsupported JDBC URL: " + jdbcUrl);
     }
 }

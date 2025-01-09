@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.ibatis.binding.BindingException;
@@ -22,6 +21,7 @@ import io.github.mybatisext.reflect.GenericTypeFactory;
 import io.github.mybatisext.statement.MappedStatementHelper;
 import io.github.mybatisext.statement.NestedSelect;
 import io.github.mybatisext.statement.NestedSelectHelper;
+import io.github.mybatisext.util.CommonUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class ExtEnhancer {
@@ -134,21 +134,14 @@ public class ExtEnhancer {
             return null;
         }
         GenericType tableType = getEntityClass(mapperClass);
-        GenericType genericType = GenericTypeFactory.build(mapperClass);
+        GenericType mapperType = GenericTypeFactory.build(mapperClass);
         GenericType returnType = null;
         List<GenericMethod> methods = new ArrayList<>();
-        for (GenericMethod method : genericType.getMethods()) {
+        for (GenericMethod method : mapperType.getMethods()) {
             if (method.isBridge() || method.isDefault() || !method.getName().equals(methodName)) {
                 continue;
             }
-            GenericType mReturnType = method.getGenericReturnType();
-            if (Collection.class.isAssignableFrom(mReturnType.getType())) {
-                mReturnType = TypeArgumentResolver.resolveGenericTypeArgument(method.getGenericReturnType(), Collection.class, 0);
-            } else if (mReturnType.getType() == Optional.class) {
-                mReturnType = TypeArgumentResolver.resolveGenericTypeArgument(method.getGenericReturnType(), Optional.class, 0);
-            } else if (mReturnType.isArray()) {
-                mReturnType = mReturnType.getComponentType();
-            }
+            GenericType mReturnType = CommonUtils.unwrapType(method.getGenericReturnType());
             if (returnType == null || returnType.isAssignableFrom(mReturnType)) {
                 returnType = mReturnType;
             } else if (!mReturnType.isAssignableFrom(returnType) && mReturnType.getType() != Void.class) {

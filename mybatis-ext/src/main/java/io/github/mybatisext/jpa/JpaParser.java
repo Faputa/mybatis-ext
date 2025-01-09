@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,7 +23,7 @@ import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.util.MybatisUtils;
+import io.github.mybatisext.util.CommonUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class JpaParser extends BaseParser {
@@ -387,7 +386,7 @@ public class JpaParser extends BaseParser {
     }
 
     private List<PropertyInfo> buildDefaultSelectItems(JpaTokenizer jpaTokenizer) {
-        GenericType returnType = unwrapType(jpaTokenizer.getReturnType());
+        GenericType returnType = CommonUtils.unwrapType(jpaTokenizer.getReturnType());
         if (!TableInfoFactory.isAssignableEitherWithTable(returnType, jpaTokenizer.getTableInfo().getTableClass())) {
             throw new MybatisExtException("Incompatible return type: " + returnType.getTypeName() + ", expected: " + jpaTokenizer.getTableInfo().getTableClass().getName());
         }
@@ -586,29 +585,16 @@ public class JpaParser extends BaseParser {
         return reference.get();
     }
 
-    private GenericType unwrapType(GenericType type) {
-        if (type.isArray()) {
-            return type.getComponentType();
-        }
-        if (Collection.class.isAssignableFrom(type.getType())) {
-            return TypeArgumentResolver.resolveGenericTypeArgument(type, Collection.class, 0);
-        }
-        if (Optional.class.isAssignableFrom(type.getType())) {
-            return TypeArgumentResolver.resolveGenericTypeArgument(type, Optional.class, 0);
-        }
-        return type;
-    }
-
     public Semantic parse(Configuration configuration, TableInfo tableInfo, String methodName, GenericParameter[] parameters, GenericType returnType) {
-        GenericType unwrappedReturnType = unwrapType(returnType);
+        GenericType unwrappedReturnType = CommonUtils.unwrapType(returnType);
         if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getTableClass(), unwrappedReturnType)) {
             tableInfo = TableInfoFactory.getTableInfo(configuration, unwrappedReturnType);
         }
         for (GenericParameter parameter : parameters) {
-            if (MybatisUtils.isSpecialParameter(parameter.getType())) {
+            if (CommonUtils.isSpecialParameter(parameter.getType())) {
                 continue;
             }
-            GenericType parameterType = unwrapType(parameter.getGenericType());
+            GenericType parameterType = CommonUtils.unwrapType(parameter.getGenericType());
             if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getTableClass(), parameterType)) {
                 tableInfo = TableInfoFactory.getTableInfo(configuration, parameterType);
             }

@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import io.github.mybatisext.reflect.GenericType;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.reflect.GenericParameter;
-import io.github.mybatisext.util.MybatisUtils;
+import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.util.CommonUtils;
 
 public class JpaTokenizer implements Tokenizer {
 
@@ -34,7 +34,7 @@ public class JpaTokenizer implements Tokenizer {
         this.text = text;
         this.configuration = configuration;
         this.returnType = returnType;
-        this.parameters = Arrays.stream(parameters).filter(v -> !MybatisUtils.isSpecialParameter(v.getType())).toArray(GenericParameter[]::new);
+        this.parameters = Arrays.stream(parameters).filter(v -> !CommonUtils.isSpecialParameter(v.getType())).toArray(GenericParameter[]::new);
         this.variables = buildVariables(configuration, parameters);
         this.expectedTokens = new ExpectedTokens(text);
         this.tokenMarker = new TokenMarker(text);
