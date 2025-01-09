@@ -19,6 +19,7 @@ public class GenericType implements Type {
     private final Class<?> type;
     private final Map<TypeVariable<?>, Type> typeMap;
     private final GenericType[] typeParameters;
+    private final GenericType componentType;
 
     public GenericType(Class<?> type, Map<TypeVariable<?>, Type> typeMap) {
         this.type = type;
@@ -28,6 +29,14 @@ public class GenericType implements Type {
         for (int i = 0; i < typeVariables.length; i++) {
             this.typeParameters[i] = GenericTypeFactory.build(typeVariables[i], new HashMap<>(typeMap));
         }
+        this.componentType = null;
+    }
+
+    public GenericType(GenericType componentType) {
+        this.type = null;
+        this.typeMap = null;
+        this.typeParameters = new GenericType[0];
+        this.componentType = componentType;
     }
 
     public Class<?> getType() {
@@ -36,6 +45,14 @@ public class GenericType implements Type {
 
     public GenericType[] getTypeParameters() {
         return typeParameters;
+    }
+
+    public GenericType getComponentType() {
+        return componentType;
+    }
+
+    public boolean isArray() {
+        return componentType != null;
     }
 
     public GenericField[] getDeclaredFields() {

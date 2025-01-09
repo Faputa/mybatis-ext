@@ -179,13 +179,7 @@ public class TableInfoFactory {
         if (propertyInfo.isOwnColumn()) {
             propertyInfo.putAll(refPropertyInfo);
         } else if (getTableAnnotationClass(targetType) != null) {
-            TableInfo subTableInfo = getTableInfo(configuration, targetType);
-            for (String key : subTableInfo.getNameToPropertyInfo().keySet()) {
-                PropertyInfo subPropertyInfo = refPropertyInfo.get(key);
-                if (subPropertyInfo != null && subPropertyInfo.isOwnColumn()) {
-                    propertyInfo.put(key, subPropertyInfo);
-                }
-            }
+            propertyInfo.putAll(collectJoinTablePropertyInfos(refPropertyInfo.getJoinTableInfo(), getTableInfo(configuration, targetType).getNameToPropertyInfo().values()));
         }
     }
 
@@ -326,6 +320,10 @@ public class TableInfoFactory {
             if (!c.isAnnotationPresent(JoinParent.class)) {
                 break;
             }
+            if (c.getGenericSuperclass() != null && c.getGenericSuperclass().isAnnotationPresent(TableRef.class)) {
+                // TODO
+                break;
+            }
             inJoinParent = true;
         }
     }
@@ -452,7 +450,7 @@ public class TableInfoFactory {
         if (propertyInfo.getColumnName() == null &&
                 (propertyInfo.getResultType() == ResultType.ASSOCIATION || propertyInfo.getResultType() == ResultType.COLLECTION) &&
                 (propertyInfo.getLoadType() == null || propertyInfo.getLoadType() == LoadType.JOIN)) {
-            propertyInfo.putAll(collectJoinTablePropertyInfos(propertyInfo.getJoinTableInfo()));
+            propertyInfo.putAll(collectJoinTablePropertyInfos(propertyInfo.getJoinTableInfo(), propertyInfo.getJoinTableInfo().getTableInfo().getNameToPropertyInfo().values()));
         }
     }
 
@@ -633,47 +631,35 @@ public class TableInfoFactory {
         return propertyInfo;
     }
 
-    private static Map<String, PropertyInfo> collectJoinTablePropertyInfos(JoinTableInfo joinTableInfo) {
+    private static Map<String, PropertyInfo> collectJoinTablePropertyInfos(JoinTableInfo joinTableInfo, Collection<PropertyInfo> propertyInfos) {
         Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
-        for (PropertyInfo propertyInfo : joinTableInfo.getTableInfo().getNameToPropertyInfo().values()) {
+        for (PropertyInfo propertyInfo : propertyInfos) {
             if (!propertyInfo.isOwnColumn()) {
                 continue;
             }
-            PropertyInfo newPropertyInfo = copyJoinTablePropertyInfo(propertyInfo);
+            PropertyInfo newPropertyInfo = new PropertyInfo();
+            copyPropertyInfoProperties(newPropertyInfo, propertyInfo);
             newPropertyInfo.setJoinTableInfo(joinTableInfo);
             newPropertyInfo.setOwnColumn(false);
-            newPropertyInfo.putAll(collectJoinTablePropertyInfos(joinTableInfo, propertyInfo));
+            newPropertyInfo.putAll(collectJoinTablePropertyInfos(joinTableInfo, propertyInfo.values()));
             nameToPropertyInfo.put(propertyInfo.getName(), newPropertyInfo);
         }
         return nameToPropertyInfo;
     }
 
-    private static Map<String, PropertyInfo> collectJoinTablePropertyInfos(JoinTableInfo joinTableInfo, PropertyInfo propertyInfo) {
-        Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
-        for (PropertyInfo value : propertyInfo.values()) {
-            if (!value.isOwnColumn()) {
-                continue;
-            }
-            PropertyInfo newPropertyInfo = copyJoinTablePropertyInfo(propertyInfo);
-            newPropertyInfo.setJoinTableInfo(joinTableInfo);
-            newPropertyInfo.setOwnColumn(false);
-            newPropertyInfo.putAll(collectJoinTablePropertyInfos(joinTableInfo, propertyInfo));
-            nameToPropertyInfo.put(propertyInfo.getName(), newPropertyInfo);
-        }
-        return nameToPropertyInfo;
-    }
-
-    private static PropertyInfo copyJoinTablePropertyInfo(PropertyInfo propertyInfo) {
-        PropertyInfo newPropertyInfo = new PropertyInfo();
-        newPropertyInfo.setName(propertyInfo.getName());
-        newPropertyInfo.setColumnName(propertyInfo.getColumnName());
-        newPropertyInfo.setJavaType(propertyInfo.getJavaType());
-        newPropertyInfo.setJdbcType(propertyInfo.getJdbcType());
-        newPropertyInfo.setReadonly(propertyInfo.isReadonly());
-        newPropertyInfo.setResultType(propertyInfo.getResultType());
-        newPropertyInfo.setIdType(propertyInfo.getIdType());
-        newPropertyInfo.setCustomIdGenerator(propertyInfo.getCustomIdGenerator());
-        return newPropertyInfo;
+    private static void copyPropertyInfoProperties(PropertyInfo dest, PropertyInfo origin) {
+        dest.setName(origin.getName());
+        dest.setColumnName(origin.getColumnName());
+        dest.setJoinTableInfo(origin.getJoinTableInfo());
+        dest.setJavaType(origin.getJavaType());
+        dest.setJdbcType(origin.getJdbcType());
+        dest.setOwnColumn(origin.isOwnColumn());
+        dest.setReadonly(origin.isReadonly());
+        dest.setResultType(origin.getResultType());
+        dest.setIdType(origin.getIdType());
+        dest.setCustomIdGenerator(origin.getCustomIdGenerator());
+        dest.setLoadType(origin.getLoadType());
+        dest.setOfType(origin.getOfType());
     }
 
     private static JoinColumnFeature buildJoinColumnFeature(JoinColumnInfo joinColumnInfo, JoinTableInfo leftJoinTableInfo, JoinTableInfo righJoinTableInfo) {
