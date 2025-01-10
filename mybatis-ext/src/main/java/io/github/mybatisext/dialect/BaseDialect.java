@@ -236,14 +236,14 @@ public abstract class BaseDialect implements Dialect {
         return orderAliases.stream().map(v -> tableInfo.getAliasToJoinTableInfo().get(v)).collect(Collectors.toList());
     }
 
-    protected String buildSelectItems(TableInfo tableInfo, Collection<PropertyInfo> propertyInfos) {
+    protected String buildSelectItems(TableInfo tableInfo, Collection<PropertyInfo> propertyInfos, Dialect dialect) {
         List<String> selectItems = new ArrayList<>();
         for (PropertyInfo propertyInfo : propertyInfos) {
             if (!propertyInfo.isReadonly()) {
                 if (propertyInfo.getColumnName() != null) {
-                    selectItems.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " AS " + propertyInfo.getJoinTableInfo().getAlias() + "_" + propertyInfo.getColumnName());
+                    selectItems.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " AS " + dialect.quote(propertyInfo.getName()));
                 } else {
-                    selectItems.add(buildSelectItems(tableInfo, propertyInfo.values()));
+                    selectItems.add(buildSelectItems(tableInfo, propertyInfo.values(), dialect));
                 }
             }
         }

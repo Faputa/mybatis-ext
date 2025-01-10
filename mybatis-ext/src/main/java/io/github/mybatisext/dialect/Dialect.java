@@ -28,4 +28,6 @@ public interface Dialect {
     String isTrue();
 
     String isFalse();
+
+    String quote(String name);
 }

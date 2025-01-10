@@ -104,13 +104,13 @@ public class SysUser extends BaseEntity {
     @LoadStrategy(LoadType.FETCH_EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "user_id", rightColumn = "user_id"), table = SysUserRole.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "role_id", rightColumn = "role_id"), table = SysRole.class, column = "role_id")
-    private Long[] roleIds;
+    private List<Long> roleIds;
 
     /** 岗位组 */
     @LoadStrategy(LoadType.FETCH_EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "user_id", rightColumn = "user_id"), table = SysUserPost.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "post_id", rightColumn = "post_id"), table = SysPost.class, column = "post_id")
-    private Long[] postIds;
+    private List<Long> postIds;
 
     public Long getUserId() {
         return userId;
@@ -275,19 +275,19 @@ public class SysUser extends BaseEntity {
         this.roles = roles;
     }
 
-    public Long[] getRoleIds() {
+    public List<Long> getRoleIds() {
         return roleIds;
     }
 
-    public void setRoleIds(Long[] roleIds) {
+    public void setRoleIds(List<Long> roleIds) {
         this.roleIds = roleIds;
     }
 
-    public Long[] getPostIds() {
+    public List<Long> getPostIds() {
         return postIds;
     }
 
-    public void setPostIds(Long[] postIds) {
+    public void setPostIds(List<Long> postIds) {
         this.postIds = postIds;
     }
 }

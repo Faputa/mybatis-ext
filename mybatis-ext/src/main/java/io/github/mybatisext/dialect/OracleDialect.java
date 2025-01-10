@@ -119,4 +119,9 @@ public class OracleDialect extends BaseSimpleDialect {
     public String isFalse() {
         return "= 0";
     }
+
+    @Override
+    public String quote(String name) {
+        return "\"" + name + "\"";
+    }
 }
