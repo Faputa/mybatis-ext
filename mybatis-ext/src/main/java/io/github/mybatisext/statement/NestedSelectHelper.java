@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.apache.ibatis.session.Configuration;
 
+import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
@@ -39,10 +40,10 @@ public class NestedSelectHelper {
         return "{" + String.join(",", ss) + "}";
     }
 
-    public static String buildNestedSelectScript(NestedSelect nestedSelect) {
+    public static String buildNestedSelectScript(NestedSelect nestedSelect, Dialect dialect) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
-        ss.add(buildSelectItems(nestedSelect.getPropertyInfo()));
+        ss.add(buildSelectItems(nestedSelect.getPropertyInfo(), dialect));
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo());
         ss.add(buildFrom(joinTableInfos));
         ss.add(buildWhere(nestedSelect.getTableInfo(), joinTableInfos));
@@ -79,15 +80,15 @@ public class NestedSelectHelper {
         return orderAliases.stream().map(v -> tableInfo.getAliasToJoinTableInfo().get(v)).collect(Collectors.toList());
     }
 
-    private static String buildSelectItems(PropertyInfo propertyInfo) {
+    private static String buildSelectItems(PropertyInfo propertyInfo, Dialect dialect) {
         List<String> selectItems = new ArrayList<>();
         JoinTableInfo joinTableInfo = propertyInfo.getJoinTableInfo();
         if (propertyInfo.getColumnName() != null) {
-            selectItems.add(joinTableInfo.getAlias() + "." + propertyInfo.getColumnName());
+            selectItems.add(joinTableInfo.getAlias() + "." + propertyInfo.getColumnName() + " AS " + dialect.quote(propertyInfo.getName()));
         }
         for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
             if (!subPropertyInfo.isReadonly()) {
-                selectItems.add(buildSelectItems(subPropertyInfo));
+                selectItems.add(buildSelectItems(subPropertyInfo, dialect));
             }
         }
         return String.join(", ", selectItems);

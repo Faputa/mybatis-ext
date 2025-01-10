@@ -92,4 +92,9 @@ public class MySqlDialect extends BaseTemplateDialect {
     public String isFalse() {
         return "IS NOT TRUE";
     }
+
+    @Override
+    public String quote(String name) {
+        return "`" + name + "`";
+    }
 }
