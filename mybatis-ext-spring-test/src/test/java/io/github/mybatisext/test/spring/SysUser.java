@@ -257,10 +257,9 @@ public class SysUser extends BaseEntity {
     }
 
     public SysDept getDept() {
-        // TODO
-        // if (dept == null) {
-        //     dept = new SysDept();
-        // }
+        if (dept == null) {
+            dept = new SysDept();
+        }
         return dept;
     }
 

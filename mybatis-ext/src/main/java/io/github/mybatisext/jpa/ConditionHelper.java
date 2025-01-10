@@ -222,7 +222,7 @@ public class ConditionHelper {
         }
     }
 
-    private static String toScript(Condition condition, LogicalOperator prefix, Dialect dialect) {
+    private static String toScript(Condition condition, @Nullable LogicalOperator prefix, Dialect dialect) {
         if (condition.hasTest()) {
             return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(condition, prefix, dialect) + "</if>";
         }
@@ -242,14 +242,26 @@ public class ConditionHelper {
         return null;
     }
 
-    private static String toExprWithPrefix(Condition condition, LogicalOperator prefix, Dialect dialect) {
-        if (LogicalOperator.AND == prefix) {
-            return "AND " + toExpr(condition, dialect);
+    private static String toExprWithPrefix(Condition condition, @Nullable LogicalOperator prefix, Dialect dialect) {
+        if (prefix == null) {
+            return toExpr(condition, dialect);
         }
-        if (LogicalOperator.OR == prefix) {
-            return "OR " + toExpr(condition, dialect);
+        if (StringUtils.isNotBlank(condition.getExprTemplate())) {
+            return prefix + " " + SimpleStringTemplate.build(condition.getExprTemplate(), condition);
         }
-        return toExpr(condition, dialect);
+        if (condition.getType() == ConditionType.BASIC) {
+            return prefix + " " + toBasicExpr(condition, condition.getCompareOperator(), condition.isNot(), condition.isIgnorecase(), dialect);
+        }
+        if (condition.getType() == ConditionType.COMPLEX) {
+            List<String> ss = new ArrayList<>();
+            ss.add("<trim prefix=\"" + prefix + " (\" suffix=\")\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
+            for (Condition subCondition : condition.getSubConditions()) {
+                ss.addAll(buildSubConditionExpr(subCondition, condition.getLogicalOperator(), dialect));
+            }
+            ss.add("</trim>");
+            return String.join(" ", ss);
+        }
+        throw new MybatisExtException("Unsupported condition type:" + condition.getType());
     }
 
     private static String toExpr(Condition condition, Dialect dialect) {
@@ -260,19 +272,15 @@ public class ConditionHelper {
             return toBasicExpr(condition, condition.getCompareOperator(), condition.isNot(), condition.isIgnorecase(), dialect);
         }
         if (condition.getType() == ConditionType.COMPLEX) {
-            return toComplexExpr(condition.getSubConditions(), condition.getLogicalOperator(), dialect);
+            List<String> ss = new ArrayList<>();
+            ss.add("<trim prefix=\"(\" suffix=\")\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
+            for (Condition subCondition : condition.getSubConditions()) {
+                ss.addAll(buildSubConditionExpr(subCondition, condition.getLogicalOperator(), dialect));
+            }
+            ss.add("</trim>");
+            return String.join(" ", ss);
         }
         throw new MybatisExtException("Unsupported condition type:" + condition.getType());
-    }
-
-    private static String toComplexExpr(Collection<Condition> conditions, LogicalOperator logicalOperator, Dialect dialect) {
-        List<String> ss = new ArrayList<>();
-        ss.add("<trim prefix=\"(\" suffix=\")\" prefixOverrides=\"" + logicalOperator + "\" >");
-        for (Condition condition : conditions) {
-            ss.addAll(buildSubConditionExpr(condition, logicalOperator, dialect));
-        }
-        ss.add("</trim>");
-        return String.join(" ", ss);
     }
 
     private static List<String> buildSubConditionExpr(Condition condition, LogicalOperator logicalOperator, Dialect dialect) {
