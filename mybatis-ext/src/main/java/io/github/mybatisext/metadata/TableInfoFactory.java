@@ -350,7 +350,7 @@ public class TableInfoFactory {
         propertyInfo.setJoinTableInfo(tableInfo.getJoinTableInfo());
         if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
             propertyInfo.putAll(collectColumnPropertyInfos(configuration, tableInfo, GenericTypeFactory.build(propertyInfo.getJavaType()), readonly));
-        } else if (propertyInfo.getResultType() == ResultType.COLLECTION) {
+        } else if (propertyInfo.getResultType() == ResultType.COLLECTION && !configuration.getTypeHandlerRegistry().hasTypeHandler(propertyInfo.getOfType().getType())) {
             propertyInfo.putAll(collectColumnPropertyInfos(configuration, tableInfo, GenericTypeFactory.build(propertyInfo.getOfType()), readonly));
         } else {
             if (id != null) {
@@ -456,8 +456,7 @@ public class TableInfoFactory {
         mergeJoinTableInfos(tableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
 
         if (propertyInfo.getColumnName() == null &&
-                (propertyInfo.getResultType() == ResultType.ASSOCIATION || propertyInfo.getResultType() == ResultType.COLLECTION) &&
-                (propertyInfo.getLoadType() == null || propertyInfo.getLoadType() == LoadType.JOIN)) {
+                (propertyInfo.getResultType() == ResultType.ASSOCIATION || propertyInfo.getResultType() == ResultType.COLLECTION)) {
             propertyInfo.putAll(collectJoinTablePropertyInfos(propertyInfo.getJoinTableInfo(), propertyInfo.getJoinTableInfo().getTableInfo().getNameToPropertyInfo().values()));
         }
     }

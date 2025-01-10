@@ -10,6 +10,7 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 
 import io.github.mybatisext.adapter.ExtConfiguration;
 import io.github.mybatisext.adapter.ExtContext;
+import io.github.mybatisext.dialect.H2Dialect;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.table.PrivilegeTable;
@@ -28,8 +29,11 @@ public class ResultMapHelperTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
+        ExtContext extContext = new ExtContext();
+        MappedStatementHelper mappedStatementHelper = new MappedStatementHelper(configuration, extContext);
+        ResultMapHelper resultMapHelper = new ResultMapHelper(configuration, mappedStatementHelper);
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        ResultMap resultMap = ResultMapHelper.buildResultMap(configuration, tableInfo);
+        ResultMap resultMap = resultMapHelper.buildResultMap(tableInfo, new H2Dialect(), false);
         System.out.println(resultMap);
     }
 }

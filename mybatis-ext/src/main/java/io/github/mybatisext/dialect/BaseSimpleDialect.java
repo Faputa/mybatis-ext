@@ -67,9 +67,9 @@ public abstract class BaseSimpleDialect extends BaseDialect {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (groupBy != null) {
-            ss.add(buildSelectItems(tableInfo, groupBy));
+            ss.add(buildSelectItems(tableInfo, groupBy, this));
         } else {
-            ss.add(buildSelectItems(tableInfo, selectItems));
+            ss.add(buildSelectItems(tableInfo, selectItems, this));
         }
         ss.add("FROM");
         ss.add(buildTableAndJoin(tableInfo, where, selectItems, groupBy, orderBy));

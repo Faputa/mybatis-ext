@@ -33,7 +33,6 @@ public class MybatisExtProperties {
     }
 
     public ExtContext toExtContext() {
-        ExtContext extContext = new ExtContext();
-        return extContext;
+        return new ExtContext();
     }
 }

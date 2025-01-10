@@ -1,5 +1,7 @@
 package io.github.mybatisext.test.spring;
 
+import java.util.List;
+
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.EmbedParent;
 import io.github.mybatisext.annotation.Id;
@@ -11,7 +13,7 @@ import io.github.mybatisext.annotation.Table;
 
 /**
  * 角色表 sys_role
- * 
+ *
  * @author ruoyi
  */
 @Table
@@ -51,13 +53,13 @@ public class SysRole extends BaseEntity {
     @LoadStrategy(LoadType.FETCH_EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "role_id", rightColumn = "role_id"), table = SysRoleMenu.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "menu_id", rightColumn = "menu_id"), table = SysMenu.class, column = "menu_id")
-    private Long[] menuIds;
+    private List<Long> menuIds;
 
     /** 部门组（数据权限） */
     @LoadStrategy(LoadType.FETCH_EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "role_id", rightColumn = "role_id"), table = SysRoleDept.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "dept_id", rightColumn = "dept_id"), table = SysDept.class, column = "dept_id")
-    private Long[] deptIds;
+    private List<Long> deptIds;
 
     public Long getRoleId() {
         return roleId;
@@ -123,19 +125,19 @@ public class SysRole extends BaseEntity {
         this.status = status;
     }
 
-    public Long[] getMenuIds() {
+    public List<Long> getMenuIds() {
         return menuIds;
     }
 
-    public void setMenuIds(Long[] menuIds) {
+    public void setMenuIds(List<Long> menuIds) {
         this.menuIds = menuIds;
     }
 
-    public Long[] getDeptIds() {
+    public List<Long> getDeptIds() {
         return deptIds;
     }
 
-    public void setDeptIds(Long[] deptIds) {
+    public void setDeptIds(List<Long> deptIds) {
         this.deptIds = deptIds;
     }
 }

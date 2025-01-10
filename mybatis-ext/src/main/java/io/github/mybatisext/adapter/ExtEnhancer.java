@@ -19,8 +19,6 @@ import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
 import io.github.mybatisext.statement.MappedStatementHelper;
-import io.github.mybatisext.statement.NestedSelect;
-import io.github.mybatisext.statement.NestedSelectHelper;
 import io.github.mybatisext.util.CommonUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
@@ -40,10 +38,6 @@ public class ExtEnhancer {
         if (originConfiguration.hasStatement(id)) {
             return originConfiguration.getMappedStatement(id);
         }
-        if (id.startsWith(NestedSelect.PREFIX)) {
-            NestedSelect nestedSelect = NestedSelectHelper.fromString(originConfiguration, id);
-            return addNestedSelectStatement(id, nestedSelect);
-        }
         int lastIndexOf = id.lastIndexOf(".");
         if (lastIndexOf < 0) {
             return null;
@@ -58,10 +52,10 @@ public class ExtEnhancer {
         if (ms != null) {
             return ms;
         }
-        ms = buildMappedStatement(id, mapperClass, methodName);
+        ms = buildMappedStatement(id, mapperClass, methodName, true);
         if (ms != null) {
             synchronized (originConfiguration) {
-                if (!originConfiguration.hasStatement(id)) {
+                if (!originConfiguration.hasStatement(ms.getId())) {
                     originConfiguration.addMappedStatement(ms);
                 }
             }
@@ -93,7 +87,7 @@ public class ExtEnhancer {
                 String id = mapperClass.getName() + "." + method.getName();
                 MappedStatement ms = resolveMappedStatement(mapperClass, method.getName());
                 if (ms == null) {
-                    ms = buildMappedStatement(id, mapperClass, method.getName());
+                    ms = buildMappedStatement(id, mapperClass, method.getName(), false);
                 }
                 if (ms == null) {
                     throw new BindingException("Invalid bound statement (not found): " + id);
@@ -119,17 +113,7 @@ public class ExtEnhancer {
         return null;
     }
 
-    private MappedStatement addNestedSelectStatement(String id, NestedSelect nestedSelect) {
-        MappedStatement ms = mappedStatementHelper.buildForNestedSelect(id, nestedSelect);
-        synchronized (originConfiguration) {
-            if (!originConfiguration.hasStatement(id)) {
-                originConfiguration.addMappedStatement(ms);
-            }
-        }
-        return ms;
-    }
-
-    private MappedStatement buildMappedStatement(String id, Class<?> mapperClass, String methodName) {
+    private MappedStatement buildMappedStatement(String id, Class<?> mapperClass, String methodName, boolean changeConfiguration) {
         if (isNotEnhancedMapper(mapperClass)) {
             return null;
         }
@@ -152,7 +136,7 @@ public class ExtEnhancer {
         if (methods.isEmpty()) {
             return null;
         }
-        return mappedStatementHelper.build(id, tableType, methods, returnType);
+        return mappedStatementHelper.build(id, tableType, methods, returnType, changeConfiguration);
     }
 
     private boolean isNotEnhancedMapper(Class<?> mapperClass) {

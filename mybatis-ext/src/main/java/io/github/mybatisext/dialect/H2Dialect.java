@@ -46,9 +46,9 @@ public class H2Dialect extends BaseDialect {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (groupBy != null) {
-            ss.add(buildSelectItems(tableInfo, groupBy));
+            ss.add(buildSelectItems(tableInfo, groupBy, this));
         } else {
-            ss.add(buildSelectItems(tableInfo, selectItems));
+            ss.add(buildSelectItems(tableInfo, selectItems, this));
         }
         ss.add("FROM");
         ss.add(buildTableAndJoin(tableInfo, where, selectItems, groupBy, orderBy));
@@ -179,5 +179,10 @@ public class H2Dialect extends BaseDialect {
             return String.join(" ", ss);
         }
         return buildSimpleInsert(tableInfo, variable, ignoreNull);
+    }
+
+    @Override
+    public String quote(String name) {
+        return "\"" + name + "\"";
     }
 }

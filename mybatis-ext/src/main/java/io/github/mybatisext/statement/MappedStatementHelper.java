@@ -35,61 +35,64 @@ import io.github.mybatisext.reflect.GenericType;
 public class MappedStatementHelper {
 
     private static final Log log = LogFactory.getLog(MappedStatementHelper.class);
-    private final Configuration originConfiguration;
-    private final ExtContext extContext;
     private final JpaParser jpaParser = new JpaParser();
+    private final Configuration configuration;
+    private final ExtContext extContext;
+    private final ResultMapHelper resultMapHelper;
 
-    public MappedStatementHelper(Configuration originConfiguration, ExtContext extContext) {
-        this.originConfiguration = originConfiguration;
+    public MappedStatementHelper(Configuration configuration, ExtContext extContext) {
+        this.configuration = configuration;
         this.extContext = extContext;
+        this.resultMapHelper = new ResultMapHelper(configuration, this);
     }
 
-    public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType) {
+    public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType, boolean changeConfiguration) {
         log.debug(id);
-        TableInfo tableInfo = TableInfoFactory.getTableInfo(originConfiguration, tableType);
+        TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, tableType);
         Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(tableInfo, methods, returnType);
-        String script = SemanticScriptHelper.buildScript(signatureToSemantic, selectDialect());
+        Dialect dialect = selectDialect();
+        String script = SemanticScriptHelper.buildScript(signatureToSemantic, dialect);
         log.debug(script);
         SqlCommandType sqlCommandType = resolveSqlCommandType(signatureToSemantic.values().iterator().next());
         List<ResultMap> resultMaps = new ArrayList<>();
         if (TableInfoFactory.isAssignableEitherWithTable(tableType, returnType)) {
-            resultMaps.add(ResultMapHelper.buildResultMap(originConfiguration, tableInfo));
+            resultMaps.add(resultMapHelper.buildResultMap(tableInfo, dialect, changeConfiguration));
         } else {
-            resultMaps.add(ResultMapHelper.buildSimpleTypeResultMap(originConfiguration, returnType.getType()));
+            resultMaps.add(resultMapHelper.buildSimpleTypeResultMap(returnType.getType()));
         }
-        SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(originConfiguration, script, Object.class);
-        Builder builder = new MappedStatement.Builder(originConfiguration, id, sqlSource, sqlCommandType);
+        SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(configuration, script, Object.class);
+        Builder builder = new MappedStatement.Builder(configuration, id, sqlSource, sqlCommandType);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }
 
-    public MappedStatement buildForNestedSelect(String id, NestedSelect nestedSelect) {
+    public MappedStatement buildForNestedSelect(String id, NestedSelect nestedSelect, Dialect dialect, boolean changeConfiguration) {
         log.debug(id);
         List<ResultMap> resultMaps = new ArrayList<>();
-        if (nestedSelect.getPropertyInfo().getColumnName() == null) {
-            resultMaps.add(ResultMapHelper.buildOwnResultMap(originConfiguration, nestedSelect.getTableInfo()));
+        if (nestedSelect.getPropertyInfo().getColumnName() == null && !configuration.getTypeHandlerRegistry().hasTypeHandler(nestedSelect.getPropertyInfo().getOfType().getType())) {
+            resultMaps.add(resultMapHelper.buildOwnResultMap(nestedSelect.getPropertyInfo().getJoinTableInfo().getTableInfo(), dialect, changeConfiguration));
         } else if (nestedSelect.getPropertyInfo().getResultType() == ResultType.ASSOCIATION) {
-            resultMaps.add(ResultMapHelper.buildSimpleTypeResultMap(originConfiguration, nestedSelect.getPropertyInfo().getJavaType().getType()));
+            resultMaps.add(resultMapHelper.buildSimpleTypeResultMap(nestedSelect.getPropertyInfo().getJavaType().getType()));
         } else {
-            resultMaps.add(ResultMapHelper.buildSimpleTypeResultMap(originConfiguration, nestedSelect.getPropertyInfo().getOfType().getType()));
+            resultMaps.add(resultMapHelper.buildSimpleTypeResultMap(nestedSelect.getPropertyInfo().getOfType().getType()));
         }
-        String script = NestedSelectHelper.buildNestedSelectScript(nestedSelect);
+        String script = NestedSelectHelper.buildNestedSelectScript(nestedSelect, dialect);
         log.debug(script);
-        SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(originConfiguration, script, Object.class);
-        Builder builder = new MappedStatement.Builder(originConfiguration, id, sqlSource, SqlCommandType.SELECT);
+        SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(configuration, script, Object.class);
+        Builder builder = new MappedStatement.Builder(configuration, id, sqlSource, SqlCommandType.SELECT);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }
 
     private Map<String, Semantic> buildSignatureToSemantic(TableInfo tableInfo, List<GenericMethod> methods, GenericType returnType) {
         Map<Semantic, String> map = new HashMap<>();
         for (GenericMethod method : methods) {
-            Semantic semantic = jpaParser.parse(originConfiguration, tableInfo, method.getName(), method.getParameters(), returnType);
+            Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters(), returnType);
             map.put(semantic, buildParameterSignature(method));
         }
         return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
 
     private String buildParameterSignature(GenericMethod method) {
-        ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(originConfiguration, method);
+        ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(configuration, method);
         return ParameterSignatureHelper.toString(parameterSignature);
     }
 
@@ -110,7 +113,7 @@ public class MappedStatementHelper {
     }
 
     private Dialect selectDialect() {
-        DataSource dataSource = originConfiguration.getEnvironment().getDataSource();
+        DataSource dataSource = configuration.getEnvironment().getDataSource();
         String jdbcUrl;
         try (Connection connection = dataSource.getConnection()) {
             jdbcUrl = connection.getMetaData().getURL();
