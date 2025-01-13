@@ -26,7 +26,6 @@ import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.jpa.JpaParser;
 import io.github.mybatisext.jpa.Semantic;
 import io.github.mybatisext.jpa.SemanticType;
-import io.github.mybatisext.metadata.ResultType;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericMethod;
@@ -55,11 +54,7 @@ public class MappedStatementHelper {
         log.debug(script);
         SqlCommandType sqlCommandType = resolveSqlCommandType(signatureToSemantic.values().iterator().next());
         List<ResultMap> resultMaps = new ArrayList<>();
-        if (TableInfoFactory.isAssignableEitherWithTable(tableType, returnType)) {
-            resultMaps.add(resultMapHelper.buildResultMap(tableInfo, dialect, changeConfiguration));
-        } else {
-            resultMaps.add(resultMapHelper.buildSimpleTypeResultMap(returnType.getType()));
-        }
+        resultMaps.add(resultMapHelper.buildResultMap(returnType, dialect, changeConfiguration));
         SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(configuration, script, Object.class);
         Builder builder = new MappedStatement.Builder(configuration, id, sqlSource, sqlCommandType);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
@@ -68,11 +63,7 @@ public class MappedStatementHelper {
     public MappedStatement buildForNestedSelect(String id, NestedSelect nestedSelect, Dialect dialect, boolean changeConfiguration) {
         log.debug(id);
         List<ResultMap> resultMaps = new ArrayList<>();
-        if (nestedSelect.getPropertyInfo().getResultType() == ResultType.COLLECTION) {
-            resultMaps.add(resultMapHelper.buildPropertyResultMap(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo(), nestedSelect.getPropertyInfo().getOfType(), dialect, changeConfiguration));
-        } else {
-            resultMaps.add(resultMapHelper.buildPropertyResultMap(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo(), nestedSelect.getPropertyInfo().getJavaType(), dialect, changeConfiguration));
-        }
+        resultMaps.add(resultMapHelper.buildPropertyResultMap(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo(), dialect, changeConfiguration));
         String script = NestedSelectHelper.buildNestedSelectScript(nestedSelect, dialect);
         log.debug(script);
         SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(configuration, script, Object.class);
