@@ -1,14 +1,16 @@
 package io.github.mybatisext.metadata;
 
+import java.util.Objects;
+
 import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.jpa.CompareOperator;
-
-import java.util.Objects;
+import io.github.mybatisext.jpa.LogicalOperator;
 
 public class FilterSpecInfo {
 
     private IfTest test;
     private CompareOperator operator;
+    private LogicalOperator logicalOperator;
     private String testTemplate;
     private String exprTemplate;
     private String secondVariable;
@@ -27,6 +29,14 @@ public class FilterSpecInfo {
 
     public void setOperator(CompareOperator operator) {
         this.operator = operator;
+    }
+
+    public LogicalOperator getLogicalOperator() {
+        return logicalOperator;
+    }
+
+    public void setLogicalOperator(LogicalOperator logicalOperator) {
+        this.logicalOperator = logicalOperator;
     }
 
     public String getTestTemplate() {
@@ -62,11 +72,11 @@ public class FilterSpecInfo {
             return false;
         }
         FilterSpecInfo that = (FilterSpecInfo) o;
-        return test == that.test && operator == that.operator && Objects.equals(testTemplate, that.testTemplate) && Objects.equals(exprTemplate, that.exprTemplate) && Objects.equals(secondVariable, that.secondVariable);
+        return test == that.test && operator == that.operator && logicalOperator == that.logicalOperator && Objects.equals(testTemplate, that.testTemplate) && Objects.equals(exprTemplate, that.exprTemplate) && Objects.equals(secondVariable, that.secondVariable);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(test, operator, testTemplate, exprTemplate, secondVariable);
+        return Objects.hash(test, operator, logicalOperator, testTemplate, exprTemplate, secondVariable);
     }
 }
