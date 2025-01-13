@@ -1,8 +1,5 @@
 package io.github.mybatisext.ognl;
 
-import io.github.mybatisext.idgenerator.IdGenerator;
-import io.github.mybatisext.statement.ParameterSignatureHelper;
-
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -11,6 +8,9 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+
+import io.github.mybatisext.idgenerator.IdGenerator;
+import io.github.mybatisext.statement.ParameterSignatureHelper;
 
 public class Ognl {
 

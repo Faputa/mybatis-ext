@@ -1,9 +1,9 @@
 package io.github.mybatisext.dialect;
 
-import io.github.mybatisext.jpa.Limit;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import io.github.mybatisext.jpa.Limit;
 
 public class PostgreSqlDialect extends MySqlDialect {
 
