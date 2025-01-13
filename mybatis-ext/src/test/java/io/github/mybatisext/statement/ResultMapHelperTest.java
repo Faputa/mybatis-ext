@@ -11,8 +11,8 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 import io.github.mybatisext.adapter.ExtConfiguration;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.H2Dialect;
-import io.github.mybatisext.metadata.TableInfo;
-import io.github.mybatisext.metadata.TableInfoFactory;
+import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.reflect.GenericTypeFactory;
 import io.github.mybatisext.table.PrivilegeTable;
 
 public class ResultMapHelperTest {
@@ -32,8 +32,8 @@ public class ResultMapHelperTest {
         ExtContext extContext = new ExtContext();
         MappedStatementHelper mappedStatementHelper = new MappedStatementHelper(configuration, extContext);
         ResultMapHelper resultMapHelper = new ResultMapHelper(configuration, mappedStatementHelper);
-        TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        ResultMap resultMap = resultMapHelper.buildResultMap(tableInfo, new H2Dialect(), false);
+        GenericType returnType = GenericTypeFactory.build(PrivilegeTable.class);
+        ResultMap resultMap = resultMapHelper.buildResultMap(returnType, new H2Dialect(), false);
         System.out.println(resultMap);
     }
 }
