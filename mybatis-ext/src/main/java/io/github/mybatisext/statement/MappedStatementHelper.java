@@ -68,12 +68,10 @@ public class MappedStatementHelper {
     public MappedStatement buildForNestedSelect(String id, NestedSelect nestedSelect, Dialect dialect, boolean changeConfiguration) {
         log.debug(id);
         List<ResultMap> resultMaps = new ArrayList<>();
-        if (nestedSelect.getPropertyInfo().getColumnName() == null && !configuration.getTypeHandlerRegistry().hasTypeHandler(nestedSelect.getPropertyInfo().getOfType().getType())) {
-            resultMaps.add(resultMapHelper.buildOwnResultMap(nestedSelect.getPropertyInfo().getJoinTableInfo().getTableInfo(), dialect, changeConfiguration));
-        } else if (nestedSelect.getPropertyInfo().getResultType() == ResultType.ASSOCIATION) {
-            resultMaps.add(resultMapHelper.buildSimpleTypeResultMap(nestedSelect.getPropertyInfo().getJavaType().getType()));
+        if (nestedSelect.getPropertyInfo().getResultType() == ResultType.COLLECTION) {
+            resultMaps.add(resultMapHelper.buildPropertyResultMap(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo(), nestedSelect.getPropertyInfo().getOfType(), dialect, changeConfiguration));
         } else {
-            resultMaps.add(resultMapHelper.buildSimpleTypeResultMap(nestedSelect.getPropertyInfo().getOfType().getType()));
+            resultMaps.add(resultMapHelper.buildPropertyResultMap(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo(), nestedSelect.getPropertyInfo().getJavaType(), dialect, changeConfiguration));
         }
         String script = NestedSelectHelper.buildNestedSelectScript(nestedSelect, dialect);
         log.debug(script);
