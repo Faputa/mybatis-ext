@@ -12,13 +12,14 @@ import io.github.mybatisext.reflect.GenericType;
 public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
     private String name;
-    // 如果是简单类型属性
-    private String columnName;
     private JoinTableInfo joinTableInfo;
     private GenericType javaType;
     private JdbcType jdbcType;
     private boolean ownColumn;
     private boolean readonly;
+    private FilterSpecInfo filterSpecInfo;
+    // 如果是简单类型属性
+    private String columnName;
 
     // resultMap项的类型
     private ResultType resultType;
@@ -37,14 +38,6 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getColumnName() {
-        return columnName;
-    }
-
-    public void setColumnName(String columnName) {
-        this.columnName = columnName;
     }
 
     public JoinTableInfo getJoinTableInfo() {
@@ -87,6 +80,22 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         this.readonly = readonly;
     }
 
+    public FilterSpecInfo getFilterSpecInfo() {
+        return filterSpecInfo;
+    }
+
+    public void setFilterSpecInfo(FilterSpecInfo filterSpecInfo) {
+        this.filterSpecInfo = filterSpecInfo;
+    }
+
+    public String getColumnName() {
+        return columnName;
+    }
+
+    public void setColumnName(String columnName) {
+        this.columnName = columnName;
+    }
+
     public ResultType getResultType() {
         return resultType;
     }
@@ -103,6 +112,14 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         this.idType = idType;
     }
 
+    public Class<?> getCustomIdGenerator() {
+        return customIdGenerator;
+    }
+
+    public void setCustomIdGenerator(Class<?> customIdGenerator) {
+        this.customIdGenerator = customIdGenerator;
+    }
+
     public LoadType getLoadType() {
         return loadType;
     }
@@ -113,14 +130,6 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
     public GenericType getOfType() {
         return ofType;
-    }
-
-    public Class<?> getCustomIdGenerator() {
-        return customIdGenerator;
-    }
-
-    public void setCustomIdGenerator(Class<?> customIdGenerator) {
-        this.customIdGenerator = customIdGenerator;
     }
 
     public void setOfType(GenericType ofType) {
@@ -136,12 +145,12 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
             return false;
         }
         PropertyInfo that = (PropertyInfo) o;
-        return ownColumn == that.ownColumn && readonly == that.readonly && Objects.equals(name, that.name) && Objects.equals(columnName, that.columnName) && Objects.equals(joinTableInfo, that.joinTableInfo) && Objects.equals(javaType, that.javaType) && jdbcType == that.jdbcType && resultType == that.resultType && idType == that.idType && Objects.equals(customIdGenerator, that.customIdGenerator) && loadType == that.loadType && Objects.equals(ofType, that.ofType);
+        return ownColumn == that.ownColumn && readonly == that.readonly && Objects.equals(name, that.name) && Objects.equals(joinTableInfo, that.joinTableInfo) && Objects.equals(javaType, that.javaType) && jdbcType == that.jdbcType && Objects.equals(filterSpecInfo, that.filterSpecInfo) && Objects.equals(columnName, that.columnName) && resultType == that.resultType && idType == that.idType && Objects.equals(customIdGenerator, that.customIdGenerator) && loadType == that.loadType && Objects.equals(ofType, that.ofType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, columnName, joinTableInfo, javaType, jdbcType, ownColumn, readonly, resultType, idType, customIdGenerator, loadType, ofType);
+        return Objects.hash(super.hashCode(), name, joinTableInfo, javaType, jdbcType, ownColumn, readonly, filterSpecInfo, columnName, resultType, idType, customIdGenerator, loadType, ofType);
     }
 
     @Override
