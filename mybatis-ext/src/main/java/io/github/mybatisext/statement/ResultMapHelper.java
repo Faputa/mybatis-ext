@@ -17,9 +17,12 @@ import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.ResultType;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericType;
 
 public class ResultMapHelper {
+
+    public static final String PREFIX = "__MYBATIS_EXT__";
 
     private final Configuration configuration;
     private final MappedStatementHelper mappedStatementHelper;
@@ -29,39 +32,44 @@ public class ResultMapHelper {
         this.mappedStatementHelper = mappedStatementHelper;
     }
 
-    public ResultMap buildResultMap(TableInfo tableInfo, Dialect dialect, boolean writeConfiguration) {
-        GenericType tableClass = tableInfo.getTableClass();
-        String id = tableClass.getName() + "-Inline";
+    public ResultMap buildResultMap(GenericType returnType, Dialect dialect, boolean writeConfiguration) {
+        String id = PREFIX + returnType.getName();
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
         }
+        if (configuration.getTypeHandlerRegistry().hasTypeHandler(returnType.getType())) {
+            return buildSimpleTypeResultMap(returnType.getType());
+        }
+        TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, returnType);
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            resultMappings.add(buildResultMapping(id, tableInfo, propertyInfo, dialect, writeConfiguration));
+            resultMappings.add(buildResultMapping(tableInfo, propertyInfo, dialect, writeConfiguration));
         }
-        return new ResultMap.Builder(configuration, id, tableClass.getType(), resultMappings).build();
+        return new ResultMap.Builder(configuration, id, returnType.getType(), resultMappings).build();
     }
 
     public ResultMap buildSimpleTypeResultMap(Class<?> type) {
         return new ResultMap.Builder(configuration, type.getName() + "-Inline", type, new ArrayList<>(0)).build();
     }
 
-    public ResultMap buildOwnResultMap(TableInfo tableInfo, Dialect dialect, boolean writeConfiguration) {
+    public ResultMap buildPropertyResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration) {
         GenericType tableClass = tableInfo.getTableClass();
-        String id = tableClass.getName() + "-Own-Inline";
+        String id = PREFIX + tableClass.getName() + "|" + propertyInfo.getName();
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
         }
-        List<ResultMapping> resultMappings = new ArrayList<>();
-        for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            if (propertyInfo.isOwnColumn()) {
-                resultMappings.add(buildResultMapping(id, tableInfo, propertyInfo, dialect, writeConfiguration));
-            }
+        GenericType propertyType = propertyInfo.getResultType() == ResultType.COLLECTION ? propertyInfo.getOfType() : propertyInfo.getJavaType();
+        if (propertyInfo.getColumnName() != null) {
+            return buildSimpleTypeResultMap(propertyType.getType());
         }
-        return new ResultMap.Builder(configuration, id, tableClass.getType(), resultMappings).build();
+        List<ResultMapping> resultMappings = new ArrayList<>();
+        for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
+            resultMappings.add(buildResultMapping(tableInfo, subPropertyInfo, dialect, writeConfiguration));
+        }
+        return new ResultMap.Builder(configuration, id, propertyType.getType(), resultMappings).build();
     }
 
-    private ResultMapping buildResultMapping(String resultMapId, TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration) {
+    private ResultMapping buildResultMapping(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration) {
         if (propertyInfo.getResultType() == ResultType.ID) {
             return new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(propertyInfo.getName())
@@ -77,46 +85,21 @@ public class ResultMapHelper {
                     .jdbcType(propertyInfo.getJdbcType())
                     .build();
         }
-        if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
+        if (propertyInfo.getResultType() == ResultType.ASSOCIATION || propertyInfo.getResultType() == ResultType.COLLECTION) {
             if (propertyInfo.getLoadType() == null || propertyInfo.getLoadType() == LoadType.JOIN) {
-                String nestedResultMapId = resultMapId + "[association" + "=" + propertyInfo.getName() + "]";
-                addNestedResultMap(nestedResultMapId, tableInfo, propertyInfo, propertyInfo.getJavaType(), dialect, writeConfiguration);
+                ResultMap resultMap = addNestedResultMap(tableInfo, propertyInfo, dialect, writeConfiguration);
                 return new ResultMapping.Builder(configuration, propertyInfo.getName())
                         .javaType(propertyInfo.getJavaType().getType())
-                        .nestedResultMapId(nestedResultMapId)
+                        .nestedResultMapId(resultMap.getId())
                         .build();
             }
             NestedSelect nestedSelect = NestedSelectHelper.buildNestedSelect(tableInfo, propertyInfo);
             String column = NestedSelectHelper.buildResultMappingColumn(nestedSelect);
-            addNestedSelectStatement(nestedSelect, dialect, writeConfiguration);
+            MappedStatement mappedStatement = addNestedSelectStatement(nestedSelect, dialect, writeConfiguration);
             ResultMapping.Builder builder = new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(column)
                     .composites(parseCompositeColumnName(column))
-                    .nestedQueryId(NestedSelectHelper.toString(nestedSelect))
-                    .javaType(propertyInfo.getJavaType().getType());
-            if (propertyInfo.getLoadType() == LoadType.FETCH_LAZY) {
-                builder.lazy(true);
-            } else if (propertyInfo.getLoadType() == LoadType.FETCH_EAGER) {
-                builder.lazy(false);
-            }
-            return builder.build();
-        }
-        if (propertyInfo.getResultType() == ResultType.COLLECTION) {
-            if (propertyInfo.getLoadType() == null || propertyInfo.getLoadType() == LoadType.JOIN) {
-                String nestedResultMapId = resultMapId + "[collection" + "=" + propertyInfo.getName() + "]";
-                addNestedResultMap(nestedResultMapId, tableInfo, propertyInfo, propertyInfo.getOfType(), dialect, writeConfiguration);
-                return new ResultMapping.Builder(configuration, propertyInfo.getName())
-                        .javaType(propertyInfo.getJavaType().getType())
-                        .nestedResultMapId(nestedResultMapId)
-                        .build();
-            }
-            NestedSelect nestedSelect = NestedSelectHelper.buildNestedSelect(tableInfo, propertyInfo);
-            String column = NestedSelectHelper.buildResultMappingColumn(nestedSelect);
-            addNestedSelectStatement(nestedSelect, dialect, writeConfiguration);
-            ResultMapping.Builder builder = new ResultMapping.Builder(configuration, propertyInfo.getName())
-                    .column(column)
-                    .composites(parseCompositeColumnName(column))
-                    .nestedQueryId(NestedSelectHelper.toString(nestedSelect))
+                    .nestedQueryId(mappedStatement.getId())
                     .javaType(propertyInfo.getJavaType().getType());
             if (propertyInfo.getLoadType() == LoadType.FETCH_LAZY) {
                 builder.lazy(true);
@@ -143,15 +126,8 @@ public class ResultMapHelper {
         return composites;
     }
 
-    private void addNestedResultMap(String id, TableInfo tableInfo, PropertyInfo propertyInfo, GenericType propertyType, Dialect dialect, boolean writeConfiguration) {
-        if (configuration.hasResultMap(id)) {
-            return;
-        }
-        List<ResultMapping> resultMappings = new ArrayList<>();
-        for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
-            resultMappings.add(buildResultMapping(id, tableInfo, subPropertyInfo, dialect, writeConfiguration));
-        }
-        ResultMap resultMap = new ResultMap.Builder(configuration, id, propertyType.getType(), resultMappings).build();
+    private ResultMap addNestedResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration) {
+        ResultMap resultMap = buildPropertyResultMap(tableInfo, propertyInfo, dialect, writeConfiguration);
         if (writeConfiguration) {
             synchronized (configuration) {
                 if (!configuration.hasResultMap(resultMap.getId())) {
@@ -159,12 +135,13 @@ public class ResultMapHelper {
                 }
             }
         }
+        return resultMap;
     }
 
-    private void addNestedSelectStatement(NestedSelect nestedSelect, Dialect dialect, boolean writeConfiguration) {
+    private MappedStatement addNestedSelectStatement(NestedSelect nestedSelect, Dialect dialect, boolean writeConfiguration) {
         String id = NestedSelectHelper.toString(nestedSelect);
         if (configuration.hasStatement(id)) {
-            return;
+            return configuration.getMappedStatement(id);
         }
         MappedStatement ms = mappedStatementHelper.buildForNestedSelect(id, nestedSelect, dialect, writeConfiguration);
         if (writeConfiguration) {
@@ -174,5 +151,6 @@ public class ResultMapHelper {
                 }
             }
         }
+        return ms;
     }
 }
