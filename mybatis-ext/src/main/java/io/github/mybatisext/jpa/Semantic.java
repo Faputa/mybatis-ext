@@ -1,10 +1,10 @@
 package io.github.mybatisext.jpa;
 
-import io.github.mybatisext.metadata.PropertyInfo;
-import io.github.mybatisext.metadata.TableInfo;
-
 import java.util.List;
 import java.util.Objects;
+
+import io.github.mybatisext.metadata.PropertyInfo;
+import io.github.mybatisext.metadata.TableInfo;
 
 public class Semantic {
 

@@ -1,8 +1,8 @@
 package io.github.mybatisext.jpa;
 
-import io.github.mybatisext.metadata.PropertyInfo;
-
 import java.util.Objects;
+
+import io.github.mybatisext.metadata.PropertyInfo;
 
 public class OrderByElement {
 

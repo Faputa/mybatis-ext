@@ -1,11 +1,5 @@
 package io.github.mybatisext.jpa;
 
-import io.github.mybatisext.exception.MybatisExtException;
-import io.github.mybatisext.reflect.GenericField;
-import io.github.mybatisext.reflect.GenericMethod;
-import io.github.mybatisext.reflect.GenericType;
-import org.apache.ibatis.session.Configuration;
-
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -15,6 +9,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.apache.ibatis.session.Configuration;
+
+import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.reflect.GenericField;
+import io.github.mybatisext.reflect.GenericMethod;
+import io.github.mybatisext.reflect.GenericType;
 
 public class VariableFactory {
 
