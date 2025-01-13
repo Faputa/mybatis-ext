@@ -5,12 +5,14 @@ import java.util.List;
 
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.EmbedParent;
+import io.github.mybatisext.annotation.FilterSpec;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.LoadStrategy;
 import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.Table;
+import io.github.mybatisext.jpa.CompareOperator;
 
 /**
  * 菜单权限表 sys_menu
@@ -27,10 +29,12 @@ public class SysMenu extends BaseEntity {
     private Long menuId;
 
     /** 菜单名称 */
+    @FilterSpec(operator = CompareOperator.Like)
     @Column
     private String menuName;
 
     /** 父菜单名称 */
+    @FilterSpec(operator = CompareOperator.Like)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parent_id", rightColumn = "menu_id"), table = SysMenu.class, column = "menu_name")
     private String parentName;
 
