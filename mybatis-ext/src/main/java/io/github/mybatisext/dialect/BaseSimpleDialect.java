@@ -66,6 +66,9 @@ public abstract class BaseSimpleDialect extends BaseDialect {
     public String select(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
+        if (distinct) {
+            ss.add("DISTINCT");
+        }
         if (groupBy != null) {
             ss.add(buildSelectItems(tableInfo, groupBy, this));
         } else {
