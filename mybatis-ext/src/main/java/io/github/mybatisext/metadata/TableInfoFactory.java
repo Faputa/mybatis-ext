@@ -230,14 +230,14 @@ public class TableInfoFactory {
                 if (!c.isAnnotationPresent(EmbedParent.class)) {
                     break;
                 }
-                if (c.getGenericSuperclass() != null && !c.getGenericSuperclass().isAnnotationPresent(Table.class)) {
-                    continue;
+                if (c.getGenericSuperclass() != null && c.getGenericSuperclass().isAnnotationPresent(Table.class)) {
+                    TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
+                    tableInfo.getJoinTableInfo().setAlias(parentTableInfo.getJoinTableInfo().getAlias());
+                    tableInfo.getAliasToJoinTableInfo().put(parentTableInfo.getJoinTableInfo().getAlias(), tableInfo.getJoinTableInfo());
+                    tableInfo.getJoinTableInfo().getRightJoinTableInfos().putAll(parentTableInfo.getJoinTableInfo().getRightJoinTableInfos());
+                    stripParentJoinRelations(tableInfo, featureToJoinTableInfo);
+                    break;
                 }
-                TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
-                tableInfo.getJoinTableInfo().setAlias(parentTableInfo.getJoinTableInfo().getAlias());
-                tableInfo.getAliasToJoinTableInfo().put(parentTableInfo.getJoinTableInfo().getAlias(), tableInfo.getJoinTableInfo());
-                tableInfo.getJoinTableInfo().getRightJoinTableInfos().putAll(parentTableInfo.getJoinTableInfo().getRightJoinTableInfos());
-                stripParentJoinRelations(tableInfo, featureToJoinTableInfo);
             }
         }
     }
