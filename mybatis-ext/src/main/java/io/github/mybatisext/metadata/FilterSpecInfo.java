@@ -8,9 +8,9 @@ import io.github.mybatisext.jpa.LogicalOperator;
 
 public class FilterSpecInfo {
 
-    private IfTest test = IfTest.NotNull;
-    private CompareOperator operator = CompareOperator.Equals;
-    private LogicalOperator logicalOperator = LogicalOperator.AND;
+    private IfTest test;
+    private CompareOperator operator;
+    private LogicalOperator logicalOperator;
     private String testTemplate;
     private String exprTemplate;
     private String secondVariable;

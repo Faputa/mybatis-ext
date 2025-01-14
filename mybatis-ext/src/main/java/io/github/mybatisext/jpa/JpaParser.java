@@ -473,22 +473,22 @@ public class JpaParser extends BaseParser {
         List<Variable> variables = jpaTokenizer.getVariables();
         if (parameters.length == 1) {
             GenericType tableClass = tableInfo.getTableClass();
-            OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
             GenericType parameterType = parameters[0].getGenericType();
+            OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
             Param param = parameters[0].getAnnotation(Param.class);
             FilterSpec filterSpec = parameters[0].getAnnotation(FilterSpec.class);
             FilterSpecInfo filterSpecInfo = buildFilterSpecInfo(filterSpec);
             if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
-                return ConditionHelper.fromTableInfo(tableInfo, filterSpecInfo, onlyById != null, param != null ? param.value() : "__array__item");
+                return ConditionHelper.fromTableParameter(tableInfo, filterSpecInfo, onlyById != null, param != null ? "__" + param.value() + "__item" : "__array__item");
             }
             if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeArgumentResolver.resolveGenericType(parameterType, Collection.class, 0))) {
                 if (List.class.isAssignableFrom(parameterType.getType())) {
-                    return ConditionHelper.fromTableInfo(tableInfo, filterSpecInfo, onlyById != null, param != null ? param.value() : "__list__item");
+                    return ConditionHelper.fromTableParameter(tableInfo, filterSpecInfo, onlyById != null, param != null ? "__" + param.value() + "__item" : "__list__item");
                 }
-                return ConditionHelper.fromTableInfo(tableInfo, filterSpecInfo, onlyById != null, param != null ? param.value() : "__collection__item");
+                return ConditionHelper.fromTableParameter(tableInfo, filterSpecInfo, onlyById != null, param != null ? "__" + param.value() + "__item" : "__collection__item");
             }
             if (TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType)) {
-                return ConditionHelper.fromTableInfo(tableInfo, filterSpecInfo, onlyById != null, param != null ? param.value() : "");
+                return ConditionHelper.fromTableParameter(tableInfo, filterSpecInfo, onlyById != null, param != null ? param.value() : "");
             }
         }
         List<Condition> conditions = new ArrayList<>();
@@ -506,7 +506,12 @@ public class JpaParser extends BaseParser {
             condition.setPropertyInfos(jpaTokenizer.getTableInfo().getNameToPropertyInfo());
             condition.setPropertyInfo(parseProperty(configuration, jpaTokenizer.getTableInfo(), param.value()));
             condition.setVariable(new Variable(param.value(), parameter.getGenericType()));
-            applyFilterSpecInfo(condition, filterSpecInfo, variables, usedParamNames);
+            if (filterSpecInfo == null) {
+                condition.setTest(IfTest.None);
+                condition.setCompareOperator(CompareOperator.Equals);
+            } else {
+                applyFilterSpecInfo(condition, filterSpecInfo, variables, usedParamNames);
+            }
             conditions.add(condition);
         }
         if (conditions.isEmpty()) {
@@ -518,28 +523,11 @@ public class JpaParser extends BaseParser {
         return ConditionHelper.simplifyCondition(condition);
     }
 
-    private void applyFilterSpecInfo(Condition condition, FilterSpecInfo filterSpecInfo, List<Variable> variables, Set<String> usedParamNames) {
-        condition.setTest(filterSpecInfo.getTest());
-        condition.setTestTemplate(filterSpecInfo.getTestTemplate());
-        condition.setExprTemplate(filterSpecInfo.getExprTemplate());
-        condition.setCompareOperator(filterSpecInfo.getOperator());
-        condition.setLogicalOperator(filterSpecInfo.getLogicalOperator());
-        if (filterSpecInfo.getOperator() == CompareOperator.Between) {
-            Variable secondVariable = deepGet(variables, filterSpecInfo.getSecondVariable());
-            if (secondVariable == null) {
-                throw new MybatisExtException("Second variable '" + filterSpecInfo.getSecondVariable() + "' not found in variables.");
-            }
-            usedParamNames.add(secondVariable.getFullName().split("\\.")[0]);
-            condition.setSecondVariable(secondVariable);
-        }
-    }
-
-    private static FilterSpecInfo buildFilterSpecInfo(@Nullable FilterSpec filterSpec) {
-        FilterSpecInfo filterSpecInfo = new FilterSpecInfo();
+    private static @Nullable FilterSpecInfo buildFilterSpecInfo(@Nullable FilterSpec filterSpec) {
         if (filterSpec == null) {
-            filterSpecInfo.setTest(IfTest.None);
-            return filterSpecInfo;
+            return null;
         }
+        FilterSpecInfo filterSpecInfo = new FilterSpecInfo();
         filterSpecInfo.setTest(filterSpec.test());
         filterSpecInfo.setOperator(filterSpec.operator());
         filterSpecInfo.setLogicalOperator(filterSpec.logicalOperator());
@@ -547,6 +535,22 @@ public class JpaParser extends BaseParser {
         filterSpecInfo.setExprTemplate(filterSpec.exprTemplate());
         filterSpecInfo.setSecondVariable(filterSpec.secondVariable());
         return filterSpecInfo;
+    }
+
+    private void applyFilterSpecInfo(Condition condition, FilterSpecInfo filterSpecInfo, List<Variable> variables, Set<String> usedParamNames) {
+        condition.setTest(filterSpecInfo.getTest());
+        condition.setTestTemplate(filterSpecInfo.getTestTemplate());
+        condition.setExprTemplate(filterSpecInfo.getExprTemplate());
+        condition.setCompareOperator(filterSpecInfo.getOperator());
+        condition.setLogicalOperator(filterSpecInfo.getLogicalOperator());
+        if (condition.getCompareOperator() == CompareOperator.Between) {
+            Variable secondVariable = deepGet(variables, filterSpecInfo.getSecondVariable());
+            if (secondVariable == null) {
+                throw new MybatisExtException("Second variable '" + filterSpecInfo.getSecondVariable() + "' not found in variables.");
+            }
+            usedParamNames.add(secondVariable.getFullName().split("\\.")[0]);
+            condition.setSecondVariable(secondVariable);
+        }
     }
 
     private Variable deepGet(List<Variable> variables, String path) {

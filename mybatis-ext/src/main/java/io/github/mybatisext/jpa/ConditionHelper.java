@@ -22,10 +22,10 @@ import io.github.mybatisext.util.StringUtils;
 
 public class ConditionHelper {
 
-    public static Condition fromTableInfo(TableInfo tableInfo, FilterSpecInfo filterSpecInfo, boolean onlyById, String param) {
-        Condition condition = buildFromTableInfo(tableInfo, filterSpecInfo, onlyById, onlyById, param);
+    public static Condition fromTableParameter(TableInfo tableInfo, FilterSpecInfo filterSpecInfo, boolean onlyById, String param) {
+        Condition condition = buildTableParameter(tableInfo, filterSpecInfo, onlyById, onlyById, param);
         if (condition.getSubConditions().isEmpty() && onlyById) {
-            condition = buildFromTableInfo(tableInfo, filterSpecInfo, false, true, param);
+            condition = buildTableParameter(tableInfo, filterSpecInfo, false, true, param);
         }
         return simplifyCondition(condition);
     }
@@ -79,21 +79,22 @@ public class ConditionHelper {
         return condition;
     }
 
-    private static Condition buildFromTableInfo(TableInfo tableInfo, FilterSpecInfo filterSpecInfo, boolean onlyById, boolean strictMatch, String param) {
+    private static Condition buildTableParameter(TableInfo tableInfo, FilterSpecInfo filterSpecInfo, boolean onlyById, boolean strictMatch, String param) {
         Condition condition = new Condition(ConditionType.COMPLEX);
         condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setLogicalOperator(LogicalOperator.AND);
-        if (strictMatch) {
+        if (strictMatch || filterSpecInfo == null) {
             condition.setTest(IfTest.None);
             condition.setLogicalOperator(LogicalOperator.AND);
         } else {
             condition.setTest(filterSpecInfo.getTest());
             condition.setTestTemplate(filterSpecInfo.getTestTemplate());
             condition.setLogicalOperator(filterSpecInfo.getLogicalOperator());
-            condition.setTestTemplate(filterSpecInfo.getExprTemplate());
+            condition.setExprTemplate(filterSpecInfo.getExprTemplate());
+            condition.setVariable(new Variable(StringUtils.isNotBlank(param) ? param : "param1", tableInfo.getTableClass()));
         }
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            Condition subCondition = buildFromPropertyInfo(tableInfo, propertyInfo, onlyById, strictMatch, param);
+            Condition subCondition = buildPropertyInfo(tableInfo, propertyInfo, onlyById, strictMatch, param);
             if (subCondition == null) {
                 continue;
             }
@@ -102,7 +103,7 @@ public class ConditionHelper {
         return condition;
     }
 
-    private static @Nullable Condition buildFromPropertyInfo(TableInfo tableInfo, PropertyInfo propertyInfo, boolean onlyById, boolean strictMatch, String prefix) {
+    private static @Nullable Condition buildPropertyInfo(TableInfo tableInfo, PropertyInfo propertyInfo, boolean onlyById, boolean strictMatch, String prefix) {
         if (onlyById && (propertyInfo.getResultType() == ResultType.RESULT || !propertyInfo.isOwnColumn())) {
             return null;
         }
@@ -110,8 +111,8 @@ public class ConditionHelper {
         condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setPropertyInfo(propertyInfo);
         condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
-        if (strictMatch) {
-            condition.setTest(propertyInfo.getResultType() == ResultType.COLLECTION ? IfTest.NotEmpty : IfTest.None);
+        if (strictMatch || propertyInfo.getFilterSpecInfo() == null) {
+            condition.setTest(propertyInfo.getResultType() == ResultType.COLLECTION ? IfTest.NotEmpty : strictMatch ? IfTest.None : IfTest.NotNull);
             condition.setCompareOperator(CompareOperator.Equals);
             condition.setLogicalOperator(LogicalOperator.AND);
         } else {
@@ -120,16 +121,16 @@ public class ConditionHelper {
             condition.setCompareOperator(propertyInfo.getFilterSpecInfo().getOperator());
             condition.setLogicalOperator(propertyInfo.getFilterSpecInfo().getLogicalOperator());
             condition.setTestTemplate(propertyInfo.getFilterSpecInfo().getExprTemplate());
-        }
-        if (condition.getCompareOperator() == CompareOperator.Between) {
-            PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, propertyInfo.getFilterSpecInfo().getSecondVariable());
-            if (secondPropertyInfo == null) {
-                throw new MybatisExtException("Second variable '" + propertyInfo.getFilterSpecInfo().getSecondVariable() + "' not found in table '" + tableInfo + "'");
+            if (condition.getCompareOperator() == CompareOperator.Between) {
+                PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, propertyInfo.getFilterSpecInfo().getSecondVariable());
+                if (secondPropertyInfo == null) {
+                    throw new MybatisExtException("Second variable '" + propertyInfo.getFilterSpecInfo().getSecondVariable() + "' not found in table '" + tableInfo + "'");
+                }
+                condition.setSecondVariable(new Variable(prefix, propertyInfo.getFilterSpecInfo().getSecondVariable(), secondPropertyInfo.getJavaType()));
             }
-            condition.setSecondVariable(new Variable(prefix, propertyInfo.getFilterSpecInfo().getSecondVariable(), secondPropertyInfo.getJavaType()));
         }
         for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
-            Condition subCondition = buildFromPropertyInfo(tableInfo, subPropertyInfo, onlyById, strictMatch, propertyInfo.getResultType() == ResultType.COLLECTION ? condition.getVariable().getFullName() + "[0]" : condition.getVariable().getFullName());
+            Condition subCondition = buildPropertyInfo(tableInfo, subPropertyInfo, onlyById, strictMatch, propertyInfo.getResultType() == ResultType.COLLECTION ? condition.getVariable().getFullName() + "[0]" : condition.getVariable().getFullName());
             if (subCondition == null) {
                 continue;
             }
