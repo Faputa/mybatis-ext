@@ -24,6 +24,7 @@ public class SimpleStringTemplate {
         for (int i = 0; i < template.length(); i++) {
             char c = template.charAt(i);
             if (c == '\\') {
+                // 转义字符
                 i++;
                 if (i < template.length()) {
                     char c1 = template.charAt(i);
@@ -79,7 +80,10 @@ public class SimpleStringTemplate {
             if (obj == null) {
                 return null;
             }
-            if (obj instanceof Map) {
+            if (key.startsWith("##")) {
+                // 强制##开头的名字为对象属性
+                obj = getProperty(obj, key.substring(2));
+            } else if (obj instanceof Map) {
                 obj = ((Map<?, ?>) obj).get(key);
             } else if (isInt(key)) {
                 int idx = Integer.parseInt(key);
@@ -97,18 +101,22 @@ public class SimpleStringTemplate {
                     return null;
                 }
             } else {
-                try {
-                    Method readMethod = getReadMethod(obj.getClass(), key);
-                    if (readMethod == null) {
-                        return null;
-                    }
-                    obj = readMethod.invoke(obj);
-                } catch (Exception e) {
-                    throw new IllegalArgumentException(e);
-                }
+                obj = getProperty(obj, key);
             }
         }
         return obj;
+    }
+
+    private static Object getProperty(Object obj, String key) {
+        try {
+            Method readMethod = getReadMethod(obj.getClass(), key);
+            if (readMethod == null) {
+                return null;
+            }
+            return readMethod.invoke(obj);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     private static boolean isInt(String s) {
