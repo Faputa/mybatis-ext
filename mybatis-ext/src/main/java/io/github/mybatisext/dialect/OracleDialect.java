@@ -1,12 +1,14 @@
 package io.github.mybatisext.dialect;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import io.github.mybatisext.jpa.Limit;
 import io.github.mybatisext.jpa.Variable;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.util.StringUtils;
+import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class OracleDialect extends BaseSimpleDialect {
 
@@ -14,7 +16,7 @@ public class OracleDialect extends BaseSimpleDialect {
     public String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
+            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
             ss.add(buildInsert(tableInfo, itemVariable, false, ignoreNull));
             ss.add("</foreach>");
@@ -27,7 +29,7 @@ public class OracleDialect extends BaseSimpleDialect {
     public String buildUpdate(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull, boolean join, String tableAndJoin, String where) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
+            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
             ss.add(buildUpdate(tableInfo, itemVariable, false, ignoreNull, join, tableAndJoin, where));
             ss.add("</foreach>");
@@ -52,7 +54,7 @@ public class OracleDialect extends BaseSimpleDialect {
     public String buildDelete(TableInfo tableInfo, Variable variable, boolean batch, boolean join, String tableAndJoin, String where) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
+            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
             ss.add(buildDelete(tableInfo, itemVariable, false, join, tableAndJoin, where));
             ss.add("</foreach>");

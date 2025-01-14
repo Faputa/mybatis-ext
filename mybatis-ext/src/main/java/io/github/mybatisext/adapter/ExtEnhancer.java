@@ -148,7 +148,7 @@ public class ExtEnhancer {
         if (annotation != null) {
             return GenericTypeFactory.build(annotation.value());
         }
-        return TypeArgumentResolver.resolveGenericTypeArgument(mapperClass, ExtMapper.class, 0);
+        return TypeArgumentResolver.resolveGenericType(mapperClass, ExtMapper.class, 0);
     }
 
     private Class<?> getMapperClass(String namespace) {

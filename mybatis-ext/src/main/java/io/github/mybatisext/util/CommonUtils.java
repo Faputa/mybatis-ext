@@ -19,10 +19,10 @@ public class CommonUtils {
             return type.getComponentType();
         }
         if (Collection.class.isAssignableFrom(type.getType())) {
-            return TypeArgumentResolver.resolveGenericTypeArgument(type, Collection.class, 0);
+            return TypeArgumentResolver.resolveGenericType(type, Collection.class, 0);
         }
         if (Optional.class.isAssignableFrom(type.getType())) {
-            return TypeArgumentResolver.resolveGenericTypeArgument(type, Optional.class, 0);
+            return TypeArgumentResolver.resolveGenericType(type, Optional.class, 0);
         }
         return type;
     }
