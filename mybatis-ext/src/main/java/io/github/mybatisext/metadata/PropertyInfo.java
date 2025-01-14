@@ -17,6 +17,7 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
     private JdbcType jdbcType;
     private boolean ownColumn;
     private boolean readonly;
+    // 如果存在FilterSpec注解
     private FilterSpecInfo filterSpecInfo;
     // 如果是简单类型属性
     private String columnName;

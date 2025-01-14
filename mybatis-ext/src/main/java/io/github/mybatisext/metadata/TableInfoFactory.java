@@ -29,7 +29,6 @@ import io.github.mybatisext.annotation.EmbedParent;
 import io.github.mybatisext.annotation.FilterSpec;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.IdType;
-import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
@@ -39,8 +38,6 @@ import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.annotation.TableRef;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.idgenerator.IdGenerator;
-import io.github.mybatisext.jpa.CompareOperator;
-import io.github.mybatisext.jpa.LogicalOperator;
 import io.github.mybatisext.reflect.GenericField;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
@@ -53,7 +50,7 @@ public class TableInfoFactory {
 
     private static final Map<GenericType, TableInfo> tableInfoCache = new ConcurrentHashMap<>();
 
-    public static PropertyInfo deepGet(TableInfo tableInfo, String path) {
+    public static @Nullable PropertyInfo deepGet(TableInfo tableInfo, String path) {
         Map<String, PropertyInfo> map = tableInfo.getNameToPropertyInfo();
         PropertyInfo propertyInfo = null;
         for (String key : path.split("\\.")) {
@@ -64,7 +61,7 @@ public class TableInfoFactory {
         return propertyInfo;
     }
 
-    public static PropertyInfo deepGet(PropertyInfo propertyInfo, String path) {
+    public static @Nullable PropertyInfo deepGet(PropertyInfo propertyInfo, String path) {
         Map<String, PropertyInfo> map = propertyInfo;
         for (String key : path.split("\\.")) {
             if ((propertyInfo = map.get(key)) == null) {
@@ -91,7 +88,7 @@ public class TableInfoFactory {
         return left.isAssignableFrom(right);
     }
 
-    public static GenericType getTableAnnotationClass(GenericType genericType) {
+    public static @Nullable GenericType getTableAnnotationClass(GenericType genericType) {
         for (GenericType c = genericType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             if (c.isAnnotationPresent(Table.class)) {
                 return c;
@@ -202,7 +199,7 @@ public class TableInfoFactory {
             propertyInfo.setResultType(configuration.getTypeHandlerRegistry().hasTypeHandler(propertyType.getType()) ? ResultType.RESULT : ResultType.ASSOCIATION);
             propertyInfo.setJavaType(targetType = propertyType);
         }
-        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(propertyInfo, filterSpec));
+        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(filterSpec));
 
         if (propertyInfo.isOwnColumn()) {
             propertyInfo.putAll(refPropertyInfo);
@@ -375,7 +372,7 @@ public class TableInfoFactory {
         propertyInfo.setReadonly(readonly);
         propertyInfo.setJdbcType(column.jdbcType());
         propertyInfo.setJoinTableInfo(tableInfo.getJoinTableInfo());
-        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(propertyInfo, filterSpec));
+        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(filterSpec));
         if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
             propertyInfo.putAll(collectColumnPropertyInfos(configuration, tableInfo, GenericTypeFactory.build(propertyInfo.getJavaType()), readonly));
         } else if (propertyInfo.getResultType() == ResultType.COLLECTION && !configuration.getTypeHandlerRegistry().hasTypeHandler(propertyInfo.getOfType().getType())) {
@@ -463,7 +460,7 @@ public class TableInfoFactory {
         propertyInfo.setName(propertyName);
         propertyInfo.setOwnColumn(false);
         propertyInfo.setReadonly(readonly);
-        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(propertyInfo, filterSpec));
+        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(filterSpec));
         tableInfo.getNameToPropertyInfo().put(propertyName, propertyInfo);
 
         if (column != null) {
@@ -696,28 +693,15 @@ public class TableInfoFactory {
         dest.setCustomIdGenerator(origin.getCustomIdGenerator());
         dest.setLoadType(origin.getLoadType());
         dest.setOfType(origin.getOfType());
-        dest.setFilterSpecInfo(new FilterSpecInfo());
-        copyFilterSpecInfoProperties(dest.getFilterSpecInfo(), origin.getFilterSpecInfo());
+        dest.setFilterSpecInfo(origin.getFilterSpecInfo());
     }
 
-    private static void copyFilterSpecInfoProperties(FilterSpecInfo dest, FilterSpecInfo origin) {
-        dest.setTest(origin.getTest());
-        dest.setOperator(origin.getOperator());
-        dest.setLogicalOperator(origin.getLogicalOperator());
-        dest.setTestTemplate(origin.getTestTemplate());
-        dest.setExprTemplate(origin.getExprTemplate());
-        dest.setSecondVariable(origin.getSecondVariable());
-    }
-
-    private static FilterSpecInfo buildFilterSpecInfo(PropertyInfo propertyInfo, @Nullable FilterSpec filterSpec) {
-        FilterSpecInfo filterSpecInfo = new FilterSpecInfo();
+    private static @Nullable FilterSpecInfo buildFilterSpecInfo(@Nullable FilterSpec filterSpec) {
         if (filterSpec == null) {
-            filterSpecInfo.setTest(propertyInfo.getResultType() == ResultType.COLLECTION ? IfTest.NotEmpty : IfTest.NotNull);
-            filterSpecInfo.setOperator(CompareOperator.Equals);
-            filterSpecInfo.setLogicalOperator(LogicalOperator.AND);
-            return filterSpecInfo;
+            return null;
         }
-        filterSpecInfo.setTest((propertyInfo.getResultType() == ResultType.COLLECTION && (filterSpec.test() == IfTest.None || filterSpec.test() == IfTest.NotNull)) ? IfTest.NotEmpty : filterSpec.test());
+        FilterSpecInfo filterSpecInfo = new FilterSpecInfo();
+        filterSpecInfo.setTest(filterSpec.test());
         filterSpecInfo.setOperator(filterSpec.operator());
         filterSpecInfo.setLogicalOperator(filterSpec.logicalOperator());
         filterSpecInfo.setTestTemplate(filterSpec.testTemplate());
