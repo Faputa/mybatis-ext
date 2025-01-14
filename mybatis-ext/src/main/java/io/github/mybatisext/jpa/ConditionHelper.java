@@ -3,9 +3,7 @@ package io.github.mybatisext.jpa;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -13,28 +11,23 @@ import javax.annotation.Nullable;
 import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.metadata.FilterSpecInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.ResultType;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.ognl.Ognl;
 import io.github.mybatisext.util.SimpleStringTemplate;
 import io.github.mybatisext.util.StringUtils;
 
 public class ConditionHelper {
 
-    private static final Map<TableInfo, Map<Boolean, Map<IfTest, Map<String, Condition>>>> fromTableInfoCache = new ConcurrentHashMap<>();
-
-    public static Condition fromTableInfo(TableInfo tableInfo, boolean onlyById, IfTest test, String param) {
-        Map<Boolean, Map<IfTest, Map<String, Condition>>> map = fromTableInfoCache.computeIfAbsent(tableInfo, k -> new ConcurrentHashMap<>());
-        Map<IfTest, Map<String, Condition>> map2 = map.computeIfAbsent(onlyById, k -> new ConcurrentHashMap<>());
-        Map<String, Condition> map3 = map2.computeIfAbsent(test, k -> new ConcurrentHashMap<>());
-        return map3.computeIfAbsent(param, k -> {
-            Condition condition = buildFromTableInfo(tableInfo, onlyById, test, param);
-            if (condition.getSubConditions().isEmpty() && onlyById) {
-                condition = buildFromTableInfo(tableInfo, false, test, param);
-            }
-            return simplifyCondition(condition);
-        });
+    public static Condition fromTableInfo(TableInfo tableInfo, FilterSpecInfo filterSpecInfo, boolean onlyById, String param) {
+        Condition condition = buildFromTableInfo(tableInfo, filterSpecInfo, onlyById, onlyById, param);
+        if (condition.getSubConditions().isEmpty() && onlyById) {
+            condition = buildFromTableInfo(tableInfo, filterSpecInfo, false, true, param);
+        }
+        return simplifyCondition(condition);
     }
 
     public static Condition fromConditionList(@Nonnull ConditionList conditionList) {
@@ -86,12 +79,21 @@ public class ConditionHelper {
         return condition;
     }
 
-    private static Condition buildFromTableInfo(TableInfo tableInfo, boolean onlyById, IfTest test, String param) {
+    private static Condition buildFromTableInfo(TableInfo tableInfo, FilterSpecInfo filterSpecInfo, boolean onlyById, boolean strictMatch, String param) {
         Condition condition = new Condition(ConditionType.COMPLEX);
         condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setLogicalOperator(LogicalOperator.AND);
+        if (strictMatch) {
+            condition.setTest(IfTest.None);
+            condition.setLogicalOperator(LogicalOperator.AND);
+        } else {
+            condition.setTest(filterSpecInfo.getTest());
+            condition.setTestTemplate(filterSpecInfo.getTestTemplate());
+            condition.setLogicalOperator(filterSpecInfo.getLogicalOperator());
+            condition.setTestTemplate(filterSpecInfo.getExprTemplate());
+        }
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            Condition subCondition = buildFromPropertyInfo(tableInfo, propertyInfo, onlyById, test, param);
+            Condition subCondition = buildFromPropertyInfo(tableInfo, propertyInfo, onlyById, strictMatch, param);
             if (subCondition == null) {
                 continue;
             }
@@ -100,50 +102,40 @@ public class ConditionHelper {
         return condition;
     }
 
-    private static @Nullable Condition buildFromPropertyInfo(TableInfo tableInfo, PropertyInfo propertyInfo, boolean onlyById, IfTest test, String prefix) {
+    private static @Nullable Condition buildFromPropertyInfo(TableInfo tableInfo, PropertyInfo propertyInfo, boolean onlyById, boolean strictMatch, String prefix) {
         if (onlyById && (propertyInfo.getResultType() == ResultType.RESULT || !propertyInfo.isOwnColumn())) {
             return null;
         }
-        if (propertyInfo.getResultType() == ResultType.ID || propertyInfo.getResultType() == ResultType.RESULT) {
-            Condition condition = new Condition(ConditionType.BASIC);
-            condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
-            condition.setPropertyInfo(propertyInfo);
+        Condition condition = new Condition(StringUtils.isNotBlank(propertyInfo.getColumnName()) ? ConditionType.BASIC : ConditionType.COMPLEX);
+        condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
+        condition.setPropertyInfo(propertyInfo);
+        condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
+        if (strictMatch) {
+            condition.setTest(propertyInfo.getResultType() == ResultType.COLLECTION ? IfTest.NotEmpty : IfTest.None);
             condition.setCompareOperator(CompareOperator.Equals);
-            condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
-            condition.setTest(test);
-            return condition;
-        }
-        if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
-            Condition condition = new Condition(ConditionType.COMPLEX);
-            condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
             condition.setLogicalOperator(LogicalOperator.AND);
-            condition.setTest(test);
-            condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
-            for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
-                Condition subCondition = buildFromPropertyInfo(tableInfo, subPropertyInfo, onlyById, test, condition.getVariable().getFullName());
-                if (subCondition == null) {
-                    continue;
-                }
-                condition.getSubConditions().add(subCondition);
-            }
-            return condition;
+        } else {
+            condition.setTest(propertyInfo.getFilterSpecInfo().getTest());
+            condition.setTestTemplate(propertyInfo.getFilterSpecInfo().getTestTemplate());
+            condition.setCompareOperator(propertyInfo.getFilterSpecInfo().getOperator());
+            condition.setLogicalOperator(propertyInfo.getFilterSpecInfo().getLogicalOperator());
+            condition.setTestTemplate(propertyInfo.getFilterSpecInfo().getExprTemplate());
         }
-        if (propertyInfo.getResultType() == ResultType.COLLECTION) {
-            Condition condition = new Condition(ConditionType.COMPLEX);
-            condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
-            condition.setLogicalOperator(LogicalOperator.AND);
-            condition.setTest(IfTest.NotEmpty);
-            condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
-            for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
-                Condition subCondition = buildFromPropertyInfo(tableInfo, subPropertyInfo, onlyById, test, condition.getVariable().getFullName() + "[0]");
-                if (subCondition == null) {
-                    continue;
-                }
-                condition.getSubConditions().add(subCondition);
+        if (condition.getCompareOperator() == CompareOperator.Between) {
+            PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, propertyInfo.getFilterSpecInfo().getSecondVariable());
+            if (secondPropertyInfo == null) {
+                throw new MybatisExtException("Second variable '" + propertyInfo.getFilterSpecInfo().getSecondVariable() + "' not found in table '" + tableInfo + "'");
             }
-            return condition;
+            condition.setSecondVariable(new Variable(prefix, propertyInfo.getFilterSpecInfo().getSecondVariable(), secondPropertyInfo.getJavaType()));
         }
-        return null;
+        for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
+            Condition subCondition = buildFromPropertyInfo(tableInfo, subPropertyInfo, onlyById, strictMatch, propertyInfo.getResultType() == ResultType.COLLECTION ? condition.getVariable().getFullName() + "[0]" : condition.getVariable().getFullName());
+            if (subCondition == null) {
+                continue;
+            }
+            condition.getSubConditions().add(subCondition);
+        }
+        return condition;
     }
 
     public static void collectUsedTableAliases(Condition condition, Set<String> tableAliases) {
@@ -302,8 +294,8 @@ public class ConditionHelper {
         }
         if (CompareOperator.Equals == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " = #{__{variable}__bind}");
+                ss.add("<bind name=\"__" + condition.getVariable().getName() + "__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " = #{__{variable.##name}__bind}");
             } else {
                 ss.add("{propertyInfo} = #{{variable}}");
             }
@@ -311,8 +303,8 @@ public class ConditionHelper {
         }
         if (CompareOperator.LessThan == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &lt; #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " &lt; #{__{variable.##name}__bind}");
             } else {
                 ss.add("{propertyInfo} &lt; #{{variable}}");
             }
@@ -320,8 +312,8 @@ public class ConditionHelper {
         }
         if (CompareOperator.LessThanEqual == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &lt;= #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " &lt;= #{__{variable.##name}__bind}");
             } else {
                 ss.add("{propertyInfo} &lt;= #{{variable}}");
             }
@@ -329,8 +321,8 @@ public class ConditionHelper {
         }
         if (CompareOperator.GreaterThan == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &gt; #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " &gt; #{__{variable.##name}__bind}");
             } else {
                 ss.add("{propertyInfo} &gt; #{{variable}}");
             }
@@ -338,8 +330,8 @@ public class ConditionHelper {
         }
         if (CompareOperator.GreaterThanEqual == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable.##name}__bind}");
             } else {
                 ss.add("{propertyInfo} &gt;= #{{variable}}");
             }
@@ -347,39 +339,39 @@ public class ConditionHelper {
         }
         if (CompareOperator.Like == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " LIKE #{__{variable.##name}__bind}");
             } else {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"'%' + ${{variable}} + '%'\"/>");
-                ss.add("{propertyInfo} &gt;= #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + ${{variable}} + '%'\"/>");
+                ss.add("{propertyInfo} LIKE #{__{variable.##name}__bind}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.StartWith == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " LIKE #{__{variable.##name}__bind}");
             } else {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"${{variable}} + '%'\"/>");
-                ss.add("{propertyInfo} &gt;= #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"${{variable}} + '%'\"/>");
+                ss.add("{propertyInfo} LIKE #{__{variable.##name}__bind}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.EndWith == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " LIKE #{__{variable.##name}__bind}");
             } else {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"'%' + ${{variable}}\"/>");
-                ss.add("{propertyInfo} &gt;= #{__{variable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + ${{variable}}\"/>");
+                ss.add("{propertyInfo} LIKE #{__{variable.##name}__bind}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.Between == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add("<bind name=\"__{secondVariable}__bind\" value=\"" + Ognl.ToUpperCase + "({secondVariable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " BETWEEN #{__{variable}__bind} AND #{__{secondVariable}__bind}");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add("<bind name=\"__{secondVariable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({secondVariable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " BETWEEN #{__{variable.##name}__bind} AND #{__{secondVariable.##name}__bind}");
             } else {
                 ss.add("{propertyInfo} BETWEEN #{{variable}} AND #{{secondVariable}}");
             }
@@ -387,12 +379,12 @@ public class ConditionHelper {
         }
         if (CompareOperator.In == compareOperator) {
             if (ignorecase) {
-                ss.add(dialect.upper("{propertyInfo}") + " IN <foreach collection=\"{variable}\" item=\"__{variable}__item\" separator=\",\" open=\"(\" close=\")\">");
-                ss.add("<bind name=\"__{variable}__item\" value=\"" + Ognl.ToUpperCase + "(__{variable}__item)\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " IN <foreach collection=\"{variable}\" item=\"__{variable.##name}__item\" separator=\",\" open=\"(\" close=\")\">");
+                ss.add("<bind name=\"__{variable.##name}__item\" value=\"" + Ognl.ToUpperCase + "(__{variable.##name}__item)\"/>");
             } else {
-                ss.add("{propertyInfo} IN <foreach collection=\"{variable}\" item=\"__{variable}__item\" separator=\",\" open=\"(\" close=\")\">");
+                ss.add("{propertyInfo} IN <foreach collection=\"{variable}\" item=\"__{variable.##name}__item\" separator=\",\" open=\"(\" close=\")\">");
             }
-            ss.add("#{__{variable}__item}");
+            ss.add("#{__{variable.##name}__item}");
             ss.add("</foreach>");
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }

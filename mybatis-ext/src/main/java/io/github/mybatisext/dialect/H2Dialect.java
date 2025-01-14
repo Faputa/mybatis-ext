@@ -14,6 +14,7 @@ import io.github.mybatisext.jpa.Variable;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class H2Dialect extends BaseDialect {
 
@@ -77,6 +78,13 @@ public class H2Dialect extends BaseDialect {
             return buildSimpleDelete(tableInfo, buildWhere(where));
         }
         List<String> ss = new ArrayList<>();
+        if (Collection.class.isAssignableFrom(parameter.getJavaType().getType())) {
+            Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeArgumentResolver.resolveGenericType(parameter.getJavaType(), Collection.class, 0));
+            ss.add("<foreach Iterable=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"begin\" close=\"; end;\" separator=\";\">");
+            ss.add(delete(tableInfo, itemVariable, where));
+            ss.add("</foreach>");
+            return String.join(" ", ss);
+        }
         ss.add("DELETE FROM");
         ss.add(tableInfo.getName());
         ss.add(tableInfo.getJoinTableInfo().getAlias());
@@ -100,6 +108,13 @@ public class H2Dialect extends BaseDialect {
             return buildSimpleUpdate(tableInfo, parameter, ignoreNull, buildWhere(where));
         }
         List<String> ss = new ArrayList<>();
+        if (Collection.class.isAssignableFrom(parameter.getJavaType().getType())) {
+            Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeArgumentResolver.resolveGenericType(parameter.getJavaType(), Collection.class, 0));
+            ss.add("<foreach Iterable=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"begin\" close=\"; end;\" separator=\";\">");
+            ss.add(update(tableInfo, itemVariable, where, ignoreNull));
+            ss.add("</foreach>");
+            return String.join(" ", ss);
+        }
         ss.add("UPDATE");
         ss.add(tableInfo.getName());
         ss.add(tableInfo.getJoinTableInfo().getAlias());
@@ -163,7 +178,7 @@ public class H2Dialect extends BaseDialect {
     private String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", variable.getJavaType().getTypeParameters()[0]);
+            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             if (ignoreNull) {
                 ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
                 ss.add(buildInsert(tableInfo, itemVariable, false, true));

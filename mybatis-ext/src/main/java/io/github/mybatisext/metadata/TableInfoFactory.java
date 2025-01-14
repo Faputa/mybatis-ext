@@ -53,6 +53,27 @@ public class TableInfoFactory {
 
     private static final Map<GenericType, TableInfo> tableInfoCache = new ConcurrentHashMap<>();
 
+    public static PropertyInfo deepGet(TableInfo tableInfo, String path) {
+        Map<String, PropertyInfo> map = tableInfo.getNameToPropertyInfo();
+        PropertyInfo propertyInfo = null;
+        for (String key : path.split("\\.")) {
+            if ((propertyInfo = map.get(key)) == null) {
+                return null;
+            }
+        }
+        return propertyInfo;
+    }
+
+    public static PropertyInfo deepGet(PropertyInfo propertyInfo, String path) {
+        Map<String, PropertyInfo> map = propertyInfo;
+        for (String key : path.split("\\.")) {
+            if ((propertyInfo = map.get(key)) == null) {
+                return null;
+            }
+        }
+        return propertyInfo;
+    }
+
     public static boolean isAssignableEitherWithTable(GenericType left, GenericType right) {
         return isAssignableFromWithTable(left, right) || isAssignableFromWithTable(right, left);
     }
@@ -168,20 +189,20 @@ public class TableInfoFactory {
         propertyInfo.setJdbcType(refPropertyInfo.getJdbcType());
         propertyInfo.setOwnColumn(refPropertyInfo.isOwnColumn());
         propertyInfo.setReadonly(readonly);
-        propertyInfo.setResultType(refPropertyInfo.getResultType());
         propertyInfo.setIdType(refPropertyInfo.getIdType());
         propertyInfo.setCustomIdGenerator(refPropertyInfo.getCustomIdGenerator());
         propertyInfo.setLoadType(refPropertyInfo.getLoadType());
-        // TODO
-        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(propertyInfo, filterSpec));
 
         GenericType targetType;
-        if (refPropertyInfo.getResultType() == ResultType.COLLECTION) {
+        if (Collection.class.isAssignableFrom(propertyType.getType())) {
+            propertyInfo.setResultType(ResultType.COLLECTION);
             propertyInfo.setJavaType(propertyType);
-            propertyInfo.setOfType(targetType = TypeArgumentResolver.resolveGenericTypeArgument(propertyType, Collection.class, 0));
+            propertyInfo.setOfType(targetType = TypeArgumentResolver.resolveGenericType(propertyType, Collection.class, 0));
         } else {
+            propertyInfo.setResultType(configuration.getTypeHandlerRegistry().hasTypeHandler(propertyType.getType()) ? ResultType.RESULT : ResultType.ASSOCIATION);
             propertyInfo.setJavaType(targetType = propertyType);
         }
+        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(propertyInfo, filterSpec));
 
         if (propertyInfo.isOwnColumn()) {
             propertyInfo.putAll(refPropertyInfo);
@@ -626,10 +647,10 @@ public class TableInfoFactory {
         PropertyInfo propertyInfo = new PropertyInfo();
         if (Collection.class.isAssignableFrom(propertyType.getType())) {
             propertyInfo.setJavaType(propertyType);
-            propertyInfo.setOfType(TypeArgumentResolver.resolveGenericTypeArgument(propertyType, Collection.class, 0));
+            propertyInfo.setOfType(TypeArgumentResolver.resolveGenericType(propertyType, Collection.class, 0));
             propertyInfo.setResultType(ResultType.COLLECTION);
         } else if (propertyType.getType() == Optional.class) {
-            propertyInfo.setJavaType(TypeArgumentResolver.resolveGenericTypeArgument(propertyType, Collection.class, 0));
+            propertyInfo.setJavaType(TypeArgumentResolver.resolveGenericType(propertyType, Collection.class, 0));
         } else if (propertyType.getTypeParameters().length == 0) {
             propertyInfo.setJavaType(propertyType);
         }
@@ -696,7 +717,7 @@ public class TableInfoFactory {
             filterSpecInfo.setLogicalOperator(LogicalOperator.AND);
             return filterSpecInfo;
         }
-        filterSpecInfo.setTest(filterSpec.test());
+        filterSpecInfo.setTest((propertyInfo.getResultType() == ResultType.COLLECTION && (filterSpec.test() == IfTest.None || filterSpec.test() == IfTest.NotNull)) ? IfTest.NotEmpty : filterSpec.test());
         filterSpecInfo.setOperator(filterSpec.operator());
         filterSpecInfo.setLogicalOperator(filterSpec.logicalOperator());
         filterSpecInfo.setTestTemplate(filterSpec.testTemplate());

@@ -9,7 +9,7 @@ import com.mysql.cj.jdbc.MysqlDataSource;
 
 import io.github.mybatisext.adapter.ExtConfiguration;
 import io.github.mybatisext.adapter.ExtContext;
-import io.github.mybatisext.annotation.IfTest;
+import io.github.mybatisext.metadata.FilterSpecInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.table.PrivilegeTable;
@@ -29,7 +29,7 @@ public class ConditionHelperTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        Condition condition = ConditionHelper.fromTableInfo(tableInfo, false, IfTest.NotNull, "pt");
+        Condition condition = ConditionHelper.fromTableInfo(tableInfo, new FilterSpecInfo(), false, "pt");
         System.out.println(condition);
     }
 }

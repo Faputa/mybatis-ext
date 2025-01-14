@@ -7,15 +7,15 @@ import io.github.mybatisext.reflect.GenericTypeFactory;
 
 public class TypeArgumentResolver {
 
-    public static Class<?> resolveTypeArgument(Type type, Class<?> sourceClass, int index) {
-        GenericType genericType = resolveGenericTypeArgument(type, sourceClass, index);
+    public static Class<?> resolveType(Type type, Class<?> sourceClass, int index) {
+        GenericType genericType = resolveGenericType(type, sourceClass, index);
         if (genericType == null) {
             return null;
         }
         return genericType.getType();
     }
 
-    public static GenericType resolveGenericTypeArgument(Type type, Class<?> sourceClass, int index) {
+    public static GenericType resolveGenericType(Type type, Class<?> sourceClass, int index) {
         if (type == null) {
             return null;
         }
@@ -24,11 +24,11 @@ public class TypeArgumentResolver {
             return genericType.getTypeParameters()[index];
         }
         for (GenericType interfaceType : genericType.getGenericInterfaces()) {
-            GenericType resolvedClass = resolveGenericTypeArgument(interfaceType, sourceClass, index);
+            GenericType resolvedClass = resolveGenericType(interfaceType, sourceClass, index);
             if (resolvedClass != null) {
                 return resolvedClass;
             }
         }
-        return resolveGenericTypeArgument(genericType.getGenericSuperclass(), sourceClass, index);
+        return resolveGenericType(genericType.getGenericSuperclass(), sourceClass, index);
     }
 }
