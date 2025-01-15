@@ -62,8 +62,30 @@ public class SysUserMapperTest {
     }
 
     @Test
+    public void testSaveIgnoreNullAndGetSysUser() {
+        int rowsAffected = sysUserMapper.saveIgnoreNull(testUser);
+        assertEquals(1, rowsAffected);
+
+        SysUser retrievedUser = sysUserMapper.get(testUser);
+        assertNotNull(retrievedUser);
+        assertEquals(testUser.getUserId(), retrievedUser.getUserId());
+        assertEquals(testUser.getLoginName(), retrievedUser.getLoginName());
+    }
+
+    @Test
     public void testSaveBatchAndGetSysUser() {
         int rowsAffected = sysUserMapper.saveBatch(Collections.singletonList(testUser));
+        assertEquals(1, rowsAffected);
+
+        SysUser retrievedUser = sysUserMapper.get(testUser);
+        assertNotNull(retrievedUser);
+        assertEquals(testUser.getUserId(), retrievedUser.getUserId());
+        assertEquals(testUser.getLoginName(), retrievedUser.getLoginName());
+    }
+
+    @Test
+    public void testSaveBatchIgnoreNullAndGetSysUser() {
+        int rowsAffected = sysUserMapper.saveBatchIgnoreNull(Collections.singletonList(testUser));
         assertEquals(1, rowsAffected);
 
         SysUser retrievedUser = sysUserMapper.get(testUser);
@@ -85,6 +107,17 @@ public class SysUserMapperTest {
 
     @Test
     public void testUpdateBatchSysUser() {
+        sysUserMapper.save(testUser);
+        testUser.setUserName("Updated User Name");
+        int rowsAffected = sysUserMapper.updateBatch(Collections.singletonList(testUser));
+        assertEquals(1, rowsAffected);
+
+        SysUser updatedUser = sysUserMapper.get(testUser);
+        assertEquals("Updated User Name", updatedUser.getUserName());
+    }
+
+    @Test
+    public void testUpdateBatchIgnoreNullSysUser() {
         sysUserMapper.save(testUser);
         testUser.setUserName("Updated User Name");
         int rowsAffected = sysUserMapper.updateBatchIgnoreNull(Collections.singletonList(testUser));
