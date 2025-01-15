@@ -8,10 +8,12 @@ import org.apache.ibatis.type.JdbcType;
 import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.util.StringUtils;
 
 public class PropertyInfo extends HashMap<String, PropertyInfo> {
 
-    private String name;
+    private final String name;
+    private final String fullName;
     private JoinTableInfo joinTableInfo;
     private GenericType javaType;
     private JdbcType jdbcType;
@@ -33,12 +35,21 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
     // resultType=COLLECTION
     private GenericType ofType;
 
+    public PropertyInfo(String name) {
+        this("", name);
+    }
+
+    public PropertyInfo(String prefix, String name) {
+        this.name = name;
+        this.fullName = StringUtils.isNotBlank(prefix) ? prefix + "." + name : name;
+    }
+
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public String getFullName() {
+        return fullName;
     }
 
     public JoinTableInfo getJoinTableInfo() {
@@ -146,12 +157,12 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
             return false;
         }
         PropertyInfo that = (PropertyInfo) o;
-        return ownColumn == that.ownColumn && readonly == that.readonly && Objects.equals(name, that.name) && Objects.equals(joinTableInfo, that.joinTableInfo) && Objects.equals(javaType, that.javaType) && jdbcType == that.jdbcType && Objects.equals(filterSpecInfo, that.filterSpecInfo) && Objects.equals(columnName, that.columnName) && resultType == that.resultType && idType == that.idType && Objects.equals(customIdGenerator, that.customIdGenerator) && loadType == that.loadType && Objects.equals(ofType, that.ofType);
+        return ownColumn == that.ownColumn && readonly == that.readonly && Objects.equals(name, that.name) && Objects.equals(fullName, that.fullName) && Objects.equals(joinTableInfo, that.joinTableInfo) && Objects.equals(javaType, that.javaType) && jdbcType == that.jdbcType && Objects.equals(filterSpecInfo, that.filterSpecInfo) && Objects.equals(columnName, that.columnName) && resultType == that.resultType && idType == that.idType && Objects.equals(customIdGenerator, that.customIdGenerator) && loadType == that.loadType && Objects.equals(ofType, that.ofType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), name, joinTableInfo, javaType, jdbcType, ownColumn, readonly, filterSpecInfo, columnName, resultType, idType, customIdGenerator, loadType, ofType);
+        return Objects.hash(super.hashCode(), name, fullName, joinTableInfo, javaType, jdbcType, ownColumn, readonly, filterSpecInfo, columnName, resultType, idType, customIdGenerator, loadType, ofType);
     }
 
     @Override
