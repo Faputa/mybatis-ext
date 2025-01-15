@@ -7,6 +7,7 @@ import java.util.List;
 import io.github.mybatisext.jpa.Limit;
 import io.github.mybatisext.jpa.Variable;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.util.StringUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class MySqlDialect extends BaseSimpleDialect {
@@ -43,6 +44,15 @@ public class MySqlDialect extends BaseSimpleDialect {
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
+        if (join) {
+            ss.add("UPDATE");
+            ss.add(tableAndJoin);
+            ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, variable, ignoreNull));
+            if (StringUtils.isNotBlank(where)) {
+                ss.add(where);
+            }
+            return String.join(" ", ss);
+        }
         return buildSimpleUpdate(tableInfo, variable, ignoreNull, where);
     }
 
@@ -54,6 +64,14 @@ public class MySqlDialect extends BaseSimpleDialect {
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
             ss.add(buildDelete(tableInfo, itemVariable, false, join, tableAndJoin, where));
             ss.add("</foreach>");
+            return String.join(" ", ss);
+        }
+        if (join) {
+            ss.add("DELETE FROM");
+            ss.add(tableAndJoin);
+            if (StringUtils.isNotBlank(where)) {
+                ss.add(where);
+            }
             return String.join(" ", ss);
         }
         return buildSimpleDelete(tableInfo, where);
