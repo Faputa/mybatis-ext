@@ -51,14 +51,14 @@ public class SysRole extends BaseEntity {
 
     /** 菜单组 */
     @LoadStrategy(LoadType.FETCH_EAGER)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "role_id", rightColumn = "role_id"), table = SysRoleMenu.class)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "menu_id", rightColumn = "menu_id"), table = SysMenu.class, column = "menu_id")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "roleId", rightColumn = "roleId"), table = SysRoleMenu.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "menuId", rightColumn = "menuId"), table = SysMenu.class, column = "menuId")
     private List<Long> menuIds;
 
     /** 部门组（数据权限） */
     @LoadStrategy(LoadType.FETCH_EAGER)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "role_id", rightColumn = "role_id"), table = SysRoleDept.class)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "dept_id", rightColumn = "dept_id"), table = SysDept.class, column = "dept_id")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "roleId", rightColumn = "roleId"), table = SysRoleDept.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "deptId", rightColumn = "deptId"), table = SysDept.class, column = "deptId")
     private List<Long> deptIds;
 
     public Long getRoleId() {

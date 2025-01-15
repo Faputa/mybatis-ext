@@ -28,7 +28,9 @@ import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.statement.NestedSelectHelper;
 import io.github.mybatisext.util.CommonUtils;
+import io.github.mybatisext.util.ImmutablePair;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class JpaParser extends BaseParser {
@@ -181,9 +183,9 @@ public class JpaParser extends BaseParser {
                     Semantic semantic = new Semantic(SemanticType.SELECT);
                     MatchResult _propertyList = state.getMatch(propertyList);
                     if (_propertyList != null) {
-                        semantic.setSelectItems(_propertyList.val());
+                        semantic.setSelectItems(ensureJoinRelationColumns(state, _propertyList.val()));
                     } else {
-                        semantic.setSelectItems(buildDefaultSelectItems(state.getTokenizer()));
+                        semantic.setSelectItems(buildDefaultSelectItems(state));
                     }
                     if (state.getMatch("Distinct") != null) {
                         semantic.setDistinct(true);
@@ -390,13 +392,31 @@ public class JpaParser extends BaseParser {
         variable.set(join(variableName, star(join(keyword("Dot"), subVariableName))));
     }
 
-    private List<PropertyInfo> buildDefaultSelectItems(JpaTokenizer jpaTokenizer) {
+    private List<PropertyInfo> buildDefaultSelectItems(State state) {
+        JpaTokenizer jpaTokenizer = state.getTokenizer();
         GenericType returnType = CommonUtils.unwrapType(jpaTokenizer.getReturnType());
         if (!TableInfoFactory.isAssignableEitherWithTable(returnType, jpaTokenizer.getTableInfo().getTableClass())) {
             throw new MybatisExtException("Incompatible return type: " + returnType.getTypeName() + ", expected: " + jpaTokenizer.getTableInfo().getTableClass().getName());
         }
         TableInfo tableInfo = TableInfoFactory.getTableInfo(jpaTokenizer.getConfiguration(), returnType);
-        return tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList());
+        List<PropertyInfo> propertyInfos = tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList());
+        return ensureJoinRelationColumns(state, propertyInfos);
+    }
+
+    private List<PropertyInfo> ensureJoinRelationColumns(State state, List<PropertyInfo> propertyInfos) {
+        JpaTokenizer jpaTokenizer = state.getTokenizer();
+        TableInfo tableInfo = jpaTokenizer.getTableInfo();
+        Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
+        for (PropertyInfo propertyInfo : propertyInfos) {
+            nameToPropertyInfo.put(propertyInfo.getName(), propertyInfo);
+            if (propertyInfo.getLoadType() != null && propertyInfo.getLoadType() != LoadType.JOIN) {
+                List<ImmutablePair<PropertyInfo, PropertyInfo>> immutablePairs = NestedSelectHelper.buildLeftmostJoinColumns(tableInfo, propertyInfo);
+                for (ImmutablePair<PropertyInfo, PropertyInfo> immutablePair : immutablePairs) {
+                    nameToPropertyInfo.put(immutablePair.getLeft().getName(), immutablePair.getLeft());
+                }
+            }
+        }
+        return new ArrayList<>(nameToPropertyInfo.values());
     }
 
     private Set<String> collectUsedParamNames(Limit limit) {

@@ -4,6 +4,8 @@ public class JoinColumnInfo {
 
     private String leftColumn;
     private String rightColumn;
+    private PropertyInfo leftPropertyInfo;
+    private PropertyInfo rightPropertyInfo;
 
     public String getLeftColumn() {
         return leftColumn;
@@ -19,6 +21,22 @@ public class JoinColumnInfo {
 
     public void setRightColumn(String rightColumn) {
         this.rightColumn = rightColumn;
+    }
+
+    public PropertyInfo getLeftPropertyInfo() {
+        return leftPropertyInfo;
+    }
+
+    public void setLeftPropertyInfo(PropertyInfo leftPropertyInfo) {
+        this.leftPropertyInfo = leftPropertyInfo;
+    }
+
+    public PropertyInfo getRightPropertyInfo() {
+        return rightPropertyInfo;
+    }
+
+    public void setRightPropertyInfo(PropertyInfo rightPropertyInfo) {
+        this.rightPropertyInfo = rightPropertyInfo;
     }
 
     @Override
