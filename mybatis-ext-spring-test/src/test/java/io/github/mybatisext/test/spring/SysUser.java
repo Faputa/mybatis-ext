@@ -31,8 +31,8 @@ public class SysUser extends BaseEntity {
     private Long deptId;
 
     /** 部门父ID */
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "dept_id", rightColumn = "dept_id"), table = SysDept.class)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parent_id", rightColumn = "dept_id"), table = SysDept.class, column = "dept_id")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "deptId", rightColumn = "deptId"), table = SysDept.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parentId", rightColumn = "deptId"), table = SysDept.class, column = "deptId")
     private Long parentId;
 
     /** 登录名称 */
@@ -92,24 +92,24 @@ public class SysUser extends BaseEntity {
     private Date pwdUpdateDate;
 
     /** 部门对象 */
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "dept_id", rightColumn = "dept_id"))
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "deptId", rightColumn = "deptId"))
     private SysDept dept;
 
     @LoadStrategy(LoadType.FETCH_EAGER)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "user_id", rightColumn = "user_id"), table = SysUserRole.class)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "role_id", rightColumn = "role_id"))
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "userId", rightColumn = "userId"), table = SysUserRole.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "roleId", rightColumn = "roleId"))
     private List<SysRole> roles;
 
     /** 角色组 */
     @LoadStrategy(LoadType.FETCH_EAGER)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "user_id", rightColumn = "user_id"), table = SysUserRole.class)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "role_id", rightColumn = "role_id"), table = SysRole.class, column = "role_id")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "userId", rightColumn = "userId"), table = SysUserRole.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "roleId", rightColumn = "roleId"), table = SysRole.class, column = "roleId")
     private List<Long> roleIds;
 
     /** 岗位组 */
     @LoadStrategy(LoadType.FETCH_EAGER)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "user_id", rightColumn = "user_id"), table = SysUserPost.class)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "post_id", rightColumn = "post_id"), table = SysPost.class, column = "post_id")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "userId", rightColumn = "userId"), table = SysUserPost.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "postId", rightColumn = "postId"), table = SysPost.class, column = "postId")
     private List<Long> postIds;
 
     public Long getUserId() {

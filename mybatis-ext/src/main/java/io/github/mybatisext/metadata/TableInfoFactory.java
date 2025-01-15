@@ -50,23 +50,14 @@ public class TableInfoFactory {
 
     private static final Map<GenericType, TableInfo> tableInfoCache = new ConcurrentHashMap<>();
 
-    public static @Nullable PropertyInfo deepGet(TableInfo tableInfo, String path) {
+    public static PropertyInfo deepGet(TableInfo tableInfo, String fullName) {
         Map<String, PropertyInfo> map = tableInfo.getNameToPropertyInfo();
         PropertyInfo propertyInfo = null;
-        for (String key : path.split("\\.")) {
+        for (String key : fullName.split("\\.")) {
             if ((propertyInfo = map.get(key)) == null) {
                 return null;
             }
-        }
-        return propertyInfo;
-    }
-
-    public static @Nullable PropertyInfo deepGet(PropertyInfo propertyInfo, String path) {
-        Map<String, PropertyInfo> map = propertyInfo;
-        for (String key : path.split("\\.")) {
-            if ((propertyInfo = map.get(key)) == null) {
-                return null;
-            }
+            map = propertyInfo;
         }
         return propertyInfo;
     }
@@ -88,7 +79,7 @@ public class TableInfoFactory {
         return left.isAssignableFrom(right);
     }
 
-    public static @Nullable GenericType getTableAnnotationClass(GenericType genericType) {
+    public static GenericType getTableAnnotationClass(GenericType genericType) {
         for (GenericType c = genericType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             if (c.isAnnotationPresent(Table.class)) {
                 return c;
@@ -142,7 +133,7 @@ public class TableInfoFactory {
                 }
                 ColumnRef columnRef = field.getAnnotation(ColumnRef.class);
                 if (columnRef != null) {
-                    processRefPropertyInfo(configuration, field.getName(), tableInfo, !columnRef.value().isEmpty() ? columnRef.value() : field.getName(), refTableInfo, field.getGenericType(), field.getAnnotation(FilterSpec.class), true);
+                    processRefPropertyInfo(configuration, field.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : field.getName(), refTableInfo, field.getGenericType(), field.getAnnotation(FilterSpec.class), true);
                 }
             }
 
@@ -164,7 +155,7 @@ public class TableInfoFactory {
                 }
                 ColumnRef columnRef = readMethod.getAnnotation(ColumnRef.class);
                 if (columnRef != null) {
-                    processRefPropertyInfo(configuration, propertyDescriptor.getName(), tableInfo, !columnRef.value().isEmpty() ? columnRef.value() : propertyDescriptor.getName(), refTableInfo, readMethod.getGenericReturnType(), readMethod.getAnnotation(FilterSpec.class), propertyDescriptor.getWriteMethod() == null);
+                    processRefPropertyInfo(configuration, propertyDescriptor.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : propertyDescriptor.getName(), refTableInfo, readMethod.getGenericReturnType(), readMethod.getAnnotation(FilterSpec.class), propertyDescriptor.getWriteMethod() == null);
                 }
             }
         }
@@ -218,7 +209,7 @@ public class TableInfoFactory {
         joinTableInfo.setAlias(table.alias());
         tableInfo.setJoinTableInfo(joinTableInfo);
         tableInfo.setTableClass(tableClass);
-        tableInfo.setName(!table.name().isEmpty() ? table.name() : StringUtils.camelToSnake(tableClass.getSimpleName()));
+        tableInfo.setName(StringUtils.isNotBlank(table.name()) ? table.name() : StringUtils.camelToSnake(tableClass.getSimpleName()));
         tableInfo.setComment(table.comment());
         tableInfo.setSchema(table.schema());
 
@@ -226,6 +217,7 @@ public class TableInfoFactory {
         Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo = new HashMap<>();
         processParentJoinRelations(configuration, tableClass, tableInfo, featureToJoinTableInfo);
         processProperty(configuration, tableClass, tableInfo, featureToJoinTableInfo, aliasCount);
+        resolveJoinRelationPropertyInfos(tableInfo.getAliasToJoinTableInfo());
 
         aliasCount.set(0);
         String alias = joinTableInfo.getAlias();
@@ -235,6 +227,23 @@ public class TableInfoFactory {
         joinTableInfo.setAlias(alias);
         tableInfo.getAliasToJoinTableInfo().put(alias, joinTableInfo);
         return tableInfo;
+    }
+
+    private static void resolveJoinRelationPropertyInfos(Map<String, JoinTableInfo> aliasToJoinTableInfo) {
+        for (JoinTableInfo joinTableInfo : aliasToJoinTableInfo.values()) {
+            for (Map.Entry<JoinColumnInfo, JoinTableInfo> entry : joinTableInfo.getLeftJoinTableInfos().entrySet()) {
+                PropertyInfo leftPropertyInfo = deepGet(entry.getValue().getTableInfo(), entry.getKey().getLeftColumn());
+                if (leftPropertyInfo == null || !leftPropertyInfo.isOwnColumn() || StringUtils.isBlank(leftPropertyInfo.getColumnName())) {
+                    throw new MybatisExtException("Left column '" + entry.getKey().getLeftColumn() + "' not found in table '" + entry.getValue().getTableInfo() + "'.");
+                }
+                PropertyInfo rightPropertyInfo = deepGet(joinTableInfo.getTableInfo(), entry.getKey().getRightColumn());
+                if (rightPropertyInfo == null || !rightPropertyInfo.isOwnColumn() || StringUtils.isBlank(rightPropertyInfo.getColumnName())) {
+                    throw new MybatisExtException("Right column '" + entry.getKey().getRightColumn() + "' not found in table '" + joinTableInfo.getTableInfo() + "'.");
+                }
+                entry.getKey().setLeftPropertyInfo(leftPropertyInfo);
+                entry.getKey().setRightPropertyInfo(rightPropertyInfo);
+            }
+        }
     }
 
     private static void processParentJoinRelations(Configuration configuration, @Nonnull GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
@@ -379,7 +388,7 @@ public class TableInfoFactory {
             if (id != null) {
                 processIdType(propertyInfo, id);
             }
-            String columnName = !column.name().isEmpty() ? column.name() : StringUtils.camelToSnake(propertyName);
+            String columnName = StringUtils.isNotBlank(column.name()) ? column.name() : StringUtils.camelToSnake(propertyName);
             propertyInfo.setColumnName(columnName);
             ColumnInfo columnInfo = new ColumnInfo();
             columnInfo.setName(columnName);
@@ -460,12 +469,20 @@ public class TableInfoFactory {
         propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(filterSpec));
         tableInfo.getNameToPropertyInfo().put(propertyName, propertyInfo);
 
+        buildJoinTableInfos(configuration, tableInfo, currentClass, propertyInfo, joinRelations);
+        mergeJoinTableInfos(tableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
+
         if (column != null) {
-            propertyInfo.setColumnName(!column.name().isEmpty() ? column.name() : StringUtils.camelToSnake(propertyName));
+            propertyInfo.setColumnName(StringUtils.isNotBlank(column.name()) ? column.name() : StringUtils.camelToSnake(propertyName));
         } else {
             JoinRelation joinRelation = joinRelations[joinRelations.length - 1];
             if (joinRelation.table() != void.class) {
-                propertyInfo.setColumnName(!joinRelation.column().isEmpty() ? joinRelation.column() : StringUtils.camelToSnake(propertyName));
+                String refName = StringUtils.isNotBlank(joinRelation.column()) ? joinRelation.column() : propertyName;
+                PropertyInfo refPropertyInfo = deepGet(propertyInfo.getJoinTableInfo().getTableInfo(), refName);
+                if (refPropertyInfo == null || !refPropertyInfo.isOwnColumn() || StringUtils.isBlank(refPropertyInfo.getColumnName())) {
+                    throw new MybatisExtException("null");
+                }
+                propertyInfo.setColumnName(refPropertyInfo.getColumnName());
             }
         }
         if (loadStrategy != null) {
@@ -474,9 +491,6 @@ public class TableInfoFactory {
                 propertyInfo.setResultType(ResultType.ASSOCIATION);
             }
         }
-
-        buildJoinTableInfos(configuration, tableInfo, currentClass, propertyInfo, joinRelations);
-        mergeJoinTableInfos(tableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
 
         if (propertyInfo.getColumnName() == null &&
                 (propertyInfo.getResultType() == ResultType.ASSOCIATION || propertyInfo.getResultType() == ResultType.COLLECTION)) {
@@ -516,7 +530,7 @@ public class TableInfoFactory {
         if (StringUtils.isNotBlank(lastJoinTableInfo.getAlias())) {
             aliasToJoinTableInfo.put(lastJoinTableInfo.getAlias(), lastJoinTableInfo);
         }
-        if (parentJoinTableInfo != lastJoinTableInfo && !parentJoinTableInfo.getAlias().isEmpty()) {
+        if (parentJoinTableInfo != lastJoinTableInfo && StringUtils.isNotBlank(parentJoinTableInfo.getAlias())) {
             if (parentJoinTableInfo.getAlias().equals(lastJoinTableInfo.getAlias())) {
                 throw new MybatisExtException("Duplicate table alias: " + parentJoinTableInfo.getAlias());
             }
@@ -531,7 +545,7 @@ public class TableInfoFactory {
         for (JoinRelation joinRelation : joinRelations) {
             JoinTableInfo joinTableInfo;
             TableInfo tableInfo = resolveTableInfoFromJoinRelation(configuration, propertyInfo, joinRelation);
-            if (!joinRelation.tableAlias().isEmpty()) {
+            if (StringUtils.isNotBlank(joinRelation.tableAlias())) {
                 joinTableInfo = aliasToJoinTableInfo.get(joinRelation.tableAlias());
                 if (joinTableInfo != null) {
                     if (joinTableInfo.getTableInfo() != null) {
@@ -553,7 +567,7 @@ public class TableInfoFactory {
                 joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
                 joinColumnInfo.setRightColumn(joinColumn.rightColumn());
 
-                if (!joinColumn.leftTableAlias().isEmpty()) {
+                if (StringUtils.isNotBlank(joinColumn.leftTableAlias())) {
                     JoinTableInfo leftJoinTableInfo = aliasToJoinTableInfo.get(joinColumn.leftTableAlias());
                     if (leftJoinTableInfo != null) {
                         leftJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, joinTableInfo);
@@ -692,7 +706,7 @@ public class TableInfoFactory {
         dest.setFilterSpecInfo(origin.getFilterSpecInfo());
     }
 
-    private static @Nullable FilterSpecInfo buildFilterSpecInfo(@Nullable FilterSpec filterSpec) {
+    private static FilterSpecInfo buildFilterSpecInfo(@Nullable FilterSpec filterSpec) {
         if (filterSpec == null) {
             return null;
         }

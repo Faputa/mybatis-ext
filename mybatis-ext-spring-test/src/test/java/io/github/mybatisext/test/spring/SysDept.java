@@ -58,7 +58,7 @@ public class SysDept extends BaseEntity {
     private String delFlag;
 
     /** 父部门名称 */
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parent_id", rightColumn = "dept_id"), table = SysDept.class, column = "dept_name")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parentId", rightColumn = "deptId"), table = SysDept.class, column = "deptName")
     private String parentName;
 
     public Long getDeptId() {

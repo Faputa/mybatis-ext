@@ -10,6 +10,7 @@ import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.util.ImmutablePair;
 
 public class NestedSelectHelper {
 
@@ -24,17 +25,26 @@ public class NestedSelectHelper {
     }
 
     public static String buildResultMappingColumn(NestedSelect nestedSelect) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo());
         List<String> ss = new ArrayList<>();
+        List<ImmutablePair<PropertyInfo, PropertyInfo>> immutablePairs = buildLeftmostJoinColumns(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo());
+        for (ImmutablePair<PropertyInfo, PropertyInfo> immutablePair : immutablePairs) {
+            ss.add(immutablePair.getRight().getFullName() + "=" + immutablePair.getLeft().getFullName());
+        }
+        return "{" + String.join(",", ss) + "}";
+    }
+
+    public static List<ImmutablePair<PropertyInfo, PropertyInfo>> buildLeftmostJoinColumns(TableInfo tableInfo, PropertyInfo propertyInfo) {
+        List<ImmutablePair<PropertyInfo, PropertyInfo>> immutablePairs = new ArrayList<>();
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, propertyInfo);
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
-                if (leftJoinTableInfo.getTableInfo() == nestedSelect.getTableInfo()) {
-                    ss.add(joinColumnInfo.getLeftColumn() + "=" + joinColumnInfo.getLeftColumn());
+                if (leftJoinTableInfo.getTableInfo() == tableInfo) {
+                    immutablePairs.add(new ImmutablePair<>(joinColumnInfo.getLeftPropertyInfo(), joinColumnInfo.getRightPropertyInfo()));
                 }
             });
         }
-        return "{" + String.join(",", ss) + "}";
+        return immutablePairs;
     }
 
     public static String buildNestedSelectScript(NestedSelect nestedSelect, Dialect dialect) {
@@ -62,9 +72,9 @@ public class NestedSelectHelper {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
                 if (leftJoinTableInfo.getTableInfo() == tableInfo) {
-                    conditions.add("#{" + joinColumnInfo.getLeftColumn() + "} = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn());
+                    conditions.add("#{" + joinColumnInfo.getRightPropertyInfo().getFullName() + "} = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getLeftPropertyInfo().getColumnName());
                 } else {
-                    conditions.add(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn());
+                    conditions.add(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftPropertyInfo().getColumnName() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightPropertyInfo().getColumnName());
                 }
             });
         }

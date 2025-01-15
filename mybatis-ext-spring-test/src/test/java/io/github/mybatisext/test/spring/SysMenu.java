@@ -35,7 +35,7 @@ public class SysMenu extends BaseEntity {
 
     /** 父菜单名称 */
     @FilterSpec(operator = CompareOperator.Like)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parent_id", rightColumn = "menu_id"), table = SysMenu.class, column = "menu_name")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parentId", rightColumn = "menuId"), table = SysMenu.class, column = "menuName")
     private String parentName;
 
     /** 父菜单ID */
@@ -76,7 +76,7 @@ public class SysMenu extends BaseEntity {
 
     /** 子菜单 */
     @LoadStrategy(LoadType.FETCH_EAGER)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "menu_id", rightColumn = "parent_id"))
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "menuId", rightColumn = "parentId"))
     private List<SysMenu> children = new ArrayList<SysMenu>();
 
     public Long getMenuId() {
