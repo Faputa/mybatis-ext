@@ -1,6 +1,7 @@
 package io.github.mybatisext.test.spring;
 
 import java.util.List;
+import java.util.Objects;
 
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.EmbedParent;
@@ -139,5 +140,37 @@ public class SysRole extends BaseEntity {
 
     public void setDeptIds(List<Long> deptIds) {
         this.deptIds = deptIds;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SysRole sysRole = (SysRole) o;
+        return Objects.equals(roleId, sysRole.roleId) && Objects.equals(roleName, sysRole.roleName) && Objects.equals(roleKey, sysRole.roleKey) && Objects.equals(roleSort, sysRole.roleSort) && Objects.equals(dataScope, sysRole.dataScope) && Objects.equals(status, sysRole.status) && Objects.equals(delFlag, sysRole.delFlag) && Objects.equals(menuIds, sysRole.menuIds) && Objects.equals(deptIds, sysRole.deptIds);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(roleId, roleName, roleKey, roleSort, dataScope, status, delFlag, menuIds, deptIds);
+    }
+
+    @Override
+    public String toString() {
+        return "SysRole{" +
+                "roleId=" + roleId +
+                ", roleName='" + roleName + '\'' +
+                ", roleKey='" + roleKey + '\'' +
+                ", roleSort='" + roleSort + '\'' +
+                ", dataScope='" + dataScope + '\'' +
+                ", status='" + status + '\'' +
+                ", delFlag='" + delFlag + '\'' +
+                ", menuIds=" + menuIds +
+                ", deptIds=" + deptIds +
+                '}';
     }
 }
