@@ -10,7 +10,7 @@ import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.Table;
 
 @Table
-@JoinParent(joinColumn = @JoinColumn(leftColumn = "connection_id", rightColumn = "id"))
+@JoinParent(joinColumn = @JoinColumn(leftColumn = "connectionId", rightColumn = "id"))
 // @EmbedParent
 public class MetadataTable extends MetadataConnection {
 
@@ -46,7 +46,7 @@ public class MetadataTable extends MetadataConnection {
     @Column
     private Timestamp updateTime;
 
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "connection_id", rightColumn = "id"), table = MetadataConnection.class, column = "name")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "connectionId", rightColumn = "id"), table = MetadataConnection.class, column = "name")
     private String dbName3;
 
     public String getId() {

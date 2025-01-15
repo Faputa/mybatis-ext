@@ -12,7 +12,7 @@ import io.github.mybatisext.annotation.JoinRelations;
 import io.github.mybatisext.annotation.Table;
 
 @Table(alias = "pt")
-@JoinParent(alias = "mt", joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"))
+@JoinParent(alias = "mt", joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"))
 public class PrivilegeTable extends MetadataTable {
 
     @Id(idType = IdType.UUID)
@@ -47,40 +47,40 @@ public class PrivilegeTable extends MetadataTable {
     // ========回显字段========
 
     // https://www.yuque.com/dontang/codewiki/sfydxf
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class)
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "connection_id", rightColumn = "id"), table = MetadataConnection.class, column = "name")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"), table = MetadataTable.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "connectionId", rightColumn = "id"), table = MetadataConnection.class, column = "name")
     private String dbName;
 
-    @JoinRelation(joinColumn = @JoinColumn(leftTableAlias = "mt", leftColumn = "connection_id", rightColumn = "id"), table = MetadataConnection.class, column = "name")
+    @JoinRelation(joinColumn = @JoinColumn(leftTableAlias = "mt", leftColumn = "connectionId", rightColumn = "id"), table = MetadataConnection.class, column = "name")
     private String dbName2;
 
     @JoinRelations({
-            @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class, column = "name")
+            @JoinRelation(joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"), table = MetadataTable.class, column = "name")
     })
     private String tableName;
 
-    @JoinRelation(joinColumn = @JoinColumn(leftTableAlias = "pt", leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftTableAlias = "pt", leftColumn = "tableId", rightColumn = "id"), table = MetadataTable.class)
     private String connectionId;
 
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"), table = MetadataTable.class)
     private String schemaName;
 
     @JoinRelation(joinColumn = {
-            @JoinColumn(leftColumn = "table_id", rightColumn = "table_id"),
-            @JoinColumn(leftColumn = "user_id", rightColumn = "user_id")
+            @JoinColumn(leftColumn = "tableId", rightColumn = "tableId"),
+            @JoinColumn(leftColumn = "userId", rightColumn = "userId")
     })
     private List<PrivilegeRowField> rowPrivilegeFields;
 
     @JoinRelation(joinColumn = {
-            @JoinColumn(leftColumn = "table_id", rightColumn = "table_id"),
-            @JoinColumn(leftColumn = "user_id", rightColumn = "user_id")
+            @JoinColumn(leftColumn = "tableId", rightColumn = "tableId"),
+            @JoinColumn(leftColumn = "userId", rightColumn = "userId")
     })
     private List<PrivilegeRowField> rowPrivilegeFields2;
 
-    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "table_id", rightColumn = "id"), table = MetadataTable.class, tableAlias = "a")
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"), table = MetadataTable.class, tableAlias = "a")
     @JoinRelation(joinColumn = {
-            @JoinColumn(leftTableAlias = "a", leftColumn = "id", rightColumn = "table_id"),
-            @JoinColumn(leftColumn = "user_id", rightColumn = "user_id")
+            @JoinColumn(leftTableAlias = "a", leftColumn = "id", rightColumn = "tableId"),
+            @JoinColumn(leftColumn = "userId", rightColumn = "userId")
     })
     private List<PrivilegeColField> colPrivilegeFields;
 
