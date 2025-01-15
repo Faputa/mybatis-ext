@@ -73,23 +73,14 @@ public class H2Dialect extends BaseDialect {
 
     @Override
     public String delete(TableInfo tableInfo, Variable parameter, Condition where) {
-        List<String> ss = new ArrayList<>();
-        if (Collection.class.isAssignableFrom(parameter.getJavaType().getType())) {
-            Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeArgumentResolver.resolveGenericType(parameter.getJavaType(), Collection.class, 0));
-            ss.add("<foreach collection=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
-            ss.add(delete(tableInfo, itemVariable, where));
-            ss.add("</foreach>");
-            return String.join(" ", ss);
-        }
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
-        if (joinTableInfos.size() == 1) {
-            return buildSimpleDelete(tableInfo, buildWhere(where));
-        }
-        ss.add("DELETE FROM");
-        ss.add(tableInfo.getName());
-        ss.add(tableInfo.getJoinTableInfo().getAlias());
-        ss.add(buildWhereExistsJoin(joinTableInfos, where));
-        return String.join(" ", ss);
+        return buildDelete(
+                tableInfo,
+                parameter,
+                where,
+                joinTableInfos,
+                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                joinTableInfos.size() > 1);
     }
 
     @Override
@@ -104,23 +95,74 @@ public class H2Dialect extends BaseDialect {
     @Override
     public String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull) {
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
+        return buildUpdate(
+                tableInfo,
+                parameter,
+                where,
+                ignoreNull,
+                joinTableInfos,
+                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                joinTableInfos.size() > 1);
+    }
+
+    private String buildDelete(TableInfo tableInfo, Variable parameter, Condition where, List<JoinTableInfo> joinTableInfos, boolean batch, boolean join) {
         List<String> ss = new ArrayList<>();
-        if (Collection.class.isAssignableFrom(parameter.getJavaType().getType())) {
+        if (batch) {
             Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeArgumentResolver.resolveGenericType(parameter.getJavaType(), Collection.class, 0));
             ss.add("<foreach collection=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
-            ss.add(update(tableInfo, itemVariable, where, ignoreNull));
+            ss.add(buildDelete(tableInfo, itemVariable, where, joinTableInfos, false, join));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
-        if (joinTableInfos.size() == 1) {
-            return buildSimpleUpdate(tableInfo, parameter, ignoreNull, buildWhere(where));
+        if (join) {
+            ss.add("DELETE FROM");
+            ss.add(tableInfo.getName());
+            ss.add(tableInfo.getJoinTableInfo().getAlias());
+            ss.add(buildWhereExistsJoin(joinTableInfos, where));
+            return String.join(" ", ss);
         }
-        ss.add("UPDATE");
-        ss.add(tableInfo.getName());
-        ss.add(tableInfo.getJoinTableInfo().getAlias());
-        ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, parameter, ignoreNull));
-        ss.add(buildWhereExistsJoin(joinTableInfos, where));
-        return String.join(" ", ss);
+        return buildSimpleDelete(tableInfo, buildWhere(where));
+    }
+
+    private String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
+        List<String> ss = new ArrayList<>();
+        if (batch) {
+            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
+            if (ignoreNull) {
+                ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
+                ss.add(buildInsert(tableInfo, itemVariable, false, true));
+                ss.add("</foreach>");
+                return String.join(" ", ss);
+            }
+            ss.add("INSERT INTO " + tableInfo.getName());
+            ss.add(buildInsertItems(tableInfo, itemVariable, false));
+            ss.add("VALUES");
+            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
+            ss.add(buildInsertValues(tableInfo, itemVariable, false));
+            ss.add("</foreach>");
+            return String.join(" ", ss);
+        }
+        return buildSimpleInsert(tableInfo, variable, ignoreNull);
+    }
+
+    private String buildUpdate(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull, List<JoinTableInfo> joinTableInfos, boolean batch, boolean join) {
+        List<String> ss = new ArrayList<>();
+        if (batch) {
+            Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeArgumentResolver.resolveGenericType(parameter.getJavaType(), Collection.class, 0));
+            ss.add("<foreach collection=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
+            ss.add(buildUpdate(tableInfo, itemVariable, where, ignoreNull, joinTableInfos, false, join));
+            ss.add("</foreach>");
+            return String.join(" ", ss);
+        }
+        if (join) {
+            ss.add("UPDATE");
+            ss.add(tableInfo.getName());
+            ss.add(tableInfo.getJoinTableInfo().getAlias());
+            ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, parameter, ignoreNull));
+            ss.add(buildWhereExistsJoin(joinTableInfos, where));
+            return String.join(" ", ss);
+        }
+        return buildSimpleUpdate(tableInfo, parameter, ignoreNull, buildWhere(where));
     }
 
     private String buildWhereExistsJoin(List<JoinTableInfo> joinTableInfos, Condition where) {
@@ -145,21 +187,6 @@ public class H2Dialect extends BaseDialect {
         return String.join(" ", ss);
     }
 
-    @Override
-    public String upper(String expr) {
-        return "UPPER(" + expr + ")";
-    }
-
-    @Override
-    public String isTrue() {
-        return "IS TRUE";
-    }
-
-    @Override
-    public String isFalse() {
-        return "IS NOT TRUE";
-    }
-
     private String buildLimit(Limit limit, String select) {
         List<String> ss = new ArrayList<>();
         ss.add(select);
@@ -175,25 +202,19 @@ public class H2Dialect extends BaseDialect {
         return String.join(" ", ss);
     }
 
-    private String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
-        List<String> ss = new ArrayList<>();
-        if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
-            if (ignoreNull) {
-                ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
-                ss.add(buildInsert(tableInfo, itemVariable, false, true));
-                ss.add("</foreach>");
-                return String.join(" ", ss);
-            }
-            ss.add("INSERT INTO " + tableInfo.getName());
-            ss.add(buildInsertItems(tableInfo, itemVariable, false));
-            ss.add("VALUES");
-            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
-            ss.add(buildInsertValues(tableInfo, itemVariable, false));
-            ss.add("</foreach>");
-            return String.join(" ", ss);
-        }
-        return buildSimpleInsert(tableInfo, variable, ignoreNull);
+    @Override
+    public String upper(String expr) {
+        return "UPPER(" + expr + ")";
+    }
+
+    @Override
+    public String isTrue() {
+        return "IS TRUE";
+    }
+
+    @Override
+    public String isFalse() {
+        return "IS NOT TRUE";
     }
 
     @Override
