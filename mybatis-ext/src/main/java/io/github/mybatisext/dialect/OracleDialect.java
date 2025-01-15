@@ -17,7 +17,7 @@ public class OracleDialect extends BaseSimpleDialect {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
-            ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
+            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
             ss.add(buildInsert(tableInfo, itemVariable, false, ignoreNull));
             ss.add("</foreach>");
             return String.join(" ", ss);
@@ -30,7 +30,7 @@ public class OracleDialect extends BaseSimpleDialect {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
-            ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
+            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
             ss.add(buildUpdate(tableInfo, itemVariable, false, ignoreNull, join, tableAndJoin, where));
             ss.add("</foreach>");
             return String.join(" ", ss);
@@ -55,7 +55,7 @@ public class OracleDialect extends BaseSimpleDialect {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
-            ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
+            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
             ss.add(buildDelete(tableInfo, itemVariable, false, join, tableAndJoin, where));
             ss.add("</foreach>");
             return String.join(" ", ss);

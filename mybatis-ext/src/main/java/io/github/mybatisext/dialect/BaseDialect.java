@@ -176,7 +176,7 @@ public abstract class BaseDialect implements Dialect {
             Map.Entry<PropertyInfo, Variable> entry = iterator.next();
             PropertyInfo propertyInfo = entry.getKey();
             Variable variable = entry.getValue();
-            String updateItem = tableAlias + "." + propertyInfo.getColumnName() + " = #{" + propertyInfo + "}";
+            String updateItem = tableAlias + "." + propertyInfo.getColumnName() + " = #{" + variable + "}";
             if (iterator.hasNext()) {
                 updateItem += ",";
             }

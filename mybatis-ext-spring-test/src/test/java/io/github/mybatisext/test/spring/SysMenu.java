@@ -2,6 +2,7 @@ package io.github.mybatisext.test.spring;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.EmbedParent;
@@ -181,5 +182,41 @@ public class SysMenu extends BaseEntity {
 
     public void setChildren(List<SysMenu> children) {
         this.children = children;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SysMenu sysMenu = (SysMenu) o;
+        return Objects.equals(menuId, sysMenu.menuId) && Objects.equals(menuName, sysMenu.menuName) && Objects.equals(parentName, sysMenu.parentName) && Objects.equals(parentId, sysMenu.parentId) && Objects.equals(orderNum, sysMenu.orderNum) && Objects.equals(url, sysMenu.url) && Objects.equals(target, sysMenu.target) && Objects.equals(menuType, sysMenu.menuType) && Objects.equals(visible, sysMenu.visible) && Objects.equals(isRefresh, sysMenu.isRefresh) && Objects.equals(perms, sysMenu.perms) && Objects.equals(icon, sysMenu.icon) && Objects.equals(children, sysMenu.children);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(menuId, menuName, parentName, parentId, orderNum, url, target, menuType, visible, isRefresh, perms, icon, children);
+    }
+
+    @Override
+    public String toString() {
+        return "SysMenu{" +
+                "menuId=" + menuId +
+                ", menuName='" + menuName + '\'' +
+                ", parentName='" + parentName + '\'' +
+                ", parentId=" + parentId +
+                ", orderNum='" + orderNum + '\'' +
+                ", url='" + url + '\'' +
+                ", target='" + target + '\'' +
+                ", menuType='" + menuType + '\'' +
+                ", visible='" + visible + '\'' +
+                ", isRefresh='" + isRefresh + '\'' +
+                ", perms='" + perms + '\'' +
+                ", icon='" + icon + '\'' +
+                ", children=" + children +
+                '}';
     }
 }
