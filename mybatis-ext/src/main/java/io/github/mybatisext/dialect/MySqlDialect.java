@@ -17,7 +17,7 @@ public class MySqlDialect extends BaseSimpleDialect {
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             if (ignoreNull) {
-                ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
+                ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
                 ss.add(buildInsert(tableInfo, itemVariable, false, true));
                 ss.add("</foreach>");
                 return String.join(" ", ss);
@@ -25,7 +25,7 @@ public class MySqlDialect extends BaseSimpleDialect {
             ss.add("INSERT INTO " + tableInfo.getName());
             ss.add(buildInsertItems(tableInfo, itemVariable, false));
             ss.add("VALUES");
-            ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
+            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
             ss.add(buildInsertValues(tableInfo, itemVariable, false));
             ss.add("</foreach>");
             return String.join(" ", ss);
@@ -38,7 +38,7 @@ public class MySqlDialect extends BaseSimpleDialect {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
-            ss.add("<foreach Iterable=\"" + variable + "\" item=\"" + "__" + variable.getName() + "__item\" open=\"begin\" close=\"; end;\" separator=\";\">");
+            ss.add("<foreach collection=\"" + variable + "\" item=\"" + "__" + variable.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
             ss.add(buildUpdate(tableInfo, itemVariable, false, ignoreNull, join, tableAndJoin, where));
             ss.add("</foreach>");
             return String.join(" ", ss);
@@ -51,7 +51,7 @@ public class MySqlDialect extends BaseSimpleDialect {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
-            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
+            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
             ss.add(buildDelete(tableInfo, itemVariable, false, join, tableAndJoin, where));
             ss.add("</foreach>");
             return String.join(" ", ss);

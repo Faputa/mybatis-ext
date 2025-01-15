@@ -2,6 +2,7 @@ package io.github.mybatisext.test.spring;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.EmbedParent;
@@ -289,5 +290,49 @@ public class SysUser extends BaseEntity {
 
     public void setPostIds(List<Long> postIds) {
         this.postIds = postIds;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SysUser sysUser = (SysUser) o;
+        return Objects.equals(userId, sysUser.userId) && Objects.equals(deptId, sysUser.deptId) && Objects.equals(parentId, sysUser.parentId) && Objects.equals(loginName, sysUser.loginName) && Objects.equals(userName, sysUser.userName) && Objects.equals(userType, sysUser.userType) && Objects.equals(email, sysUser.email) && Objects.equals(phonenumber, sysUser.phonenumber) && Objects.equals(sex, sysUser.sex) && Objects.equals(avatar, sysUser.avatar) && Objects.equals(password, sysUser.password) && Objects.equals(salt, sysUser.salt) && Objects.equals(status, sysUser.status) && Objects.equals(delFlag, sysUser.delFlag) && Objects.equals(loginIp, sysUser.loginIp) && Objects.equals(loginDate, sysUser.loginDate) && Objects.equals(pwdUpdateDate, sysUser.pwdUpdateDate) && Objects.equals(dept, sysUser.dept) && Objects.equals(roles, sysUser.roles) && Objects.equals(roleIds, sysUser.roleIds) && Objects.equals(postIds, sysUser.postIds);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId, deptId, parentId, loginName, userName, userType, email, phonenumber, sex, avatar, password, salt, status, delFlag, loginIp, loginDate, pwdUpdateDate, dept, roles, roleIds, postIds);
+    }
+
+    @Override
+    public String toString() {
+        return "SysUser{" +
+                "userId=" + userId +
+                ", deptId=" + deptId +
+                ", parentId=" + parentId +
+                ", loginName='" + loginName + '\'' +
+                ", userName='" + userName + '\'' +
+                ", userType='" + userType + '\'' +
+                ", email='" + email + '\'' +
+                ", phonenumber='" + phonenumber + '\'' +
+                ", sex='" + sex + '\'' +
+                ", avatar='" + avatar + '\'' +
+                ", password='" + password + '\'' +
+                ", salt='" + salt + '\'' +
+                ", status='" + status + '\'' +
+                ", delFlag='" + delFlag + '\'' +
+                ", loginIp='" + loginIp + '\'' +
+                ", loginDate=" + loginDate +
+                ", pwdUpdateDate=" + pwdUpdateDate +
+                ", dept=" + dept +
+                ", roles=" + roles +
+                ", roleIds=" + roleIds +
+                ", postIds=" + postIds +
+                '}';
     }
 }

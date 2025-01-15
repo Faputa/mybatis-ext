@@ -1,5 +1,7 @@
 package io.github.mybatisext.test.spring;
 
+import java.util.Objects;
+
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.EmbedParent;
 import io.github.mybatisext.annotation.Id;
@@ -147,5 +149,39 @@ public class SysDept extends BaseEntity {
 
     public void setParentName(String parentName) {
         this.parentName = parentName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SysDept sysDept = (SysDept) o;
+        return Objects.equals(deptId, sysDept.deptId) && Objects.equals(parentId, sysDept.parentId) && Objects.equals(ancestors, sysDept.ancestors) && Objects.equals(deptName, sysDept.deptName) && Objects.equals(orderNum, sysDept.orderNum) && Objects.equals(leader, sysDept.leader) && Objects.equals(phone, sysDept.phone) && Objects.equals(email, sysDept.email) && Objects.equals(status, sysDept.status) && Objects.equals(delFlag, sysDept.delFlag) && Objects.equals(parentName, sysDept.parentName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(deptId, parentId, ancestors, deptName, orderNum, leader, phone, email, status, delFlag, parentName);
+    }
+
+    @Override
+    public String toString() {
+        return "SysDept{" +
+                "deptId=" + deptId +
+                ", parentId=" + parentId +
+                ", ancestors='" + ancestors + '\'' +
+                ", deptName='" + deptName + '\'' +
+                ", orderNum=" + orderNum +
+                ", leader='" + leader + '\'' +
+                ", phone='" + phone + '\'' +
+                ", email='" + email + '\'' +
+                ", status='" + status + '\'' +
+                ", delFlag='" + delFlag + '\'' +
+                ", parentName='" + parentName + '\'' +
+                '}';
     }
 }

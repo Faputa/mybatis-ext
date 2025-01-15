@@ -1,5 +1,7 @@
 package io.github.mybatisext.test.spring;
 
+import java.util.Objects;
+
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.EmbedParent;
 import io.github.mybatisext.annotation.Id;
@@ -73,5 +75,33 @@ public class SysPost extends BaseEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SysPost sysPost = (SysPost) o;
+        return Objects.equals(postId, sysPost.postId) && Objects.equals(postCode, sysPost.postCode) && Objects.equals(postName, sysPost.postName) && Objects.equals(postSort, sysPost.postSort) && Objects.equals(status, sysPost.status);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(postId, postCode, postName, postSort, status);
+    }
+
+    @Override
+    public String toString() {
+        return "SysPost{" +
+                "postId=" + postId +
+                ", postCode='" + postCode + '\'' +
+                ", postName='" + postName + '\'' +
+                ", postSort='" + postSort + '\'' +
+                ", status='" + status + '\'' +
+                '}';
     }
 }
