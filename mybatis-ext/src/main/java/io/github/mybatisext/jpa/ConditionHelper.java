@@ -121,6 +121,9 @@ public class ConditionHelper {
             condition.setCompareOperator(propertyInfo.getFilterSpecInfo().getOperator());
             condition.setLogicalOperator(propertyInfo.getFilterSpecInfo().getLogicalOperator());
             condition.setTestTemplate(propertyInfo.getFilterSpecInfo().getExprTemplate());
+            if (propertyInfo.getResultType() == ResultType.COLLECTION && (condition.getTest() == IfTest.None || condition.getTest() == IfTest.NotNull)) {
+                condition.setTest(IfTest.NotEmpty);
+            }
             if (condition.getCompareOperator() == CompareOperator.Between) {
                 PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, propertyInfo.getFilterSpecInfo().getSecondVariable());
                 if (secondPropertyInfo == null) {
