@@ -72,7 +72,7 @@ public class ResultMapHelper {
     private ResultMapping buildResultMapping(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean changeConfiguration) {
         if (propertyInfo.getResultType() == ResultType.ID) {
             return new ResultMapping.Builder(configuration, propertyInfo.getName())
-                    .column(propertyInfo.getName())
+                    .column(propertyInfo.getFullName())
                     .javaType(propertyInfo.getJavaType().getType())
                     .jdbcType(propertyInfo.getJdbcType())
                     .flags(Collections.singletonList(ResultFlag.ID))
@@ -80,7 +80,7 @@ public class ResultMapHelper {
         }
         if (propertyInfo.getResultType() == ResultType.RESULT) {
             return new ResultMapping.Builder(configuration, propertyInfo.getName())
-                    .column(propertyInfo.getName())
+                    .column(propertyInfo.getFullName())
                     .javaType(propertyInfo.getJavaType().getType())
                     .jdbcType(propertyInfo.getJdbcType())
                     .build();

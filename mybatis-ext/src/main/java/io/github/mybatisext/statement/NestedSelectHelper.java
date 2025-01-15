@@ -5,14 +5,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.ibatis.session.Configuration;
-
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
-import io.github.mybatisext.metadata.TableInfoFactory;
 
 public class NestedSelectHelper {
 
@@ -82,9 +79,8 @@ public class NestedSelectHelper {
 
     private static String buildSelectItems(PropertyInfo propertyInfo, Dialect dialect) {
         List<String> selectItems = new ArrayList<>();
-        JoinTableInfo joinTableInfo = propertyInfo.getJoinTableInfo();
         if (propertyInfo.getColumnName() != null) {
-            selectItems.add(joinTableInfo.getAlias() + "." + propertyInfo.getColumnName() + " AS " + dialect.quote(propertyInfo.getName()));
+            selectItems.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " AS " + dialect.quote(propertyInfo.getFullName()));
         }
         for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
             if (!subPropertyInfo.isReadonly()) {
@@ -96,30 +92,5 @@ public class NestedSelectHelper {
 
     public static String toString(NestedSelect nestedSelect) {
         return NestedSelect.PREFIX + nestedSelect.getTableInfo().getTableClass().getName() + "|" + nestedSelect.getPropertyInfo().getName();
-    }
-
-    public static NestedSelect fromString(Configuration configuration, String s) {
-        if (!s.startsWith(NestedSelect.PREFIX)) {
-            throw new MybatisExtException("String does not start with required prefix: " + NestedSelect.PREFIX);
-        }
-        s = s.substring(NestedSelect.PREFIX.length());
-        String[] ss = s.split("\\|");
-        if (ss.length != 2) {
-            throw new MybatisExtException("Expected exactly two parts separated by '|'.");
-        }
-        try {
-            NestedSelect nestedSelect = new NestedSelect();
-            Class<?> tableClass = Class.forName(ss[0]);
-            TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, tableClass);
-            PropertyInfo propertyInfo = tableInfo.getNameToPropertyInfo().get(ss[1]);
-            if (propertyInfo == null) {
-                throw new MybatisExtException("Property '" + ss[1] + "' not found in tableClass " + ss[0] + ".");
-            }
-            nestedSelect.setTableInfo(tableInfo);
-            nestedSelect.setPropertyInfo(propertyInfo);
-            return nestedSelect;
-        } catch (ClassNotFoundException e) {
-            throw new MybatisExtException(e);
-        }
     }
 }
