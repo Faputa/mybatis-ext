@@ -176,7 +176,7 @@ public class H2Dialect extends BaseDialect {
             tables.add(joinTableInfo.getTableInfo() + " " + joinTableInfo.getAlias());
             joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
                 Condition condition = new Condition(ConditionType.BASIC);
-                condition.setExprTemplate(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftPropertyInfo().getColumnName() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightPropertyInfo().getColumnName());
+                condition.setExprTemplate(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName());
                 conditions.add(condition);
             });
         }

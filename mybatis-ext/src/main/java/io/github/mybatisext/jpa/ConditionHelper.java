@@ -117,7 +117,7 @@ public class ConditionHelper {
             if (condition.getCompareOperator() == CompareOperator.Between) {
                 PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, propertyInfo.getFilterSpecInfo().getSecondVariable());
                 if (secondPropertyInfo == null) {
-                    throw new MybatisExtException("Second variable '" + propertyInfo.getFilterSpecInfo().getSecondVariable() + "' not found in table '" + tableInfo + "'");
+                    throw new MybatisExtException("Second variable '" + propertyInfo.getFilterSpecInfo().getSecondVariable() + "' not found in tableClass '" + tableInfo.getTableClass() + "'");
                 }
                 condition.setSecondVariable(new Variable(prefix, propertyInfo.getFilterSpecInfo().getSecondVariable(), secondPropertyInfo.getJavaType()));
             }
