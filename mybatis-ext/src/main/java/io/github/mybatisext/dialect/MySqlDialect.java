@@ -35,12 +35,12 @@ public class MySqlDialect extends BaseSimpleDialect {
     }
 
     @Override
-    public String buildUpdate(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull, boolean join, String tableAndJoin, String where) {
+    public String buildUpdate(TableInfo tableInfo, Variable variable, String tableAndJoin, String where, boolean batch, boolean join, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + "__" + variable.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
-            ss.add(buildUpdate(tableInfo, itemVariable, false, ignoreNull, join, tableAndJoin, where));
+            ss.add(buildUpdate(tableInfo, itemVariable, tableAndJoin, where, false, join, ignoreNull));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -57,12 +57,12 @@ public class MySqlDialect extends BaseSimpleDialect {
     }
 
     @Override
-    public String buildDelete(TableInfo tableInfo, Variable variable, boolean batch, boolean join, String tableAndJoin, String where) {
+    public String buildDelete(TableInfo tableInfo, Variable variable, String tableAndJoin, String where, boolean batch, boolean join) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
-            ss.add(buildDelete(tableInfo, itemVariable, false, join, tableAndJoin, where));
+            ss.add(buildDelete(tableInfo, itemVariable, tableAndJoin, where, false, join));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
