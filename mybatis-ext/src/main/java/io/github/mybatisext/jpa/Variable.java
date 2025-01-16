@@ -9,7 +9,7 @@ import io.github.mybatisext.util.StringUtils;
 public class Variable extends HashMap<String, Variable> {
 
     private final String name;
-    private final String fullName;
+    private final String prefix;
     private final GenericType javaType;
 
     public Variable(String name, GenericType javaType) {
@@ -18,7 +18,7 @@ public class Variable extends HashMap<String, Variable> {
 
     public Variable(String prefix, String name, GenericType javaType) {
         this.name = name;
-        this.fullName = StringUtils.isNotBlank(prefix) ? prefix + "." + name : name;
+        this.prefix = prefix;
         this.javaType = javaType;
     }
 
@@ -27,7 +27,7 @@ public class Variable extends HashMap<String, Variable> {
     }
 
     public String getFullName() {
-        return fullName;
+        return StringUtils.isNotBlank(prefix) ? prefix + "." + name : name;
     }
 
     public GenericType getJavaType() {
@@ -43,16 +43,16 @@ public class Variable extends HashMap<String, Variable> {
             return false;
         }
         Variable variable = (Variable) o;
-        return Objects.equals(name, variable.name) && Objects.equals(fullName, variable.fullName) && Objects.equals(javaType, variable.javaType);
+        return Objects.equals(name, variable.name) && Objects.equals(prefix, variable.prefix) && Objects.equals(javaType, variable.javaType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, fullName, javaType);
+        return Objects.hash(name, prefix, javaType);
     }
 
     @Override
     public String toString() {
-        return fullName;
+        return getFullName();
     }
 }

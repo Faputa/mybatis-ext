@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.github.mybatisext.exception.MybatisExtException;
+
 public class GenericTypeFactory {
 
     private static final Map<Type, GenericType> tableInfoCache = new ConcurrentHashMap<>();
@@ -36,7 +38,7 @@ public class GenericTypeFactory {
             GenericArrayType genericArrayType = (GenericArrayType) type;
             return new GenericType(build(genericArrayType.getGenericComponentType(), typeMap));
         }
-        return null;
+        throw new MybatisExtException("Unsupported Type: '" + type.getClass().getName() + "'.");
     }
 
     private static void mapTypeVariables(Map<TypeVariable<?>, Type> typeMap, Class<?> rawType, Type[] actualTypeArguments) {

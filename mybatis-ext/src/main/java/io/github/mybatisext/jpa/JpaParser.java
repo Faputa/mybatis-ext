@@ -409,11 +409,11 @@ public class JpaParser extends BaseParser {
         TableInfo tableInfo = jpaTokenizer.getTableInfo();
         Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
         for (PropertyInfo propertyInfo : propertyInfos) {
-            nameToPropertyInfo.put(propertyInfo.getName(), propertyInfo);
+            nameToPropertyInfo.put(propertyInfo.getFullName(), propertyInfo);
             if (propertyInfo.getLoadType() != null && propertyInfo.getLoadType() != LoadType.JOIN) {
                 List<ImmutablePair<PropertyInfo, PropertyInfo>> immutablePairs = NestedSelectHelper.buildLeftmostJoinColumns(tableInfo, propertyInfo);
                 for (ImmutablePair<PropertyInfo, PropertyInfo> immutablePair : immutablePairs) {
-                    nameToPropertyInfo.put(immutablePair.getLeft().getName(), immutablePair.getLeft());
+                    nameToPropertyInfo.put(immutablePair.getLeft().getFullName(), immutablePair.getLeft());
                 }
             }
         }
