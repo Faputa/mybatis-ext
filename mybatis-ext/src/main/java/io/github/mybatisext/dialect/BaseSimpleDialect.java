@@ -14,11 +14,11 @@ import io.github.mybatisext.metadata.TableInfo;
 
 public abstract class BaseSimpleDialect extends BaseDialect {
 
-    protected abstract String buildUpdate(TableInfo tableInfo, Variable parameter, boolean batch, boolean ignoreNull, boolean join, String tableAndJoin, String where);
+    protected abstract String buildUpdate(TableInfo tableInfo, Variable parameter, String tableAndJoin, String where, boolean batch, boolean join, boolean ignoreNull);
+
+    protected abstract String buildDelete(TableInfo tableInfo, Variable parameter, String tableAndJoin, String where, boolean batch, boolean join);
 
     protected abstract String buildInsert(TableInfo tableInfo, Variable parameter, boolean batch, boolean ignoreNull);
-
-    protected abstract String buildDelete(TableInfo tableInfo, Variable parameter, boolean batch, boolean join, String tableAndJoin, String where);
 
     protected abstract String buildLimit(Limit limit, String select);
 
@@ -32,20 +32,10 @@ public abstract class BaseSimpleDialect extends BaseDialect {
         return buildUpdate(
                 tableInfo,
                 parameter,
-                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
-                ignoreNull,
-                joinTableInfos.size() > 1,
                 tableAndJoin,
-                whereSql);
-    }
-
-    @Override
-    public String insert(TableInfo tableInfo, Variable parameter, boolean ignoreNull) {
-        return buildInsert(
-                tableInfo,
-                parameter,
+                whereSql,
                 Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
-                ignoreNull);
+                joinTableInfos.size() > 1, ignoreNull);
     }
 
     @Override
@@ -56,10 +46,19 @@ public abstract class BaseSimpleDialect extends BaseDialect {
         return buildDelete(
                 tableInfo,
                 parameter,
-                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
-                joinTableInfos.size() > 1,
                 tableAndJoin,
-                whereSql);
+                whereSql,
+                parameter != null && Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                joinTableInfos.size() > 1);
+    }
+
+    @Override
+    public String insert(TableInfo tableInfo, Variable parameter, boolean ignoreNull) {
+        return buildInsert(
+                tableInfo,
+                parameter,
+                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                ignoreNull);
     }
 
     @Override
