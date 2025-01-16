@@ -80,7 +80,7 @@ public class PrivilegeTable extends MetadataTable {
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"), table = MetadataTable.class, tableAlias = "a")
     @JoinRelation(joinColumn = {
             @JoinColumn(leftTableAlias = "a", leftColumn = "id", rightColumn = "tableId"),
-            @JoinColumn(leftColumn = "userId", rightColumn = "userId")
+            @JoinColumn(leftTableAlias = "pt", leftColumn = "userId", rightColumn = "userId")
     })
     private List<PrivilegeColField> colPrivilegeFields;
 

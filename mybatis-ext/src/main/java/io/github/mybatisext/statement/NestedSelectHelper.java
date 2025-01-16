@@ -40,7 +40,7 @@ public class NestedSelectHelper {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
                 if (leftJoinTableInfo.getTableInfo() == tableInfo) {
-                    immutablePairs.add(new ImmutablePair<>(joinColumnInfo.getLeftPropertyInfo(), joinColumnInfo.getRightPropertyInfo()));
+                    immutablePairs.add(new ImmutablePair<>(joinColumnInfo.getLeftColumn(), joinColumnInfo.getRightColumn()));
                 }
             });
         }
@@ -72,9 +72,9 @@ public class NestedSelectHelper {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
                 if (leftJoinTableInfo.getTableInfo() == tableInfo) {
-                    conditions.add("#{" + joinColumnInfo.getRightPropertyInfo().getFullName() + "} = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getLeftPropertyInfo().getColumnName());
+                    conditions.add("#{" + joinColumnInfo.getRightColumn().getFullName() + "} = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
                 } else {
-                    conditions.add(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftPropertyInfo().getColumnName() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightPropertyInfo().getColumnName());
+                    conditions.add(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName());
                 }
             });
         }

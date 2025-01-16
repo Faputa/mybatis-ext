@@ -217,7 +217,7 @@ public class TableInfoFactory {
         Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo = new HashMap<>();
         processParentJoinRelations(configuration, tableClass, tableInfo, featureToJoinTableInfo);
         processProperty(configuration, tableClass, tableInfo, featureToJoinTableInfo, aliasCount);
-        resolveJoinRelationPropertyInfos(tableInfo.getAliasToJoinTableInfo());
+        replaceJoinColumnPlaceholder(tableInfo);
 
         aliasCount.set(0);
         String alias = joinTableInfo.getAlias();
@@ -229,19 +229,31 @@ public class TableInfoFactory {
         return tableInfo;
     }
 
-    private static void resolveJoinRelationPropertyInfos(Map<String, JoinTableInfo> aliasToJoinTableInfo) {
-        for (JoinTableInfo joinTableInfo : aliasToJoinTableInfo.values()) {
+    private static void replaceJoinColumnPlaceholder(TableInfo tableInfo) {
+        for (JoinTableInfo joinTableInfo : tableInfo.getAliasToJoinTableInfo().values()) {
             for (Map.Entry<JoinColumnInfo, JoinTableInfo> entry : joinTableInfo.getLeftJoinTableInfos().entrySet()) {
-                PropertyInfo leftPropertyInfo = deepGet(entry.getValue().getTableInfo(), entry.getKey().getLeftColumn());
-                if (leftPropertyInfo == null || !leftPropertyInfo.isOwnColumn() || StringUtils.isBlank(leftPropertyInfo.getColumnName())) {
-                    throw new MybatisExtException("Left column '" + entry.getKey().getLeftColumn() + "' not found in table '" + entry.getValue().getTableInfo() + "'.");
+                {
+                    PropertyInfo propertyInfo = deepGet(entry.getValue().getTableInfo(), entry.getKey().getLeftColumn().getFullName());
+                    if (propertyInfo == null || !propertyInfo.isOwnColumn() || StringUtils.isBlank(propertyInfo.getColumnName())) {
+                        throw new MybatisExtException("Column property '" + entry.getKey().getLeftColumn().getFullName() + "': not found in '" + entry.getValue().getTableInfo().getTableClass() + "'.");
+                    }
+                    PropertyInfo leftColumn = new PropertyInfo(propertyInfo.getPrefix(), propertyInfo.getName());
+                    copyPropertyInfoProperties(leftColumn, propertyInfo);
+                    leftColumn.setJoinTableInfo(entry.getValue());
+                    leftColumn.setOwnColumn(entry.getValue().getTableInfo() == tableInfo);
+                    entry.getKey().setLeftColumn(leftColumn);
                 }
-                PropertyInfo rightPropertyInfo = deepGet(joinTableInfo.getTableInfo(), entry.getKey().getRightColumn());
-                if (rightPropertyInfo == null || !rightPropertyInfo.isOwnColumn() || StringUtils.isBlank(rightPropertyInfo.getColumnName())) {
-                    throw new MybatisExtException("Right column '" + entry.getKey().getRightColumn() + "' not found in table '" + joinTableInfo.getTableInfo() + "'.");
+                {
+                    PropertyInfo propertyInfo = deepGet(joinTableInfo.getTableInfo(), entry.getKey().getRightColumn().getFullName());
+                    if (propertyInfo == null || !propertyInfo.isOwnColumn() || StringUtils.isBlank(propertyInfo.getColumnName())) {
+                        throw new MybatisExtException("Column property '" + entry.getKey().getRightColumn().getFullName() + "': not found in '" + joinTableInfo.getTableInfo().getTableClass() + "'.");
+                    }
+                    PropertyInfo rightColumn = new PropertyInfo(propertyInfo.getPrefix(), propertyInfo.getName());
+                    copyPropertyInfoProperties(rightColumn, propertyInfo);
+                    rightColumn.setJoinTableInfo(entry.getValue());
+                    rightColumn.setOwnColumn(entry.getValue().getTableInfo() == tableInfo);
+                    entry.getKey().setRightColumn(rightColumn);
                 }
-                entry.getKey().setLeftPropertyInfo(leftPropertyInfo);
-                entry.getKey().setRightPropertyInfo(rightPropertyInfo);
             }
         }
     }
@@ -252,11 +264,11 @@ public class TableInfoFactory {
             JoinParent joinParent = tableClass.getAnnotation(JoinParent.class);
             for (JoinColumn joinColumn : joinParent.joinColumn()) {
                 JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
-                joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
-                joinColumnInfo.setRightColumn(joinColumn.rightColumn());
+                joinColumnInfo.setLeftColumn(new PropertyInfo(joinColumn.leftColumn()));
+                joinColumnInfo.setRightColumn(new PropertyInfo(joinColumn.rightColumn()));
                 tableInfo.getJoinTableInfo().getRightJoinTableInfos().put(joinColumnInfo, parentTableInfo.getJoinTableInfo());
             }
-            stripParentJoinRelations(tableInfo, featureToJoinTableInfo);
+            stripJoinRelations(tableInfo, featureToJoinTableInfo);
         } else {
             for (GenericType c = tableClass; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
                 if (!c.isAnnotationPresent(EmbedParent.class)) {
@@ -267,14 +279,14 @@ public class TableInfoFactory {
                     tableInfo.getJoinTableInfo().setAlias(parentTableInfo.getJoinTableInfo().getAlias());
                     tableInfo.getAliasToJoinTableInfo().put(parentTableInfo.getJoinTableInfo().getAlias(), tableInfo.getJoinTableInfo());
                     tableInfo.getJoinTableInfo().getRightJoinTableInfos().putAll(parentTableInfo.getJoinTableInfo().getRightJoinTableInfos());
-                    stripParentJoinRelations(tableInfo, featureToJoinTableInfo);
+                    stripJoinRelations(tableInfo, featureToJoinTableInfo);
                     break;
                 }
             }
         }
     }
 
-    private static void stripParentJoinRelations(TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
+    private static void stripJoinRelations(TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
         List<JoinTableInfo> queue = new ArrayList<>();
         queue.add(tableInfo.getJoinTableInfo());
         for (int i = 0; i < queue.size(); i++) {
@@ -480,7 +492,7 @@ public class TableInfoFactory {
                 String refName = StringUtils.isNotBlank(joinRelation.column()) ? joinRelation.column() : propertyName;
                 PropertyInfo refPropertyInfo = deepGet(propertyInfo.getJoinTableInfo().getTableInfo(), refName);
                 if (refPropertyInfo == null || !refPropertyInfo.isOwnColumn() || StringUtils.isBlank(refPropertyInfo.getColumnName())) {
-                    throw new MybatisExtException("null");
+                    throw new MybatisExtException("Column property '" + refName + "': not found in '" + propertyInfo.getJoinTableInfo().getTableInfo().getTableClass() + "'.");
                 }
                 propertyInfo.setColumnName(refPropertyInfo.getColumnName());
             }
@@ -519,8 +531,8 @@ public class TableInfoFactory {
 
             for (JoinColumn joinColumn : joinParent.joinColumn()) {
                 JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
-                joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
-                joinColumnInfo.setRightColumn(joinColumn.rightColumn());
+                joinColumnInfo.setLeftColumn(new PropertyInfo(joinColumn.leftColumn()));
+                joinColumnInfo.setRightColumn(new PropertyInfo(joinColumn.rightColumn()));
                 lastJoinTableInfo.getRightJoinTableInfos().put(joinColumnInfo, parentJoinTableInfo);
                 parentJoinTableInfo.getLeftJoinTableInfos().put(joinColumnInfo, lastJoinTableInfo);
             }
@@ -564,8 +576,8 @@ public class TableInfoFactory {
 
             for (JoinColumn joinColumn : joinRelation.joinColumn()) {
                 JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
-                joinColumnInfo.setLeftColumn(joinColumn.leftColumn());
-                joinColumnInfo.setRightColumn(joinColumn.rightColumn());
+                joinColumnInfo.setLeftColumn(new PropertyInfo(joinColumn.leftColumn()));
+                joinColumnInfo.setRightColumn(new PropertyInfo(joinColumn.rightColumn()));
 
                 if (StringUtils.isNotBlank(joinColumn.leftTableAlias())) {
                     JoinTableInfo leftJoinTableInfo = aliasToJoinTableInfo.get(joinColumn.leftTableAlias());
@@ -603,9 +615,10 @@ public class TableInfoFactory {
         for (int i = 0; i < queue.size(); i++) {
             Set<JoinTableInfo> joinTableInfos = new HashSet<>(queue.get(i).getRightJoinTableInfos().values());
             for (JoinTableInfo joinTableInfo : joinTableInfos) {
-                if (!queue.contains(joinTableInfo) && joinTableInfo.getLeftJoinTableInfos().values().stream().map(queue::contains).reduce((a, b) -> a && b).get()) {
-                    queue.add(joinTableInfo);
+                if (queue.contains(joinTableInfo) || !new HashSet<>(queue).containsAll(joinTableInfo.getLeftJoinTableInfos().values())) {
+                    continue;
                 }
+                queue.add(joinTableInfo);
 
                 Set<JoinColumnFeature> joinColumnFeatures = joinTableInfo.getLeftJoinTableInfos().entrySet().stream().map(v -> buildJoinColumnFeature(v.getKey(), v.getValue(), joinTableInfo)).collect(Collectors.toSet());
                 JoinTableInfo existedJoinTableInfo = featureToJoinTableInfo.get(joinColumnFeatures);
@@ -722,8 +735,8 @@ public class TableInfoFactory {
 
     private static JoinColumnFeature buildJoinColumnFeature(JoinColumnInfo joinColumnInfo, JoinTableInfo leftJoinTableInfo, JoinTableInfo righJoinTableInfo) {
         JoinColumnFeature joinColumnFeature = new JoinColumnFeature();
-        joinColumnFeature.setLeftColumn(joinColumnInfo.getLeftColumn());
-        joinColumnFeature.setRightColumn(joinColumnInfo.getRightColumn());
+        joinColumnFeature.setLeftColumn(joinColumnInfo.getLeftColumn().getFullName());
+        joinColumnFeature.setRightColumn(joinColumnInfo.getRightColumn().getFullName());
         joinColumnFeature.setLeftTable(leftJoinTableInfo);
         joinColumnFeature.setRightTable(righJoinTableInfo.getTableInfo());
         return joinColumnFeature;
