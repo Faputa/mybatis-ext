@@ -5,44 +5,42 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
-
-import com.mysql.cj.jdbc.MysqlDataSource;
 
 import io.github.mybatisext.adapter.ExtConfiguration;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.annotation.TableRef;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
-import io.github.mybatisext.table.PrivilegeTable;
+import io.github.mybatisext.metadata.TablePermission;
 
 public class ConditionHelperTest {
 
     @Test
     public void testFromTableInfo() {
-        MysqlDataSource dataSource = new MysqlDataSource();
-        dataSource.setServerName("localhost");
-        dataSource.setPort(3306);
-        dataSource.setDatabaseName("visual");
-        dataSource.setUser("root");
-        dataSource.setPassword("root");
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName("org.h2.Driver");
+        dataSource.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MYSQL");
+        dataSource.setUsername("sa");
+        dataSource.setPassword("");
 
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
-        TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
+        TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, TablePermission.class);
         Condition condition = ConditionHelper.fromTableInfo(tableInfo, false, "pt");
         System.out.println(condition);
     }
 
-    @TableRef(PrivilegeTable.class)
+    @TableRef(TablePermission.class)
     static class A {
     }
 
-    @TableRef(PrivilegeTable.class)
+    @TableRef(TablePermission.class)
     static class B {
     }
 
