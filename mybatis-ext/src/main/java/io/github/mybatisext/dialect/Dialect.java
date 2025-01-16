@@ -17,11 +17,11 @@ public interface Dialect {
 
     String select(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit);
 
+    String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull);
+
     String delete(TableInfo tableInfo, Variable parameter, Condition where);
 
     String insert(TableInfo tableInfo, Variable parameter, boolean ignoreNull);
-
-    String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull);
 
     String upper(String expr);
 

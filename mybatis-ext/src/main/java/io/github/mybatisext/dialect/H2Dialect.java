@@ -72,6 +72,19 @@ public class H2Dialect extends BaseDialect {
     }
 
     @Override
+    public String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull) {
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
+        return buildUpdate(
+                tableInfo,
+                parameter,
+                where,
+                ignoreNull,
+                joinTableInfos,
+                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                joinTableInfos.size() > 1);
+    }
+
+    @Override
     public String delete(TableInfo tableInfo, Variable parameter, Condition where) {
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
         return buildDelete(
@@ -79,7 +92,7 @@ public class H2Dialect extends BaseDialect {
                 parameter,
                 where,
                 joinTableInfos,
-                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                parameter != null && Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
                 joinTableInfos.size() > 1);
     }
 
@@ -92,17 +105,24 @@ public class H2Dialect extends BaseDialect {
                 ignoreNull);
     }
 
-    @Override
-    public String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
-        return buildUpdate(
-                tableInfo,
-                parameter,
-                where,
-                ignoreNull,
-                joinTableInfos,
-                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
-                joinTableInfos.size() > 1);
+    private String buildUpdate(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull, List<JoinTableInfo> joinTableInfos, boolean batch, boolean join) {
+        List<String> ss = new ArrayList<>();
+        if (batch) {
+            Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeArgumentResolver.resolveGenericType(parameter.getJavaType(), Collection.class, 0));
+            ss.add("<foreach collection=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
+            ss.add(buildUpdate(tableInfo, itemVariable, where, ignoreNull, joinTableInfos, false, join));
+            ss.add("</foreach>");
+            return String.join(" ", ss);
+        }
+        if (join) {
+            ss.add("UPDATE");
+            ss.add(tableInfo.getName());
+            ss.add(tableInfo.getJoinTableInfo().getAlias());
+            ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, parameter, ignoreNull));
+            ss.add(buildWhereExistsJoin(joinTableInfos, where));
+            return String.join(" ", ss);
+        }
+        return buildSimpleUpdate(tableInfo, parameter, ignoreNull, buildWhere(where));
     }
 
     private String buildDelete(TableInfo tableInfo, Variable parameter, Condition where, List<JoinTableInfo> joinTableInfos, boolean batch, boolean join) {
@@ -145,24 +165,19 @@ public class H2Dialect extends BaseDialect {
         return buildSimpleInsert(tableInfo, variable, ignoreNull);
     }
 
-    private String buildUpdate(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull, List<JoinTableInfo> joinTableInfos, boolean batch, boolean join) {
+    private String buildLimit(Limit limit, String select) {
         List<String> ss = new ArrayList<>();
-        if (batch) {
-            Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeArgumentResolver.resolveGenericType(parameter.getJavaType(), Collection.class, 0));
-            ss.add("<foreach collection=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
-            ss.add(buildUpdate(tableInfo, itemVariable, where, ignoreNull, joinTableInfos, false, join));
-            ss.add("</foreach>");
-            return String.join(" ", ss);
+        ss.add(select);
+        if (limit.getOffset() == null && limit.getOffsetVariable() == null) {
+            ss.add("LIMIT");
+            ss.add(limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}");
+        } else {
+            ss.add("LIMIT");
+            ss.add(limit.getOffset() != null ? limit.getOffset().toString() : "#{" + limit.getOffsetVariable() + "}");
+            ss.add(",");
+            ss.add(limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}");
         }
-        if (join) {
-            ss.add("UPDATE");
-            ss.add(tableInfo.getName());
-            ss.add(tableInfo.getJoinTableInfo().getAlias());
-            ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, parameter, ignoreNull));
-            ss.add(buildWhereExistsJoin(joinTableInfos, where));
-            return String.join(" ", ss);
-        }
-        return buildSimpleUpdate(tableInfo, parameter, ignoreNull, buildWhere(where));
+        return String.join(" ", ss);
     }
 
     private String buildWhereExistsJoin(List<JoinTableInfo> joinTableInfos, Condition where) {
@@ -184,21 +199,6 @@ public class H2Dialect extends BaseDialect {
         ss.add(String.join(", ", tables));
         ss.add(ConditionHelper.toWhere(conditions, LogicalOperator.AND, this));
         ss.add(")");
-        return String.join(" ", ss);
-    }
-
-    private String buildLimit(Limit limit, String select) {
-        List<String> ss = new ArrayList<>();
-        ss.add(select);
-        if (limit.getOffset() == null && limit.getOffsetVariable() == null) {
-            ss.add("LIMIT");
-            ss.add(limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}");
-        } else {
-            ss.add("LIMIT");
-            ss.add(limit.getOffset() != null ? limit.getOffset().toString() : "#{" + limit.getOffsetVariable() + "}");
-            ss.add(",");
-            ss.add(limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}");
-        }
         return String.join(" ", ss);
     }
 
