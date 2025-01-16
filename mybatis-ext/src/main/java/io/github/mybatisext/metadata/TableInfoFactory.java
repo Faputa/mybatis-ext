@@ -428,7 +428,7 @@ public class TableInfoFactory {
         return propertyInfo;
     }
 
-    private static Map<String, PropertyInfo> collectColumnPropertyInfos(Configuration configuration, TableInfo tableInfo, String prefix, GenericType javaType, boolean readonly) {
+    private static Map<String, PropertyInfo> collectColumnPropertyInfos(Configuration configuration, TableInfo tableInfo, String prefix, @Nonnull GenericType javaType, boolean readonly) {
         Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
         for (GenericType c = javaType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             for (GenericField field : c.getDeclaredFields()) {
@@ -619,13 +619,15 @@ public class TableInfoFactory {
     private static void mergeJoinTableInfos(TableInfo rootTableInfo, PropertyInfo propertyInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         List<JoinTableInfo> queue = new ArrayList<>();
         queue.add(rootTableInfo.getJoinTableInfo());
+        Set<JoinTableInfo> merged = new HashSet<>(queue);
 
         for (int i = 0; i < queue.size(); i++) {
             Set<JoinTableInfo> joinTableInfos = new HashSet<>(queue.get(i).getRightJoinTableInfos().values());
             for (JoinTableInfo joinTableInfo : joinTableInfos) {
-                if (queue.contains(joinTableInfo) || !new HashSet<>(queue).containsAll(joinTableInfo.getLeftJoinTableInfos().values())) {
+                if (merged.contains(joinTableInfo) || !merged.containsAll(joinTableInfo.getLeftJoinTableInfos().values())) {
                     continue;
                 }
+                merged.add(joinTableInfo);
                 queue.add(joinTableInfo);
 
                 Set<JoinColumnFeature> joinColumnFeatures = joinTableInfo.getLeftJoinTableInfos().entrySet().stream().map(v -> buildJoinColumnFeature(v.getKey(), v.getValue(), joinTableInfo)).collect(Collectors.toSet());
