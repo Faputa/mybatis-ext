@@ -11,7 +11,6 @@ import javax.annotation.Nullable;
 import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
-import io.github.mybatisext.metadata.FilterSpecInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.ResultType;
 import io.github.mybatisext.metadata.TableInfo;
@@ -21,14 +20,6 @@ import io.github.mybatisext.util.SimpleStringTemplate;
 import io.github.mybatisext.util.StringUtils;
 
 public class ConditionHelper {
-
-    public static Condition fromTableParameter(TableInfo tableInfo, FilterSpecInfo filterSpecInfo, boolean onlyById, String param) {
-        Condition condition = buildTableParameter(tableInfo, filterSpecInfo, onlyById, onlyById, param);
-        if (condition.getSubConditions().isEmpty() && onlyById) {
-            condition = buildTableParameter(tableInfo, filterSpecInfo, false, true, param);
-        }
-        return simplifyCondition(condition);
-    }
 
     public static Condition fromConditionList(@Nonnull ConditionList conditionList) {
         List<Condition> andConditions = new ArrayList<>();
@@ -55,7 +46,7 @@ public class ConditionHelper {
         condition.setPropertyInfos(conditionList.getCondition().getPropertyInfos());
         condition.setLogicalOperator(LogicalOperator.OR);
         condition.getSubConditions().addAll(orConditions);
-        return simplifyCondition(condition);
+        return condition;
     }
 
     public static @Nullable Condition simplifyCondition(Condition condition) {
@@ -79,20 +70,19 @@ public class ConditionHelper {
         return condition;
     }
 
-    private static Condition buildTableParameter(TableInfo tableInfo, FilterSpecInfo filterSpecInfo, boolean onlyById, boolean strictMatch, String param) {
+    public static Condition fromTableInfo(TableInfo tableInfo, boolean onlyById, String param) {
+        Condition condition = buildTableInfo(tableInfo, onlyById, onlyById, param);
+        if (condition.getSubConditions().isEmpty() && onlyById) {
+            condition = buildTableInfo(tableInfo, false, true, param);
+        }
+        return condition;
+    }
+
+    private static Condition buildTableInfo(TableInfo tableInfo, boolean onlyById, boolean strictMatch, String param) {
         Condition condition = new Condition(ConditionType.COMPLEX);
         condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setLogicalOperator(LogicalOperator.AND);
-        if (strictMatch || filterSpecInfo == null) {
-            condition.setTest(IfTest.None);
-            condition.setLogicalOperator(LogicalOperator.AND);
-        } else {
-            condition.setTest(filterSpecInfo.getTest());
-            condition.setTestTemplate(filterSpecInfo.getTestTemplate());
-            condition.setLogicalOperator(filterSpecInfo.getLogicalOperator());
-            condition.setExprTemplate(filterSpecInfo.getExprTemplate());
-            condition.setVariable(new Variable(StringUtils.isNotBlank(param) ? param : "param1", tableInfo.getTableClass()));
-        }
+        condition.setTest(IfTest.None);
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
             Condition subCondition = buildPropertyInfo(tableInfo, propertyInfo, onlyById, strictMatch, param);
             if (subCondition == null) {
