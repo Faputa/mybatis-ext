@@ -115,13 +115,21 @@ public class TableInfoFactory {
         TableInfo tableInfo = new TableInfo();
         tableInfoCache.put(tableClass, tableInfo);
         tableInfo.setTableClass(tableClass);
-        tableInfo.setJoinTableInfo(refTableInfo.getJoinTableInfo());
         tableInfo.setName(refTableInfo.getName());
         tableInfo.setComment(refTableInfo.getComment());
         tableInfo.setSchema(refTableInfo.getSchema());
-        tableInfo.getAliasToJoinTableInfo().putAll(refTableInfo.getAliasToJoinTableInfo());
         tableInfo.getNameToColumnInfo().putAll(refTableInfo.getNameToColumnInfo());
         processPropertyRef(configuration, tableClass, tableInfo, refTableInfo);
+
+        // 拷贝关联关系
+        JoinTableInfo joinTableInfo = new JoinTableInfo();
+        joinTableInfo.setAlias(refTableInfo.getJoinTableInfo().getAlias());
+        joinTableInfo.setTableInfo(refTableInfo);
+        joinTableInfo.getRightJoinTableInfos().putAll(refTableInfo.getJoinTableInfo().getRightJoinTableInfos());
+        stripJoinRelations(tableInfo, new HashMap<>());
+
+        tableInfo.setJoinTableInfo(joinTableInfo);
+        tableInfo.getAliasToJoinTableInfo().put(joinTableInfo.getAlias(), joinTableInfo);
         return tableInfo;
     }
 
