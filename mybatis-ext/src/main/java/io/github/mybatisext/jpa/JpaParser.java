@@ -31,6 +31,7 @@ import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.statement.NestedSelectHelper;
 import io.github.mybatisext.util.CommonUtils;
 import io.github.mybatisext.util.ImmutablePair;
+import io.github.mybatisext.util.StringUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class JpaParser extends BaseParser {
@@ -487,30 +488,47 @@ public class JpaParser extends BaseParser {
 
     private Condition buildDefaultCondition(State state, Set<String> usedParamNames) {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
-        Configuration configuration = jpaTokenizer.getConfiguration();
         GenericParameter[] parameters = jpaTokenizer.getParameters();
+        if (parameters.length == 1) {
+            return buildSingleParamCondition(jpaTokenizer, usedParamNames, parameters[0]);
+        }
+        return buildMultiParamCondition(jpaTokenizer, usedParamNames, parameters);
+    }
+
+    private Condition buildSingleParamCondition(JpaTokenizer jpaTokenizer, Set<String> usedParamNames, GenericParameter parameter) {
         TableInfo tableInfo = jpaTokenizer.getTableInfo();
         List<Variable> variables = jpaTokenizer.getVariables();
-        if (parameters.length == 1) {
-            GenericType tableClass = tableInfo.getTableClass();
-            GenericType parameterType = parameters[0].getGenericType();
-            OnlyById onlyById = parameters[0].getAnnotation(OnlyById.class);
-            Param param = parameters[0].getAnnotation(Param.class);
-            FilterSpec filterSpec = parameters[0].getAnnotation(FilterSpec.class);
-            FilterSpecInfo filterSpecInfo = buildFilterSpecInfo(filterSpec);
-            if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
-                return ConditionHelper.fromTableParameter(tableInfo, filterSpecInfo, onlyById != null, param != null ? "__" + param.value() + "__item" : "__array__item");
+        GenericType tableClass = tableInfo.getTableClass();
+        GenericType parameterType = parameter.getGenericType();
+        OnlyById onlyById = parameter.getAnnotation(OnlyById.class);
+        Param param = parameter.getAnnotation(Param.class);
+        String paramName;
+        if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
+            paramName = param != null ? "__" + param.value() + "__item" : "__array__item";
+        } else if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeArgumentResolver.resolveGenericType(parameterType, Collection.class, 0))) {
+            paramName = param != null ? "__" + param.value() + "__item" : "__collection__item";
+            if (List.class.isAssignableFrom(parameterType.getType())) {
+                paramName = param != null ? "__" + param.value() + "__item" : "__list__item";
             }
-            if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeArgumentResolver.resolveGenericType(parameterType, Collection.class, 0))) {
-                if (List.class.isAssignableFrom(parameterType.getType())) {
-                    return ConditionHelper.fromTableParameter(tableInfo, filterSpecInfo, onlyById != null, param != null ? "__" + param.value() + "__item" : "__list__item");
-                }
-                return ConditionHelper.fromTableParameter(tableInfo, filterSpecInfo, onlyById != null, param != null ? "__" + param.value() + "__item" : "__collection__item");
-            }
-            if (TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType)) {
-                return ConditionHelper.fromTableParameter(tableInfo, filterSpecInfo, onlyById != null, param != null ? param.value() : "");
-            }
+        } else if (TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType)) {
+            paramName = param != null ? param.value() : "";
+        } else {
+            return buildMultiParamCondition(jpaTokenizer, usedParamNames, parameter);
         }
+        Condition condition = ConditionHelper.fromTableInfo(tableInfo, onlyById != null, paramName);
+        FilterSpec filterSpec = parameter.getAnnotation(FilterSpec.class);
+        FilterSpecInfo filterSpecInfo = buildFilterSpecInfo(filterSpec);
+        if (onlyById == null && filterSpecInfo != null) {
+            applyFilterSpecInfo(condition, filterSpecInfo, variables, usedParamNames);
+            condition.setVariable(new Variable(StringUtils.isNotBlank(paramName) ? paramName : "param1", tableClass));
+        }
+        return ConditionHelper.simplifyCondition(condition);
+    }
+
+    private Condition buildMultiParamCondition(JpaTokenizer jpaTokenizer, Set<String> usedParamNames, GenericParameter... parameters) {
+        TableInfo tableInfo = jpaTokenizer.getTableInfo();
+        List<Variable> variables = jpaTokenizer.getVariables();
+        Configuration configuration = jpaTokenizer.getConfiguration();
         List<Condition> conditions = new ArrayList<>();
         for (GenericParameter parameter : parameters) {
             Param param = parameter.getAnnotation(Param.class);
@@ -523,8 +541,8 @@ public class JpaParser extends BaseParser {
                 throw new MybatisExtException("Unsupported parameter type: " + parameter.getType().getName() + ". Method: " + jpaTokenizer.getText());
             }
             Condition condition = new Condition(ConditionType.BASIC);
-            condition.setPropertyInfos(jpaTokenizer.getTableInfo().getNameToPropertyInfo());
-            condition.setPropertyInfo(parseProperty(configuration, jpaTokenizer.getTableInfo(), param.value()));
+            condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
+            condition.setPropertyInfo(parseProperty(configuration, tableInfo, param.value()));
             condition.setVariable(new Variable(param.value(), parameter.getGenericType()));
             if (filterSpecInfo == null) {
                 condition.setTest(IfTest.None);
@@ -603,7 +621,7 @@ public class JpaParser extends BaseParser {
                 }
             }
         }
-        return ConditionHelper.fromConditionList(conditionList);
+        return ConditionHelper.simplifyCondition(ConditionHelper.fromConditionList(conditionList));
     }
 
     private void setConditionVariable(Set<String> usedParamNames, AtomicInteger paramIndex, GenericParameter[] parameters, Condition condition, JpaTokenizer jpaTokenizer) {
