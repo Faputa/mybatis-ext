@@ -260,6 +260,9 @@ public class TableInfoFactory {
 
     private static void processParentJoinRelations(Configuration configuration, @Nonnull GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
         if (tableClass.isAnnotationPresent(JoinParent.class)) {
+            if (tableClass.getGenericSuperclass() == null || tableClass.getGenericSuperclass().getType() == Object.class) {
+                throw new MybatisExtException("@" + JoinParent.class.getSimpleName() + " requires a valid non-Object superclass: " + tableClass.getType().getName());
+            }
             TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
             JoinParent joinParent = tableClass.getAnnotation(JoinParent.class);
             for (JoinColumn joinColumn : joinParent.joinColumn()) {
@@ -274,7 +277,10 @@ public class TableInfoFactory {
                 if (!c.isAnnotationPresent(EmbedParent.class)) {
                     break;
                 }
-                if (c.getGenericSuperclass() != null && c.getGenericSuperclass().isAnnotationPresent(Table.class)) {
+                if (c.getGenericSuperclass() == null || tableClass.getGenericSuperclass().getType() == Object.class) {
+                    throw new MybatisExtException("@" + EmbedParent.class.getSimpleName() + " requires a valid non-Object superclass: " + c.getType().getName());
+                }
+                if (c.getGenericSuperclass().isAnnotationPresent(Table.class)) {
                     TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
                     tableInfo.getJoinTableInfo().setAlias(parentTableInfo.getJoinTableInfo().getAlias());
                     tableInfo.getAliasToJoinTableInfo().put(parentTableInfo.getJoinTableInfo().getAlias(), tableInfo.getJoinTableInfo());
