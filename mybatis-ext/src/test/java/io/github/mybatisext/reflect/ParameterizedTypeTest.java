@@ -7,15 +7,15 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.mybatisext.table.PrivilegeColField;
-import io.github.mybatisext.table.PrivilegeRowField;
+import io.github.mybatisext.metadata.ColumnPermission;
+import io.github.mybatisext.metadata.RowPermission;
 
 public class ParameterizedTypeTest {
 
-    interface A extends List<PrivilegeRowField> {
+    interface A extends List<RowPermission> {
     }
 
-    interface B extends List<PrivilegeColField> {
+    interface B extends List<ColumnPermission> {
     }
 
     @Test

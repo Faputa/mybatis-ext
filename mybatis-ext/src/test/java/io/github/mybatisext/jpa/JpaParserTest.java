@@ -4,12 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
-
-import com.mysql.cj.jdbc.MysqlDataSource;
 
 import io.github.mybatisext.adapter.ExtConfiguration;
 import io.github.mybatisext.adapter.ExtContext;
@@ -17,13 +16,13 @@ import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.dialect.H2Dialect;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
+import io.github.mybatisext.metadata.TablePermission;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
 import io.github.mybatisext.statement.ParameterSignature;
 import io.github.mybatisext.statement.ParameterSignatureHelper;
 import io.github.mybatisext.statement.SemanticScriptHelper;
-import io.github.mybatisext.table.PrivilegeTable;
 
 public class JpaParserTest {
 
@@ -31,16 +30,15 @@ public class JpaParserTest {
     final TableInfo tableInfo;
 
     JpaParserTest() {
-        MysqlDataSource dataSource = new MysqlDataSource();
-        dataSource.setServerName("localhost");
-        dataSource.setPort(3306);
-        dataSource.setDatabaseName("visual");
-        dataSource.setUser("root");
-        dataSource.setPassword("root");
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName("org.h2.Driver");
+        dataSource.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MYSQL");
+        dataSource.setUsername("sa");
+        dataSource.setPassword("");
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         configuration = new ExtConfiguration(environment, new ExtContext());
-        tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
+        tableInfo = TableInfoFactory.getTableInfo(configuration, TablePermission.class);
     }
 
     @Test

@@ -5,31 +5,31 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 import io.github.mybatisext.mapper.BaseMapper;
-import io.github.mybatisext.table.PrivilegeTable;
+import io.github.mybatisext.metadata.TablePermission;
 
-public interface JpaParserExample extends BaseMapper<PrivilegeTable> {
+public interface JpaParserExample extends BaseMapper<TablePermission> {
 
-    PrivilegeTable get(@Param("tableId") String tableId, @Param("userId") String userId);
+    TablePermission get(@Param("tableId") String tableId, @Param("roleId") String roleId);
 
-    PrivilegeTable getDbName(@Param("tableId") String tableId, @Param("userId") String userId);
+    TablePermission getDataSourceName(@Param("tableId") String tableId, @Param("roleId") String roleId);
 
-    PrivilegeTable getDistinctTop10ByUserId$AndTableIdAndRowPrivilegeFieldsDotFieldInXyz$OrderByCreateTime(@Param("userId") String userId, @Param("tableId") String tableId, @Param("xyz") String s);
+    TablePermission getDistinctTop10ByRoleId$AndTableIdAndColumnPermissionsDotColumnNameInXyz$OrderByCreatedAt(@Param("roleId") String roleId, @Param("tableId") String tableId, @Param("xyz") List<String> ss);
 
-    PrivilegeTable getByTableId(PrivilegeTable query);
+    TablePermission getByTableId(TablePermission query);
 
-    PrivilegeTable getByTableId(@Param("tableId") String tableId);
+    TablePermission getByTableId(@Param("tableId") String tableId);
 
-    PrivilegeTable getByTableIdIsPtDotTableId(@Param("pt") PrivilegeTable query);
+    TablePermission getByTableIdIsTpDotTableId(@Param("tp") TablePermission query);
 
-    PrivilegeTable getByTableIdOrderByIdAndTableId(PrivilegeTable query);
+    TablePermission getByTableIdOrderByIdAndTableId(TablePermission query);
 
-    PrivilegeTable getByTableIdGroupByIdAndTableId(PrivilegeTable query);
+    TablePermission getByTableIdGroupByIdAndTableId(TablePermission query);
 
-    int deleteByDbName(String dbName);
+    int deleteByDataSourceName(String dbName);
 
-    int deleteByDbName(PrivilegeTable query);
+    int deleteByDataSourceName(TablePermission query);
 
-    int updateIgnoreNullByDbName(PrivilegeTable query);
+    int updateIgnoreNullByDataSourceName(TablePermission query);
 
-    List<PrivilegeTable> findAll();
+    List<TablePermission> findAll();
 }
