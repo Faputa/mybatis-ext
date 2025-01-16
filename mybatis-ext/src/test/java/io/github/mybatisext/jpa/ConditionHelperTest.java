@@ -34,7 +34,7 @@ public class ConditionHelperTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
         TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, PrivilegeTable.class);
-        Condition condition = ConditionHelper.fromTableParameter(tableInfo, null, false, "pt");
+        Condition condition = ConditionHelper.fromTableInfo(tableInfo, false, "pt");
         System.out.println(condition);
     }
 
