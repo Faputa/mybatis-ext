@@ -13,8 +13,8 @@ public class MybatisExtProperties {
 
     /** 是否启用 */
     private boolean enabled = true;
-    /** 是否启用级联 */
-    private boolean cascadeEnabled = false;
+    /** 默认启用过滤 */
+    private boolean defaultFilterableEnable = false;
 
     public boolean isEnabled() {
         return enabled;
@@ -24,15 +24,17 @@ public class MybatisExtProperties {
         this.enabled = enabled;
     }
 
-    public boolean isCascadeEnabled() {
-        return cascadeEnabled;
+    public boolean isDefaultFilterableEnable() {
+        return defaultFilterableEnable;
     }
 
-    public void setCascadeEnabled(boolean cascadeEnabled) {
-        this.cascadeEnabled = cascadeEnabled;
+    public void setDefaultFilterableEnable(boolean defaultFilterableEnable) {
+        this.defaultFilterableEnable = defaultFilterableEnable;
     }
 
     public ExtContext toExtContext() {
-        return new ExtContext();
+        ExtContext extContext = new ExtContext();
+        extContext.setDefaultFilterableEnable(defaultFilterableEnable);
+        return extContext;
     }
 }

@@ -17,12 +17,12 @@ import javax.annotation.Nullable;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
-import io.github.mybatisext.annotation.FilterSpec;
+import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.OnlyById;
 import io.github.mybatisext.exception.MybatisExtException;
-import io.github.mybatisext.metadata.FilterSpecInfo;
+import io.github.mybatisext.metadata.FilterableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
@@ -36,16 +36,14 @@ import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class JpaParser extends BaseParser {
 
-    Symbol grammar = new Symbol("grammar");
-    Symbol conditionList = new Symbol("conditionList");
-    Symbol condition = new Symbol("condition");
-    Symbol propertyList = new Symbol("propertyList");
-    Symbol property = new Symbol("property");
-    Symbol variable = new Symbol("variable");
-    Symbol orderByList = new Symbol("orderByList");
-    Symbol limit = new Symbol("limit");
+    private final Symbol grammar = new Symbol("grammar");
+    private final Symbol conditionList = new Symbol("conditionList");
+    private final Symbol condition = new Symbol("condition");
+    private final Symbol propertyList = new Symbol("propertyList");
+    private final Symbol orderByList = new Symbol("orderByList");
+    private final Symbol limit = new Symbol("limit");
 
-    Symbol propertyName = new Symbol("propertyName").set((state, continuation) -> {
+    private final Symbol propertyName = new Symbol("propertyName").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         int cursor = jpaTokenizer.getCursor();
         List<PropertyInfo> propertyInfos = jpaTokenizer.property();
@@ -61,7 +59,7 @@ public class JpaParser extends BaseParser {
         return false;
     });
 
-    Symbol subPropertyName = new Symbol("subPropertyName").set((state, continuation) -> {
+    private final Symbol subPropertyName = new Symbol("subPropertyName").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         int cursor = jpaTokenizer.getCursor();
         List<PropertyInfo> propertyInfos = jpaTokenizer.property((PropertyInfo) state.getResult());
@@ -77,7 +75,7 @@ public class JpaParser extends BaseParser {
         return false;
     });
 
-    Symbol integer = new Symbol("integer").set((state, continuation) -> {
+    private final Symbol integer = new Symbol("integer").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         int cursor = jpaTokenizer.getCursor();
         int i = jpaTokenizer.integer();
@@ -89,7 +87,7 @@ public class JpaParser extends BaseParser {
         return state.setResult(i) && continuation.test(state);
     });
 
-    Symbol variableName = new Symbol("variableName").set((state, continuation) -> {
+    private final Symbol variableName = new Symbol("variableName").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         int cursor = jpaTokenizer.getCursor();
         List<Variable> variables = jpaTokenizer.variable();
@@ -105,7 +103,7 @@ public class JpaParser extends BaseParser {
         return false;
     });
 
-    Symbol subVariableName = new Symbol("subVariableName").set((state, continuation) -> {
+    private final Symbol subVariableName = new Symbol("subVariableName").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         int cursor = jpaTokenizer.getCursor();
         List<Variable> variables = jpaTokenizer.variable((Variable) state.getResult());
@@ -121,7 +119,7 @@ public class JpaParser extends BaseParser {
         return false;
     });
 
-    Symbol end = new Symbol("end").set((state, continuation) -> {
+    private final Symbol end = new Symbol("end").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         if (jpaTokenizer.getCursor() != jpaTokenizer.getText().length()) {
             jpaTokenizer.getExpectedTokens().record(jpaTokenizer.getCursor(), "end");
@@ -130,7 +128,7 @@ public class JpaParser extends BaseParser {
         return continuation.test(state);
     });
 
-    Symbol keyword(String s) {
+    private Symbol keyword(String s) {
         return assign(s, new Symbol("keyword(" + s + ")").set((state, continuation) -> {
             JpaTokenizer jpaTokenizer = state.getTokenizer();
             int cursor = jpaTokenizer.getCursor();
@@ -143,10 +141,12 @@ public class JpaParser extends BaseParser {
         }));
     }
 
-    Symbol integerB = new Symbol("integerB").set(integer);
-    Symbol variableB = new Symbol("variableB").set(variable);
+    private final Symbol property = new Symbol("property").set(join(propertyName, star(join(keyword("Dot"), subPropertyName))));
+    private final Symbol variable = new Symbol("variable").set(join(variableName, star(join(keyword("Dot"), subVariableName))));
+    private final Symbol integerB = new Symbol("integerB").set(integer);
+    private final Symbol variableB = new Symbol("variableB").set(variable);
 
-    Symbol conditionAction(CompareOperator compareOperator) {
+    private Symbol conditionAction(CompareOperator compareOperator) {
         return action(state -> {
             Condition condition = new Condition(ConditionType.BASIC);
             condition.setPropertyInfos(state.<JpaTokenizer>getTokenizer().getTableInfo().getNameToPropertyInfo());
@@ -174,9 +174,9 @@ public class JpaParser extends BaseParser {
         });
     }
 
-    Symbol groupBy = new Symbol("groupBy").set(join(keyword("GroupBy"), propertyList));
-    Symbol having = new Symbol("having").set(join(keyword("Having"), conditionList));
-    Symbol orderBy = new Symbol("orderBy").set(join(keyword("OrderBy"), orderByList));
+    private final Symbol groupBy = new Symbol("groupBy").set(join(keyword("GroupBy"), propertyList));
+    private final Symbol having = new Symbol("having").set(join(keyword("Having"), conditionList));
+    private final Symbol orderBy = new Symbol("orderBy").set(join(keyword("OrderBy"), orderByList));
 
     public JpaParser() {
         grammar.set(choice(
@@ -333,22 +333,23 @@ public class JpaParser extends BaseParser {
                         join(keyword("IsTrue"), conditionAction(CompareOperator.IsTrue)),
                         join(keyword("IsFalse"), conditionAction(CompareOperator.IsFalse)))))));
 
-        orderByList.set(join(property, optional(choice(keyword("Asc"), keyword("Desc"))), optional(join(keyword("And"), orderByList)), action(state -> {
-            OrderByElement orderByElement = new OrderByElement();
-            orderByElement.setPropertyInfo(state.getMatch(property).val());
-            if (state.getMatch("Asc") != null) {
-                orderByElement.setType(OrderByType.ASC);
-            } else if (state.getMatch("Desc") != null) {
-                orderByElement.setType(OrderByType.DESC);
-            }
-            List<OrderByElement> orderByElements = new ArrayList<>();
-            orderByElements.add(orderByElement);
-            MatchResult _orderByList = state.getMatch(orderByList);
-            if (_orderByList != null) {
-                orderByElements.addAll(_orderByList.val());
-            }
-            state.setReturn(orderByElements);
-        })));
+        orderByList.set(
+                join(property, optional(choice(keyword("Asc"), keyword("Desc"))), optional(join(keyword("And"), orderByList)), action(state -> {
+                    OrderByElement orderByElement = new OrderByElement();
+                    orderByElement.setPropertyInfo(state.getMatch(property).val());
+                    if (state.getMatch("Asc") != null) {
+                        orderByElement.setType(OrderByType.ASC);
+                    } else if (state.getMatch("Desc") != null) {
+                        orderByElement.setType(OrderByType.DESC);
+                    }
+                    List<OrderByElement> orderByElements = new ArrayList<>();
+                    orderByElements.add(orderByElement);
+                    MatchResult _orderByList = state.getMatch(orderByList);
+                    if (_orderByList != null) {
+                        orderByElements.addAll(_orderByList.val());
+                    }
+                    state.setReturn(orderByElements);
+                })));
 
         limit.set(join(keyword("Limit"), choice(
                 choice(integer, variable), keyword("To"), choice(integerB, variableB), action(state -> {
@@ -388,9 +389,6 @@ public class JpaParser extends BaseParser {
                     }
                     state.setReturn(propertyInfos);
                 })));
-
-        property.set(join(propertyName, star(join(keyword("Dot"), subPropertyName))));
-        variable.set(join(variableName, star(join(keyword("Dot"), subVariableName))));
     }
 
     private List<PropertyInfo> buildDefaultSelectItems(State state) {
@@ -516,10 +514,10 @@ public class JpaParser extends BaseParser {
             return buildMultiParamCondition(jpaTokenizer, usedParamNames, parameter);
         }
         Condition condition = ConditionHelper.fromTableInfo(tableInfo, onlyById != null, paramName);
-        FilterSpec filterSpec = parameter.getAnnotation(FilterSpec.class);
-        FilterSpecInfo filterSpecInfo = buildFilterSpecInfo(filterSpec);
-        if (onlyById == null && filterSpecInfo != null) {
-            applyFilterSpecInfo(condition, filterSpecInfo, variables, usedParamNames);
+        Filterable filterable = parameter.getAnnotation(Filterable.class);
+        FilterableInfo filterableInfo = buildFilterableInfo(filterable);
+        if (onlyById == null && filterableInfo != null && filterableInfo.isEnable()) {
+            applyFilterableInfo(condition, filterableInfo, variables, usedParamNames);
             condition.setVariable(new Variable(StringUtils.isNotBlank(paramName) ? paramName : "param1", tableClass));
         }
         return ConditionHelper.simplifyCondition(condition);
@@ -532,8 +530,8 @@ public class JpaParser extends BaseParser {
         List<Condition> conditions = new ArrayList<>();
         for (GenericParameter parameter : parameters) {
             Param param = parameter.getAnnotation(Param.class);
-            FilterSpec filterSpec = parameter.getAnnotation(FilterSpec.class);
-            FilterSpecInfo filterSpecInfo = buildFilterSpecInfo(filterSpec);
+            Filterable filterable = parameter.getAnnotation(Filterable.class);
+            FilterableInfo filterableInfo = buildFilterableInfo(filterable);
             if (param != null && usedParamNames.contains(param.value())) {
                 continue;
             }
@@ -544,11 +542,11 @@ public class JpaParser extends BaseParser {
             condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
             condition.setPropertyInfo(parseProperty(configuration, tableInfo, param.value()));
             condition.setVariable(new Variable(param.value(), parameter.getGenericType()));
-            if (filterSpecInfo == null) {
+            if (filterableInfo == null || !filterableInfo.isEnable()) {
                 condition.setTest(IfTest.None);
                 condition.setCompareOperator(CompareOperator.Equals);
             } else {
-                applyFilterSpecInfo(condition, filterSpecInfo, variables, usedParamNames);
+                applyFilterableInfo(condition, filterableInfo, variables, usedParamNames);
             }
             conditions.add(condition);
         }
@@ -561,30 +559,31 @@ public class JpaParser extends BaseParser {
         return ConditionHelper.simplifyCondition(condition);
     }
 
-    private static @Nullable FilterSpecInfo buildFilterSpecInfo(@Nullable FilterSpec filterSpec) {
-        if (filterSpec == null) {
+    private static @Nullable FilterableInfo buildFilterableInfo(@Nullable Filterable filterable) {
+        if (filterable == null) {
             return null;
         }
-        FilterSpecInfo filterSpecInfo = new FilterSpecInfo();
-        filterSpecInfo.setTest(filterSpec.test());
-        filterSpecInfo.setOperator(filterSpec.operator());
-        filterSpecInfo.setLogicalOperator(filterSpec.logicalOperator());
-        filterSpecInfo.setTestTemplate(filterSpec.testTemplate());
-        filterSpecInfo.setExprTemplate(filterSpec.exprTemplate());
-        filterSpecInfo.setSecondVariable(filterSpec.secondVariable());
-        return filterSpecInfo;
+        FilterableInfo filterableInfo = new FilterableInfo();
+        filterableInfo.setEnable(filterable.enable());
+        filterableInfo.setTest(filterable.test());
+        filterableInfo.setOperator(filterable.operator());
+        filterableInfo.setLogicalOperator(filterable.logicalOperator());
+        filterableInfo.setTestTemplate(filterable.testTemplate());
+        filterableInfo.setExprTemplate(filterable.exprTemplate());
+        filterableInfo.setSecondVariable(filterable.secondVariable());
+        return filterableInfo;
     }
 
-    private void applyFilterSpecInfo(Condition condition, FilterSpecInfo filterSpecInfo, List<Variable> variables, Set<String> usedParamNames) {
-        condition.setTest(filterSpecInfo.getTest());
-        condition.setTestTemplate(filterSpecInfo.getTestTemplate());
-        condition.setExprTemplate(filterSpecInfo.getExprTemplate());
-        condition.setCompareOperator(filterSpecInfo.getOperator());
-        condition.setLogicalOperator(filterSpecInfo.getLogicalOperator());
+    private void applyFilterableInfo(Condition condition, FilterableInfo filterableInfo, List<Variable> variables, Set<String> usedParamNames) {
+        condition.setTest(filterableInfo.getTest());
+        condition.setTestTemplate(filterableInfo.getTestTemplate());
+        condition.setExprTemplate(filterableInfo.getExprTemplate());
+        condition.setCompareOperator(filterableInfo.getOperator());
+        condition.setLogicalOperator(filterableInfo.getLogicalOperator());
         if (condition.getCompareOperator() == CompareOperator.Between) {
-            Variable secondVariable = deepGet(variables, filterSpecInfo.getSecondVariable());
+            Variable secondVariable = deepGet(variables, filterableInfo.getSecondVariable());
             if (secondVariable == null) {
-                throw new MybatisExtException("Second variable '" + filterSpecInfo.getSecondVariable() + "' not found in variables.");
+                throw new MybatisExtException("Second variable '" + filterableInfo.getSecondVariable() + "' not found in variables.");
             }
             usedParamNames.add(secondVariable.getFullName().split("\\.")[0]);
             condition.setSecondVariable(secondVariable);

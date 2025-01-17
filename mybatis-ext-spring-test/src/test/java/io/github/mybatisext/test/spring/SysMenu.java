@@ -6,7 +6,7 @@ import java.util.Objects;
 
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.EmbedParent;
-import io.github.mybatisext.annotation.FilterSpec;
+import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
@@ -30,12 +30,12 @@ public class SysMenu extends BaseEntity {
     private Long menuId;
 
     /** 菜单名称 */
-    @FilterSpec(operator = CompareOperator.Like)
+    @Filterable(operator = CompareOperator.Like)
     @Column
     private String menuName;
 
     /** 父菜单名称 */
-    @FilterSpec(operator = CompareOperator.Like)
+    @Filterable(operator = CompareOperator.Like)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "parentId", rightColumn = "menuId"), table = SysMenu.class, column = "menuName")
     private String parentName;
 

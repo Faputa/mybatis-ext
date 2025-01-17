@@ -10,7 +10,9 @@ import io.github.mybatisext.jpa.LogicalOperator;
 
 @Target({ ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface FilterSpec {
+public @interface Filterable {
+
+    boolean enable() default true;
 
     IfTest test() default IfTest.NotNull;
 
