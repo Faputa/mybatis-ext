@@ -26,7 +26,7 @@ import org.apache.ibatis.session.Configuration;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.ColumnRef;
 import io.github.mybatisext.annotation.EmbedParent;
-import io.github.mybatisext.annotation.FilterSpec;
+import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.annotation.JoinColumn;
@@ -133,7 +133,7 @@ public class TableInfoFactory {
                 }
                 ColumnRef columnRef = field.getAnnotation(ColumnRef.class);
                 if (columnRef != null) {
-                    processRefPropertyInfo(configuration, field.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : field.getName(), refTableInfo, field.getGenericType(), field.getAnnotation(FilterSpec.class), true);
+                    processRefPropertyInfo(configuration, field.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : field.getName(), refTableInfo, field.getGenericType(), field.getAnnotation(Filterable.class), true);
                 }
             }
 
@@ -155,13 +155,13 @@ public class TableInfoFactory {
                 }
                 ColumnRef columnRef = readMethod.getAnnotation(ColumnRef.class);
                 if (columnRef != null) {
-                    processRefPropertyInfo(configuration, propertyDescriptor.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : propertyDescriptor.getName(), refTableInfo, readMethod.getGenericReturnType(), readMethod.getAnnotation(FilterSpec.class), propertyDescriptor.getWriteMethod() == null);
+                    processRefPropertyInfo(configuration, propertyDescriptor.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : propertyDescriptor.getName(), refTableInfo, readMethod.getGenericReturnType(), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getWriteMethod() == null);
                 }
             }
         }
     }
 
-    private static void processRefPropertyInfo(Configuration configuration, String name, TableInfo tableInfo, String refName, TableInfo refTableInfo, GenericType propertyType, FilterSpec filterSpec, boolean readonly) {
+    private static void processRefPropertyInfo(Configuration configuration, String name, TableInfo tableInfo, String refName, TableInfo refTableInfo, GenericType propertyType, Filterable filterable, boolean readonly) {
         PropertyInfo refPropertyInfo = refTableInfo.getNameToPropertyInfo().get(refName);
         if (refPropertyInfo == null) {
             throw new MybatisExtException("Missing property [" + refName + "] in ref table.");
@@ -189,7 +189,7 @@ public class TableInfoFactory {
             propertyInfo.setResultType(configuration.getTypeHandlerRegistry().hasTypeHandler(propertyType.getType()) ? ResultType.RESULT : ResultType.ASSOCIATION);
             propertyInfo.setJavaType(targetType = propertyType);
         }
-        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(filterSpec));
+        propertyInfo.setFilterableInfo(buildFilterableInfo(filterable));
 
         if (propertyInfo.isOwnColumn()) {
             propertyInfo.putAll(refPropertyInfo);
@@ -329,14 +329,14 @@ public class TableInfoFactory {
                 Column column = field.getAnnotation(Column.class);
                 if (column != null) {
                     if (inJoinParent) {
-                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, field.getAnnotation(LoadStrategy.class), field.getAnnotation(FilterSpec.class), field.getName(), field.getGenericType(), false, featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, field.getAnnotation(LoadStrategy.class), field.getAnnotation(Filterable.class), field.getName(), field.getGenericType(), false, featureToJoinTableInfo, aliasCount);
                     } else {
-                        processColumn(configuration, tableInfo, column, field.getAnnotation(Id.class), field.getAnnotation(FilterSpec.class), field.getName(), field.getGenericType(), false);
+                        processColumn(configuration, tableInfo, column, field.getAnnotation(Id.class), field.getAnnotation(Filterable.class), field.getName(), field.getGenericType(), false);
                     }
                 } else {
                     JoinRelation[] joinRelations = field.getAnnotationsByType(JoinRelation.class);
                     if (joinRelations.length > 0) {
-                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, field.getAnnotation(LoadStrategy.class), field.getAnnotation(FilterSpec.class), field.getName(), field.getGenericType(), false, featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, field.getAnnotation(LoadStrategy.class), field.getAnnotation(Filterable.class), field.getName(), field.getGenericType(), false, featureToJoinTableInfo, aliasCount);
                     }
                 }
             }
@@ -360,14 +360,14 @@ public class TableInfoFactory {
                 Column column = readMethod.getAnnotation(Column.class);
                 if (column != null) {
                     if (inJoinParent) {
-                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, readMethod.getAnnotation(LoadStrategy.class), readMethod.getAnnotation(FilterSpec.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null, featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, readMethod.getAnnotation(LoadStrategy.class), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null, featureToJoinTableInfo, aliasCount);
                     } else {
-                        processColumn(configuration, tableInfo, column, readMethod.getAnnotation(Id.class), readMethod.getAnnotation(FilterSpec.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null);
+                        processColumn(configuration, tableInfo, column, readMethod.getAnnotation(Id.class), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null);
                     }
                 } else {
                     JoinRelation[] joinRelations = readMethod.getAnnotationsByType(JoinRelation.class);
                     if (joinRelations.length > 0) {
-                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, readMethod.getAnnotation(LoadStrategy.class), readMethod.getAnnotation(FilterSpec.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null, featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, readMethod.getAnnotation(LoadStrategy.class), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null, featureToJoinTableInfo, aliasCount);
                     }
                 }
             }
@@ -386,18 +386,18 @@ public class TableInfoFactory {
         }
     }
 
-    private static void processColumn(Configuration configuration, TableInfo tableInfo, Column column, @Nullable Id id, FilterSpec filterSpec, String propertyName, GenericType propertyType, boolean readonly) {
-        PropertyInfo propertyInfo = buildColumnPropertyInfo(configuration, tableInfo, column, id, filterSpec, "", propertyName, propertyType, readonly);
+    private static void processColumn(Configuration configuration, TableInfo tableInfo, Column column, @Nullable Id id, Filterable filterable, String propertyName, GenericType propertyType, boolean readonly) {
+        PropertyInfo propertyInfo = buildColumnPropertyInfo(configuration, tableInfo, column, id, filterable, "", propertyName, propertyType, readonly);
         tableInfo.getNameToPropertyInfo().put(propertyName, propertyInfo);
     }
 
-    private static PropertyInfo buildColumnPropertyInfo(Configuration configuration, TableInfo tableInfo, Column column, @Nullable Id id, FilterSpec filterSpec, String prefix, String propertyName, GenericType propertyType, boolean readonly) {
+    private static PropertyInfo buildColumnPropertyInfo(Configuration configuration, TableInfo tableInfo, Column column, @Nullable Id id, Filterable filterable, String prefix, String propertyName, GenericType propertyType, boolean readonly) {
         PropertyInfo propertyInfo = buildPropertyInfo(configuration, prefix, propertyName, propertyType);
         propertyInfo.setOwnColumn(true);
         propertyInfo.setReadonly(readonly);
         propertyInfo.setJdbcType(column.jdbcType());
         propertyInfo.setJoinTableInfo(tableInfo.getJoinTableInfo());
-        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(filterSpec));
+        propertyInfo.setFilterableInfo(buildFilterableInfo(filterable));
         if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
             propertyInfo.putAll(collectColumnPropertyInfos(configuration, tableInfo, propertyInfo.getFullName(), GenericTypeFactory.build(propertyInfo.getJavaType()), readonly));
         } else if (propertyInfo.getResultType() == ResultType.COLLECTION && !configuration.getTypeHandlerRegistry().hasTypeHandler(propertyInfo.getOfType().getType())) {
@@ -435,7 +435,7 @@ public class TableInfoFactory {
                 }
                 Column column = field.getAnnotation(Column.class);
                 if (column != null) {
-                    PropertyInfo propertyInfo = buildColumnPropertyInfo(configuration, tableInfo, column, field.getAnnotation(Id.class), field.getAnnotation(FilterSpec.class), prefix, field.getName(), field.getGenericType(), readonly);
+                    PropertyInfo propertyInfo = buildColumnPropertyInfo(configuration, tableInfo, column, field.getAnnotation(Id.class), field.getAnnotation(Filterable.class), prefix, field.getName(), field.getGenericType(), readonly);
                     nameToPropertyInfo.put(field.getName(), propertyInfo);
                 }
             }
@@ -459,7 +459,7 @@ public class TableInfoFactory {
             }
             Column column = readMethod.getAnnotation(Column.class);
             if (column != null) {
-                PropertyInfo propertyInfo = buildColumnPropertyInfo(configuration, tableInfo, column, readMethod.getAnnotation(Id.class), readMethod.getAnnotation(FilterSpec.class), prefix, propertyDescriptor.getName(), readMethod.getGenericReturnType(), readonly || propertyDescriptor.getWriteMethod() == null);
+                PropertyInfo propertyInfo = buildColumnPropertyInfo(configuration, tableInfo, column, readMethod.getAnnotation(Id.class), readMethod.getAnnotation(Filterable.class), prefix, propertyDescriptor.getName(), readMethod.getGenericReturnType(), readonly || propertyDescriptor.getWriteMethod() == null);
                 nameToPropertyInfo.put(propertyDescriptor.getName(), propertyInfo);
             }
         }
@@ -480,11 +480,11 @@ public class TableInfoFactory {
         propertyInfo.setResultType(ResultType.ID);
     }
 
-    private static void processJoinProperty(Configuration configuration, TableInfo tableInfo, GenericType currentClass, JoinRelation[] joinRelations, @Nullable Column column, @Nullable LoadStrategy loadStrategy, FilterSpec filterSpec, String propertyName, GenericType propertyType, boolean readonly, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
+    private static void processJoinProperty(Configuration configuration, TableInfo tableInfo, GenericType currentClass, JoinRelation[] joinRelations, @Nullable Column column, @Nullable LoadStrategy loadStrategy, Filterable filterable, String propertyName, GenericType propertyType, boolean readonly, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         PropertyInfo propertyInfo = buildPropertyInfo(configuration, "", propertyName, propertyType);
         propertyInfo.setOwnColumn(false);
         propertyInfo.setReadonly(readonly);
-        propertyInfo.setFilterSpecInfo(buildFilterSpecInfo(filterSpec));
+        propertyInfo.setFilterableInfo(buildFilterableInfo(filterable));
         tableInfo.getNameToPropertyInfo().put(propertyName, propertyInfo);
 
         buildJoinTableInfos(configuration, tableInfo, currentClass, propertyInfo, joinRelations);
@@ -724,21 +724,22 @@ public class TableInfoFactory {
         dest.setCustomIdGenerator(origin.getCustomIdGenerator());
         dest.setLoadType(origin.getLoadType());
         dest.setOfType(origin.getOfType());
-        dest.setFilterSpecInfo(origin.getFilterSpecInfo());
+        dest.setFilterableInfo(origin.getFilterableInfo());
     }
 
-    private static FilterSpecInfo buildFilterSpecInfo(@Nullable FilterSpec filterSpec) {
-        if (filterSpec == null) {
+    private static FilterableInfo buildFilterableInfo(@Nullable Filterable filterable) {
+        if (filterable == null) {
             return null;
         }
-        FilterSpecInfo filterSpecInfo = new FilterSpecInfo();
-        filterSpecInfo.setTest(filterSpec.test());
-        filterSpecInfo.setOperator(filterSpec.operator());
-        filterSpecInfo.setLogicalOperator(filterSpec.logicalOperator());
-        filterSpecInfo.setTestTemplate(filterSpec.testTemplate());
-        filterSpecInfo.setExprTemplate(filterSpec.exprTemplate());
-        filterSpecInfo.setSecondVariable(filterSpec.secondVariable());
-        return filterSpecInfo;
+        FilterableInfo filterableInfo = new FilterableInfo();
+        filterableInfo.setEnable(filterable.enable());
+        filterableInfo.setTest(filterable.test());
+        filterableInfo.setOperator(filterable.operator());
+        filterableInfo.setLogicalOperator(filterable.logicalOperator());
+        filterableInfo.setTestTemplate(filterable.testTemplate());
+        filterableInfo.setExprTemplate(filterable.exprTemplate());
+        filterableInfo.setSecondVariable(filterable.secondVariable());
+        return filterableInfo;
     }
 
     private static JoinColumnFeature buildJoinColumnFeature(JoinColumnInfo joinColumnInfo, JoinTableInfo leftJoinTableInfo, JoinTableInfo righJoinTableInfo) {
