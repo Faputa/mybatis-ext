@@ -34,20 +34,23 @@ import io.github.mybatisext.reflect.GenericType;
 public class MappedStatementHelper {
 
     private static final Log log = LogFactory.getLog(MappedStatementHelper.class);
-    private final JpaParser jpaParser = new JpaParser();
+    private final JpaParser jpaParser;
     private final Configuration configuration;
     private final ExtContext extContext;
     private final ResultMapHelper resultMapHelper;
+    private final TableInfoFactory tableInfoFactory;
 
     public MappedStatementHelper(Configuration configuration, ExtContext extContext) {
         this.configuration = configuration;
         this.extContext = extContext;
-        this.resultMapHelper = new ResultMapHelper(configuration, this);
+        this.tableInfoFactory = new TableInfoFactory(configuration, extContext);
+        this.resultMapHelper = new ResultMapHelper(configuration, this, tableInfoFactory);
+        this.jpaParser = new JpaParser(configuration, tableInfoFactory);
     }
 
     public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType, boolean changeConfiguration) {
         log.debug(id);
-        TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, tableType);
+        TableInfo tableInfo = tableInfoFactory.getTableInfo(tableType);
         Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(tableInfo, methods, returnType);
         Dialect dialect = selectDialect();
         String script = SemanticScriptHelper.buildScript(signatureToSemantic, dialect);
@@ -74,7 +77,7 @@ public class MappedStatementHelper {
     private Map<String, Semantic> buildSignatureToSemantic(TableInfo tableInfo, List<GenericMethod> methods, GenericType returnType) {
         Map<Semantic, String> map = new HashMap<>();
         for (GenericMethod method : methods) {
-            Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters(), returnType);
+            Semantic semantic = jpaParser.parse(tableInfo, method.getName(), method.getParameters(), returnType);
             map.put(semantic, buildParameterSignature(method));
         }
         return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));

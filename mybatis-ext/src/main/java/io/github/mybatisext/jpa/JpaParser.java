@@ -36,6 +36,9 @@ import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class JpaParser extends BaseParser {
 
+    private final Configuration configuration;
+    private final TableInfoFactory tableInfoFactory;
+
     private final Symbol grammar = new Symbol("grammar");
     private final Symbol conditionList = new Symbol("conditionList");
     private final Symbol condition = new Symbol("condition");
@@ -178,7 +181,10 @@ public class JpaParser extends BaseParser {
     private final Symbol having = new Symbol("having").set(join(keyword("Having"), conditionList));
     private final Symbol orderBy = new Symbol("orderBy").set(join(keyword("OrderBy"), orderByList));
 
-    public JpaParser() {
+    public JpaParser(Configuration configuration, TableInfoFactory tableInfoFactory) {
+        this.configuration = configuration;
+        this.tableInfoFactory = tableInfoFactory;
+
         grammar.set(choice(
                 join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(propertyList), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(join(groupBy, optional(having))), optional(orderBy), optional(limit), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.SELECT);
@@ -397,7 +403,7 @@ public class JpaParser extends BaseParser {
         if (!TableInfoFactory.isAssignableEitherWithTable(returnType, jpaTokenizer.getTableInfo().getTableClass())) {
             throw new MybatisExtException("Incompatible return type: " + returnType.getTypeName() + ", expected: " + jpaTokenizer.getTableInfo().getTableClass().getName());
         }
-        TableInfo tableInfo = TableInfoFactory.getTableInfo(jpaTokenizer.getConfiguration(), returnType);
+        TableInfo tableInfo = tableInfoFactory.getTableInfo(returnType);
         List<PropertyInfo> propertyInfos = tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList());
         return ensureJoinRelationColumns(state, propertyInfos);
     }
@@ -498,7 +504,6 @@ public class JpaParser extends BaseParser {
         List<Variable> variables = jpaTokenizer.getVariables();
         GenericType tableClass = tableInfo.getTableClass();
         GenericType parameterType = parameter.getGenericType();
-        OnlyById onlyById = parameter.getAnnotation(OnlyById.class);
         Param param = parameter.getAnnotation(Param.class);
         String paramName;
         if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
@@ -513,10 +518,11 @@ public class JpaParser extends BaseParser {
         } else {
             return buildMultiParamCondition(jpaTokenizer, usedParamNames, parameter);
         }
+        OnlyById onlyById = parameter.getAnnotation(OnlyById.class);
         Condition condition = ConditionHelper.fromTableInfo(tableInfo, onlyById != null, paramName);
         Filterable filterable = parameter.getAnnotation(Filterable.class);
-        FilterableInfo filterableInfo = buildFilterableInfo(filterable);
-        if (onlyById == null && filterableInfo != null && filterableInfo.isEnable()) {
+        if (onlyById == null && filterable != null) {
+            FilterableInfo filterableInfo = buildFilterableInfo(filterable);
             applyFilterableInfo(condition, filterableInfo, variables, usedParamNames);
             condition.setVariable(new Variable(StringUtils.isNotBlank(paramName) ? paramName : "param1", tableClass));
         }
@@ -526,12 +532,9 @@ public class JpaParser extends BaseParser {
     private Condition buildMultiParamCondition(JpaTokenizer jpaTokenizer, Set<String> usedParamNames, GenericParameter... parameters) {
         TableInfo tableInfo = jpaTokenizer.getTableInfo();
         List<Variable> variables = jpaTokenizer.getVariables();
-        Configuration configuration = jpaTokenizer.getConfiguration();
         List<Condition> conditions = new ArrayList<>();
         for (GenericParameter parameter : parameters) {
             Param param = parameter.getAnnotation(Param.class);
-            Filterable filterable = parameter.getAnnotation(Filterable.class);
-            FilterableInfo filterableInfo = buildFilterableInfo(filterable);
             if (param != null && usedParamNames.contains(param.value())) {
                 continue;
             }
@@ -540,14 +543,11 @@ public class JpaParser extends BaseParser {
             }
             Condition condition = new Condition(ConditionType.BASIC);
             condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
-            condition.setPropertyInfo(parseProperty(configuration, tableInfo, param.value()));
+            condition.setPropertyInfo(parseProperty(tableInfo, param.value()));
             condition.setVariable(new Variable(param.value(), parameter.getGenericType()));
-            if (filterableInfo == null || !filterableInfo.isEnable()) {
-                condition.setTest(IfTest.None);
-                condition.setCompareOperator(CompareOperator.Equals);
-            } else {
-                applyFilterableInfo(condition, filterableInfo, variables, usedParamNames);
-            }
+            Filterable filterable = parameter.getAnnotation(Filterable.class);
+            FilterableInfo filterableInfo = buildFilterableInfo(filterable);
+            applyFilterableInfo(condition, filterableInfo, variables, usedParamNames);
             conditions.add(condition);
         }
         if (conditions.isEmpty()) {
@@ -559,12 +559,14 @@ public class JpaParser extends BaseParser {
         return ConditionHelper.simplifyCondition(condition);
     }
 
-    private static @Nullable FilterableInfo buildFilterableInfo(@Nullable Filterable filterable) {
-        if (filterable == null) {
-            return null;
-        }
+    private FilterableInfo buildFilterableInfo(@Nullable Filterable filterable) {
         FilterableInfo filterableInfo = new FilterableInfo();
-        filterableInfo.setEnable(filterable.enable());
+        if (filterable == null) {
+            filterableInfo.setTest(IfTest.None);
+            filterableInfo.setOperator(CompareOperator.Equals);
+            filterableInfo.setLogicalOperator(LogicalOperator.AND);
+            return filterableInfo;
+        }
         filterableInfo.setTest(filterable.test());
         filterableInfo.setOperator(filterable.operator());
         filterableInfo.setLogicalOperator(filterable.logicalOperator());
@@ -661,7 +663,7 @@ public class JpaParser extends BaseParser {
 
     private final Symbol propertyEnd = join(property, end);
 
-    private PropertyInfo parseProperty(Configuration configuration, TableInfo tableInfo, String param) {
+    private PropertyInfo parseProperty(TableInfo tableInfo, String param) {
         AtomicReference<PropertyInfo> reference = new AtomicReference<>();
         List<TokenMarker> tokenMarkers = new ArrayList<>();
         JpaTokenizer jpaTokenizer = new JpaTokenizer(tableInfo, param.substring(0, 1).toUpperCase() + param.substring(1), configuration);
@@ -682,10 +684,10 @@ public class JpaParser extends BaseParser {
         return reference.get();
     }
 
-    public Semantic parse(Configuration configuration, TableInfo tableInfo, String methodName, GenericParameter[] parameters, GenericType returnType) {
+    public Semantic parse(TableInfo tableInfo, String methodName, GenericParameter[] parameters, GenericType returnType) {
         GenericType unwrappedReturnType = CommonUtils.unwrapType(returnType);
         if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getTableClass(), unwrappedReturnType)) {
-            tableInfo = TableInfoFactory.getTableInfo(configuration, unwrappedReturnType);
+            tableInfo = tableInfoFactory.getTableInfo(unwrappedReturnType);
         }
         for (GenericParameter parameter : parameters) {
             if (CommonUtils.isSpecialParameter(parameter.getType())) {
@@ -693,7 +695,7 @@ public class JpaParser extends BaseParser {
             }
             GenericType parameterType = CommonUtils.unwrapType(parameter.getGenericType());
             if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getTableClass(), parameterType)) {
-                tableInfo = TableInfoFactory.getTableInfo(configuration, parameterType);
+                tableInfo = tableInfoFactory.getTableInfo(parameterType);
             }
             break;
         }

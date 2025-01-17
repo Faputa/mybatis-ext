@@ -23,12 +23,14 @@ import javax.annotation.Nullable;
 
 import org.apache.ibatis.session.Configuration;
 
+import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.ColumnRef;
 import io.github.mybatisext.annotation.EmbedParent;
 import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.IdType;
+import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
@@ -38,6 +40,8 @@ import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.annotation.TableRef;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.idgenerator.IdGenerator;
+import io.github.mybatisext.jpa.CompareOperator;
+import io.github.mybatisext.jpa.LogicalOperator;
 import io.github.mybatisext.reflect.GenericField;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
@@ -49,6 +53,13 @@ import io.github.mybatisext.util.TypeArgumentResolver;
 public class TableInfoFactory {
 
     private static final Map<GenericType, TableInfo> tableInfoCache = new ConcurrentHashMap<>();
+    private final Configuration configuration;
+    private final ExtContext extContext;
+
+    public TableInfoFactory(Configuration configuration, ExtContext extContext) {
+        this.configuration = configuration;
+        this.extContext = extContext;
+    }
 
     public static PropertyInfo deepGet(TableInfo tableInfo, String fullName) {
         Map<String, PropertyInfo> map = tableInfo.getNameToPropertyInfo();
@@ -91,27 +102,27 @@ public class TableInfoFactory {
         return null;
     }
 
-    public static TableInfo getTableInfo(Configuration configuration, Class<?> tableClass) {
-        return getTableInfo(configuration, GenericTypeFactory.build(tableClass));
+    public TableInfo getTableInfo(Class<?> tableClass) {
+        return getTableInfo(GenericTypeFactory.build(tableClass));
     }
 
-    public static TableInfo getTableInfo(Configuration configuration, @Nonnull GenericType tableClass) {
+    public TableInfo getTableInfo(@Nonnull GenericType tableClass) {
         for (GenericType c = tableClass; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             if (c.isAnnotationPresent(Table.class)) {
-                return processTable(configuration, c, c.getAnnotation(Table.class));
+                return processTable(c, c.getAnnotation(Table.class));
             }
             if (c.isAnnotationPresent(TableRef.class)) {
-                return processTableRef(configuration, c, c.getAnnotation(TableRef.class));
+                return processTableRef(c, c.getAnnotation(TableRef.class));
             }
         }
         throw new MybatisExtException("Class [" + tableClass.getName() + "] lacks @" + Table.class.getSimpleName() + " or @" + TableRef.class.getSimpleName() + " annotation.");
     }
 
-    private static TableInfo processTableRef(Configuration configuration, GenericType tableClass, TableRef tableRef) {
+    private TableInfo processTableRef(GenericType tableClass, TableRef tableRef) {
         if (tableInfoCache.containsKey(tableClass)) {
             return tableInfoCache.get(tableClass);
         }
-        TableInfo refTableInfo = getTableInfo(configuration, tableRef.value());
+        TableInfo refTableInfo = getTableInfo(tableRef.value());
         TableInfo tableInfo = new TableInfo();
         tableInfoCache.put(tableClass, tableInfo);
         tableInfo.setTableClass(tableClass);
@@ -121,11 +132,11 @@ public class TableInfoFactory {
         tableInfo.setSchema(refTableInfo.getSchema());
         tableInfo.getAliasToJoinTableInfo().putAll(refTableInfo.getAliasToJoinTableInfo());
         tableInfo.getNameToColumnInfo().putAll(refTableInfo.getNameToColumnInfo());
-        processPropertyRef(configuration, tableClass, tableInfo, refTableInfo);
+        processPropertyRef(tableClass, tableInfo, refTableInfo);
         return tableInfo;
     }
 
-    private static void processPropertyRef(Configuration configuration, GenericType genericType, TableInfo tableInfo, TableInfo refTableInfo) {
+    private void processPropertyRef(GenericType genericType, TableInfo tableInfo, TableInfo refTableInfo) {
         for (GenericType c = genericType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             for (GenericField field : c.getDeclaredFields()) {
                 if (tableInfo.getNameToPropertyInfo().containsKey(field.getName())) {
@@ -133,7 +144,7 @@ public class TableInfoFactory {
                 }
                 ColumnRef columnRef = field.getAnnotation(ColumnRef.class);
                 if (columnRef != null) {
-                    processRefPropertyInfo(configuration, field.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : field.getName(), refTableInfo, field.getGenericType(), field.getAnnotation(Filterable.class), true);
+                    processRefPropertyInfo(field.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : field.getName(), refTableInfo, field.getGenericType(), field.getAnnotation(Filterable.class), true);
                 }
             }
 
@@ -155,13 +166,13 @@ public class TableInfoFactory {
                 }
                 ColumnRef columnRef = readMethod.getAnnotation(ColumnRef.class);
                 if (columnRef != null) {
-                    processRefPropertyInfo(configuration, propertyDescriptor.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : propertyDescriptor.getName(), refTableInfo, readMethod.getGenericReturnType(), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getWriteMethod() == null);
+                    processRefPropertyInfo(propertyDescriptor.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : propertyDescriptor.getName(), refTableInfo, readMethod.getGenericReturnType(), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getWriteMethod() == null);
                 }
             }
         }
     }
 
-    private static void processRefPropertyInfo(Configuration configuration, String name, TableInfo tableInfo, String refName, TableInfo refTableInfo, GenericType propertyType, Filterable filterable, boolean readonly) {
+    private void processRefPropertyInfo(String name, TableInfo tableInfo, String refName, TableInfo refTableInfo, GenericType propertyType, Filterable filterable, boolean readonly) {
         PropertyInfo refPropertyInfo = refTableInfo.getNameToPropertyInfo().get(refName);
         if (refPropertyInfo == null) {
             throw new MybatisExtException("Missing property [" + refName + "] in ref table.");
@@ -194,11 +205,11 @@ public class TableInfoFactory {
         if (propertyInfo.isOwnColumn()) {
             propertyInfo.putAll(refPropertyInfo);
         } else if (getTableAnnotationClass(targetType) != null) {
-            propertyInfo.putAll(collectJoinTablePropertyInfos(refPropertyInfo.getJoinTableInfo(), getTableInfo(configuration, targetType).getNameToPropertyInfo().values(), propertyInfo.getFullName()));
+            propertyInfo.putAll(collectJoinTablePropertyInfos(refPropertyInfo.getJoinTableInfo(), getTableInfo(targetType).getNameToPropertyInfo().values(), propertyInfo.getFullName()));
         }
     }
 
-    private static TableInfo processTable(Configuration configuration, GenericType tableClass, Table table) {
+    private TableInfo processTable(GenericType tableClass, Table table) {
         if (tableInfoCache.containsKey(tableClass)) {
             return tableInfoCache.get(tableClass);
         }
@@ -215,8 +226,8 @@ public class TableInfoFactory {
 
         AtomicInteger aliasCount = new AtomicInteger(1);
         Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo = new HashMap<>();
-        processParentJoinRelations(configuration, tableClass, tableInfo, featureToJoinTableInfo);
-        processProperty(configuration, tableClass, tableInfo, featureToJoinTableInfo, aliasCount);
+        processParentJoinRelations(tableClass, tableInfo, featureToJoinTableInfo);
+        processProperty(tableClass, tableInfo, featureToJoinTableInfo, aliasCount);
         replaceJoinColumnPlaceholder(tableInfo);
 
         aliasCount.set(0);
@@ -258,12 +269,12 @@ public class TableInfoFactory {
         }
     }
 
-    private static void processParentJoinRelations(Configuration configuration, @Nonnull GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
+    private void processParentJoinRelations(@Nonnull GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo) {
         if (tableClass.isAnnotationPresent(JoinParent.class)) {
             if (tableClass.getGenericSuperclass() == null || tableClass.getGenericSuperclass().getType() == Object.class) {
                 throw new MybatisExtException("@" + JoinParent.class.getSimpleName() + " requires a valid non-Object superclass: " + tableClass.getType().getName());
             }
-            TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
+            TableInfo parentTableInfo = getTableInfo(tableClass.getGenericSuperclass());
             JoinParent joinParent = tableClass.getAnnotation(JoinParent.class);
             for (JoinColumn joinColumn : joinParent.joinColumn()) {
                 JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
@@ -281,7 +292,7 @@ public class TableInfoFactory {
                     throw new MybatisExtException("@" + EmbedParent.class.getSimpleName() + " requires a valid non-Object superclass: " + c.getType().getName());
                 }
                 if (c.getGenericSuperclass().isAnnotationPresent(Table.class)) {
-                    TableInfo parentTableInfo = getTableInfo(configuration, tableClass.getGenericSuperclass());
+                    TableInfo parentTableInfo = getTableInfo(tableClass.getGenericSuperclass());
                     tableInfo.getJoinTableInfo().setAlias(parentTableInfo.getJoinTableInfo().getAlias());
                     tableInfo.getAliasToJoinTableInfo().put(parentTableInfo.getJoinTableInfo().getAlias(), tableInfo.getJoinTableInfo());
                     tableInfo.getJoinTableInfo().getRightJoinTableInfos().putAll(parentTableInfo.getJoinTableInfo().getRightJoinTableInfos());
@@ -319,7 +330,7 @@ public class TableInfoFactory {
         }
     }
 
-    private static void processProperty(Configuration configuration, GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
+    private void processProperty(GenericType tableClass, TableInfo tableInfo, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
         boolean inJoinParent = false;
         for (GenericType c = tableClass; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             for (GenericField field : c.getDeclaredFields()) {
@@ -329,14 +340,14 @@ public class TableInfoFactory {
                 Column column = field.getAnnotation(Column.class);
                 if (column != null) {
                     if (inJoinParent) {
-                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, field.getAnnotation(LoadStrategy.class), field.getAnnotation(Filterable.class), field.getName(), field.getGenericType(), false, featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(tableInfo, c, new JoinRelation[0], column, field.getAnnotation(LoadStrategy.class), field.getAnnotation(Filterable.class), field.getName(), field.getGenericType(), false, featureToJoinTableInfo, aliasCount);
                     } else {
-                        processColumn(configuration, tableInfo, column, field.getAnnotation(Id.class), field.getAnnotation(Filterable.class), field.getName(), field.getGenericType(), false);
+                        processColumn(tableInfo, column, field.getAnnotation(Id.class), field.getAnnotation(Filterable.class), field.getName(), field.getGenericType(), false);
                     }
                 } else {
                     JoinRelation[] joinRelations = field.getAnnotationsByType(JoinRelation.class);
                     if (joinRelations.length > 0) {
-                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, field.getAnnotation(LoadStrategy.class), field.getAnnotation(Filterable.class), field.getName(), field.getGenericType(), false, featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(tableInfo, c, joinRelations, null, field.getAnnotation(LoadStrategy.class), field.getAnnotation(Filterable.class), field.getName(), field.getGenericType(), false, featureToJoinTableInfo, aliasCount);
                     }
                 }
             }
@@ -360,14 +371,14 @@ public class TableInfoFactory {
                 Column column = readMethod.getAnnotation(Column.class);
                 if (column != null) {
                     if (inJoinParent) {
-                        processJoinProperty(configuration, tableInfo, c, new JoinRelation[0], column, readMethod.getAnnotation(LoadStrategy.class), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null, featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(tableInfo, c, new JoinRelation[0], column, readMethod.getAnnotation(LoadStrategy.class), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null, featureToJoinTableInfo, aliasCount);
                     } else {
-                        processColumn(configuration, tableInfo, column, readMethod.getAnnotation(Id.class), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null);
+                        processColumn(tableInfo, column, readMethod.getAnnotation(Id.class), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null);
                     }
                 } else {
                     JoinRelation[] joinRelations = readMethod.getAnnotationsByType(JoinRelation.class);
                     if (joinRelations.length > 0) {
-                        processJoinProperty(configuration, tableInfo, c, joinRelations, null, readMethod.getAnnotation(LoadStrategy.class), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null, featureToJoinTableInfo, aliasCount);
+                        processJoinProperty(tableInfo, c, joinRelations, null, readMethod.getAnnotation(LoadStrategy.class), readMethod.getAnnotation(Filterable.class), propertyDescriptor.getName(), readMethod.getGenericReturnType(), propertyDescriptor.getWriteMethod() == null, featureToJoinTableInfo, aliasCount);
                     }
                 }
             }
@@ -386,22 +397,22 @@ public class TableInfoFactory {
         }
     }
 
-    private static void processColumn(Configuration configuration, TableInfo tableInfo, Column column, @Nullable Id id, Filterable filterable, String propertyName, GenericType propertyType, boolean readonly) {
-        PropertyInfo propertyInfo = buildColumnPropertyInfo(configuration, tableInfo, column, id, filterable, "", propertyName, propertyType, readonly);
+    private void processColumn(TableInfo tableInfo, Column column, @Nullable Id id, Filterable filterable, String propertyName, GenericType propertyType, boolean readonly) {
+        PropertyInfo propertyInfo = buildColumnPropertyInfo(tableInfo, column, id, filterable, "", propertyName, propertyType, readonly);
         tableInfo.getNameToPropertyInfo().put(propertyName, propertyInfo);
     }
 
-    private static PropertyInfo buildColumnPropertyInfo(Configuration configuration, TableInfo tableInfo, Column column, @Nullable Id id, Filterable filterable, String prefix, String propertyName, GenericType propertyType, boolean readonly) {
-        PropertyInfo propertyInfo = buildPropertyInfo(configuration, prefix, propertyName, propertyType);
+    private PropertyInfo buildColumnPropertyInfo(TableInfo tableInfo, Column column, @Nullable Id id, Filterable filterable, String prefix, String propertyName, GenericType propertyType, boolean readonly) {
+        PropertyInfo propertyInfo = buildPropertyInfo(prefix, propertyName, propertyType);
         propertyInfo.setOwnColumn(true);
         propertyInfo.setReadonly(readonly);
         propertyInfo.setJdbcType(column.jdbcType());
         propertyInfo.setJoinTableInfo(tableInfo.getJoinTableInfo());
         propertyInfo.setFilterableInfo(buildFilterableInfo(filterable));
         if (propertyInfo.getResultType() == ResultType.ASSOCIATION) {
-            propertyInfo.putAll(collectColumnPropertyInfos(configuration, tableInfo, propertyInfo.getFullName(), GenericTypeFactory.build(propertyInfo.getJavaType()), readonly));
+            propertyInfo.putAll(collectColumnPropertyInfos(tableInfo, propertyInfo.getFullName(), GenericTypeFactory.build(propertyInfo.getJavaType()), readonly));
         } else if (propertyInfo.getResultType() == ResultType.COLLECTION && !configuration.getTypeHandlerRegistry().hasTypeHandler(propertyInfo.getOfType().getType())) {
-            propertyInfo.putAll(collectColumnPropertyInfos(configuration, tableInfo, propertyInfo.getFullName(), GenericTypeFactory.build(propertyInfo.getOfType()), readonly));
+            propertyInfo.putAll(collectColumnPropertyInfos(tableInfo, propertyInfo.getFullName(), GenericTypeFactory.build(propertyInfo.getOfType()), readonly));
         } else {
             if (id != null) {
                 processIdType(propertyInfo, id);
@@ -426,7 +437,7 @@ public class TableInfoFactory {
         return propertyInfo;
     }
 
-    private static Map<String, PropertyInfo> collectColumnPropertyInfos(Configuration configuration, TableInfo tableInfo, String prefix, @Nonnull GenericType javaType, boolean readonly) {
+    private Map<String, PropertyInfo> collectColumnPropertyInfos(TableInfo tableInfo, String prefix, @Nonnull GenericType javaType, boolean readonly) {
         Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
         for (GenericType c = javaType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             for (GenericField field : c.getDeclaredFields()) {
@@ -435,7 +446,7 @@ public class TableInfoFactory {
                 }
                 Column column = field.getAnnotation(Column.class);
                 if (column != null) {
-                    PropertyInfo propertyInfo = buildColumnPropertyInfo(configuration, tableInfo, column, field.getAnnotation(Id.class), field.getAnnotation(Filterable.class), prefix, field.getName(), field.getGenericType(), readonly);
+                    PropertyInfo propertyInfo = buildColumnPropertyInfo(tableInfo, column, field.getAnnotation(Id.class), field.getAnnotation(Filterable.class), prefix, field.getName(), field.getGenericType(), readonly);
                     nameToPropertyInfo.put(field.getName(), propertyInfo);
                 }
             }
@@ -459,7 +470,7 @@ public class TableInfoFactory {
             }
             Column column = readMethod.getAnnotation(Column.class);
             if (column != null) {
-                PropertyInfo propertyInfo = buildColumnPropertyInfo(configuration, tableInfo, column, readMethod.getAnnotation(Id.class), readMethod.getAnnotation(Filterable.class), prefix, propertyDescriptor.getName(), readMethod.getGenericReturnType(), readonly || propertyDescriptor.getWriteMethod() == null);
+                PropertyInfo propertyInfo = buildColumnPropertyInfo(tableInfo, column, readMethod.getAnnotation(Id.class), readMethod.getAnnotation(Filterable.class), prefix, propertyDescriptor.getName(), readMethod.getGenericReturnType(), readonly || propertyDescriptor.getWriteMethod() == null);
                 nameToPropertyInfo.put(propertyDescriptor.getName(), propertyInfo);
             }
         }
@@ -480,14 +491,14 @@ public class TableInfoFactory {
         propertyInfo.setResultType(ResultType.ID);
     }
 
-    private static void processJoinProperty(Configuration configuration, TableInfo tableInfo, GenericType currentClass, JoinRelation[] joinRelations, @Nullable Column column, @Nullable LoadStrategy loadStrategy, Filterable filterable, String propertyName, GenericType propertyType, boolean readonly, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
-        PropertyInfo propertyInfo = buildPropertyInfo(configuration, "", propertyName, propertyType);
+    private void processJoinProperty(TableInfo tableInfo, GenericType currentClass, JoinRelation[] joinRelations, @Nullable Column column, @Nullable LoadStrategy loadStrategy, Filterable filterable, String propertyName, GenericType propertyType, boolean readonly, Map<Set<JoinColumnFeature>, JoinTableInfo> featureToJoinTableInfo, AtomicInteger aliasCount) {
+        PropertyInfo propertyInfo = buildPropertyInfo("", propertyName, propertyType);
         propertyInfo.setOwnColumn(false);
         propertyInfo.setReadonly(readonly);
         propertyInfo.setFilterableInfo(buildFilterableInfo(filterable));
         tableInfo.getNameToPropertyInfo().put(propertyName, propertyInfo);
 
-        buildJoinTableInfos(configuration, tableInfo, currentClass, propertyInfo, joinRelations);
+        buildJoinTableInfos(tableInfo, currentClass, propertyInfo, joinRelations);
         mergeJoinTableInfos(tableInfo, propertyInfo, featureToJoinTableInfo, aliasCount);
 
         if (column != null) {
@@ -516,7 +527,7 @@ public class TableInfoFactory {
         }
     }
 
-    private static void buildJoinTableInfos(Configuration configuration, TableInfo rootTableInfo, GenericType currentClass, PropertyInfo propertyInfo, JoinRelation[] joinRelations) {
+    private void buildJoinTableInfos(TableInfo rootTableInfo, GenericType currentClass, PropertyInfo propertyInfo, JoinRelation[] joinRelations) {
         JoinTableInfo lastJoinTableInfo = rootTableInfo.getJoinTableInfo();
         JoinTableInfo parentJoinTableInfo = rootTableInfo.getJoinTableInfo();
         GenericType tableClass = rootTableInfo.getTableClass();
@@ -530,7 +541,7 @@ public class TableInfoFactory {
                 break;
             }
             JoinParent joinParent = c.getAnnotation(JoinParent.class);
-            TableInfo tableInfo = getTableInfo(configuration, c.getGenericSuperclass());
+            TableInfo tableInfo = getTableInfo(c.getGenericSuperclass());
             parentJoinTableInfo = new JoinTableInfo();
             parentJoinTableInfo.setTableInfo(tableInfo);
             parentJoinTableInfo.setAlias(joinParent.alias());
@@ -555,14 +566,14 @@ public class TableInfoFactory {
             aliasToJoinTableInfo.put(parentJoinTableInfo.getAlias(), parentJoinTableInfo);
         }
 
-        processJoinRelations(configuration, lastJoinTableInfo, propertyInfo, joinRelations, aliasToJoinTableInfo);
+        processJoinRelations(lastJoinTableInfo, propertyInfo, joinRelations, aliasToJoinTableInfo);
         checkJoinTableInfos(aliasToJoinTableInfo);
     }
 
-    private static void processJoinRelations(Configuration configuration, JoinTableInfo lastJoinTableInfo, PropertyInfo propertyInfo, JoinRelation[] joinRelations, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
+    private void processJoinRelations(JoinTableInfo lastJoinTableInfo, PropertyInfo propertyInfo, JoinRelation[] joinRelations, Map<String, JoinTableInfo> aliasToJoinTableInfo) {
         for (JoinRelation joinRelation : joinRelations) {
             JoinTableInfo joinTableInfo;
-            TableInfo tableInfo = resolveTableInfoFromJoinRelation(configuration, propertyInfo, joinRelation);
+            TableInfo tableInfo = resolveTableInfoFromJoinRelation(propertyInfo, joinRelation);
             if (StringUtils.isNotBlank(joinRelation.tableAlias())) {
                 joinTableInfo = aliasToJoinTableInfo.get(joinRelation.tableAlias());
                 if (joinTableInfo != null) {
@@ -662,17 +673,17 @@ public class TableInfoFactory {
         }
     }
 
-    private static TableInfo resolveTableInfoFromJoinRelation(Configuration configuration, PropertyInfo propertyInfo, JoinRelation joinRelation) {
+    private TableInfo resolveTableInfoFromJoinRelation(PropertyInfo propertyInfo, JoinRelation joinRelation) {
         if (joinRelation.table() != void.class) {
-            return getTableInfo(configuration, joinRelation.table());
+            return getTableInfo(joinRelation.table());
         }
         if (propertyInfo.getOfType() != null) {
-            return getTableInfo(configuration, propertyInfo.getOfType());
+            return getTableInfo(propertyInfo.getOfType());
         }
-        return getTableInfo(configuration, propertyInfo.getJavaType());
+        return getTableInfo(propertyInfo.getJavaType());
     }
 
-    private static PropertyInfo buildPropertyInfo(Configuration configuration, String prefix, String name, GenericType propertyType) {
+    private PropertyInfo buildPropertyInfo(String prefix, String name, GenericType propertyType) {
         PropertyInfo propertyInfo = new PropertyInfo(prefix, name);
         if (Collection.class.isAssignableFrom(propertyType.getType())) {
             propertyInfo.setJavaType(propertyType);
@@ -727,12 +738,18 @@ public class TableInfoFactory {
         dest.setFilterableInfo(origin.getFilterableInfo());
     }
 
-    private static FilterableInfo buildFilterableInfo(@Nullable Filterable filterable) {
+    private FilterableInfo buildFilterableInfo(@Nullable Filterable filterable) {
         if (filterable == null) {
-            return null;
+            if (!extContext.isDefaultFilterable()) {
+                return null;
+            }
+            FilterableInfo filterableInfo = new FilterableInfo();
+            filterableInfo.setTest(IfTest.NotNull);
+            filterableInfo.setOperator(CompareOperator.Equals);
+            filterableInfo.setLogicalOperator(LogicalOperator.AND);
+            return filterableInfo;
         }
         FilterableInfo filterableInfo = new FilterableInfo();
-        filterableInfo.setEnable(filterable.enable());
         filterableInfo.setTest(filterable.test());
         filterableInfo.setOperator(filterable.operator());
         filterableInfo.setLogicalOperator(filterable.logicalOperator());

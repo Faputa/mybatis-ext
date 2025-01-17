@@ -26,8 +26,9 @@ import io.github.mybatisext.statement.SemanticScriptHelper;
 
 public class JpaParserTest {
 
-    final ExtConfiguration configuration;
-    final TableInfo tableInfo;
+    private final ExtConfiguration configuration;
+    private final TableInfo tableInfo;
+    private final JpaParser jpaParser;
 
     JpaParserTest() {
         BasicDataSource dataSource = new BasicDataSource();
@@ -37,17 +38,19 @@ public class JpaParserTest {
         dataSource.setPassword("");
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
-        configuration = new ExtConfiguration(environment, new ExtContext());
-        tableInfo = TableInfoFactory.getTableInfo(configuration, TablePermission.class);
+        ExtContext extContext = new ExtContext();
+        configuration = new ExtConfiguration(environment, extContext);
+        TableInfoFactory tableInfoFactory = new TableInfoFactory(configuration, extContext);
+        tableInfo = tableInfoFactory.getTableInfo(TablePermission.class);
+        jpaParser = new JpaParser(configuration, tableInfoFactory);
     }
 
     @Test
     public void testParse() {
-        JpaParser jpaParser = new JpaParser();
         GenericType genericType = GenericTypeFactory.build(JpaParserExample.class);
         Map<String, Map<Semantic, String>> map = new HashMap<>();
         for (GenericMethod method : genericType.getMethods()) {
-            Semantic semantic = jpaParser.parse(configuration, tableInfo, method.getName(), method.getParameters(), method.getGenericReturnType());
+            Semantic semantic = jpaParser.parse(tableInfo, method.getName(), method.getParameters(), method.getGenericReturnType());
             ParameterSignature parameterSignature = ParameterSignatureHelper.buildParameterSignature(configuration, method);
             String s = ParameterSignatureHelper.toString(parameterSignature);
             map.computeIfAbsent(method.getName(), k -> new HashMap<>()).put(semantic, s);
