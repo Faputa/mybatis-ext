@@ -19,8 +19,7 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
     private JdbcType jdbcType;
     private boolean ownColumn;
     private boolean readonly;
-    // 如果存在FilterSpec注解
-    private FilterSpecInfo filterSpecInfo;
+    private FilterableInfo filterableInfo;
     // 如果是简单类型属性
     private String columnName;
 
@@ -96,12 +95,12 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         this.readonly = readonly;
     }
 
-    public FilterSpecInfo getFilterSpecInfo() {
-        return filterSpecInfo;
+    public FilterableInfo getFilterableInfo() {
+        return filterableInfo;
     }
 
-    public void setFilterSpecInfo(FilterSpecInfo filterSpecInfo) {
-        this.filterSpecInfo = filterSpecInfo;
+    public void setFilterableInfo(FilterableInfo filterableInfo) {
+        this.filterableInfo = filterableInfo;
     }
 
     public String getColumnName() {
@@ -161,12 +160,12 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
             return false;
         }
         PropertyInfo that = (PropertyInfo) o;
-        return ownColumn == that.ownColumn && readonly == that.readonly && Objects.equals(name, that.name) && Objects.equals(prefix, that.prefix) && Objects.equals(joinTableInfo, that.joinTableInfo) && Objects.equals(javaType, that.javaType) && jdbcType == that.jdbcType && Objects.equals(filterSpecInfo, that.filterSpecInfo) && Objects.equals(columnName, that.columnName) && resultType == that.resultType && idType == that.idType && Objects.equals(customIdGenerator, that.customIdGenerator) && loadType == that.loadType && Objects.equals(ofType, that.ofType);
+        return ownColumn == that.ownColumn && readonly == that.readonly && Objects.equals(name, that.name) && Objects.equals(prefix, that.prefix) && Objects.equals(joinTableInfo, that.joinTableInfo) && Objects.equals(javaType, that.javaType) && jdbcType == that.jdbcType && Objects.equals(filterableInfo, that.filterableInfo) && Objects.equals(columnName, that.columnName) && resultType == that.resultType && idType == that.idType && Objects.equals(customIdGenerator, that.customIdGenerator) && loadType == that.loadType && Objects.equals(ofType, that.ofType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), name, prefix, joinTableInfo, javaType, jdbcType, ownColumn, readonly, filterSpecInfo, columnName, resultType, idType, customIdGenerator, loadType, ofType);
+        return Objects.hash(super.hashCode(), name, prefix, joinTableInfo, javaType, jdbcType, ownColumn, readonly, filterableInfo, columnName, resultType, idType, customIdGenerator, loadType, ofType);
     }
 
     @Override

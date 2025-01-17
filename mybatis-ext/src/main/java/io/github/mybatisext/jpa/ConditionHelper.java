@@ -101,25 +101,25 @@ public class ConditionHelper {
         condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setPropertyInfo(propertyInfo);
         condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
-        if (strictMatch || propertyInfo.getFilterSpecInfo() == null) {
+        if (strictMatch || propertyInfo.getFilterableInfo() == null || !propertyInfo.getFilterableInfo().isEnable()) {
             condition.setTest(propertyInfo.getResultType() == ResultType.COLLECTION ? IfTest.NotEmpty : strictMatch ? IfTest.None : IfTest.NotNull);
             condition.setCompareOperator(CompareOperator.Equals);
             condition.setLogicalOperator(LogicalOperator.AND);
         } else {
-            condition.setTest(propertyInfo.getFilterSpecInfo().getTest());
-            condition.setTestTemplate(propertyInfo.getFilterSpecInfo().getTestTemplate());
-            condition.setCompareOperator(propertyInfo.getFilterSpecInfo().getOperator());
-            condition.setLogicalOperator(propertyInfo.getFilterSpecInfo().getLogicalOperator());
-            condition.setTestTemplate(propertyInfo.getFilterSpecInfo().getExprTemplate());
+            condition.setTest(propertyInfo.getFilterableInfo().getTest());
+            condition.setTestTemplate(propertyInfo.getFilterableInfo().getTestTemplate());
+            condition.setCompareOperator(propertyInfo.getFilterableInfo().getOperator());
+            condition.setLogicalOperator(propertyInfo.getFilterableInfo().getLogicalOperator());
+            condition.setTestTemplate(propertyInfo.getFilterableInfo().getExprTemplate());
             if (propertyInfo.getResultType() == ResultType.COLLECTION && (condition.getTest() == IfTest.None || condition.getTest() == IfTest.NotNull)) {
                 condition.setTest(IfTest.NotEmpty);
             }
             if (condition.getCompareOperator() == CompareOperator.Between) {
-                PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, propertyInfo.getFilterSpecInfo().getSecondVariable());
+                PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, propertyInfo.getFilterableInfo().getSecondVariable());
                 if (secondPropertyInfo == null) {
-                    throw new MybatisExtException("Second variable '" + propertyInfo.getFilterSpecInfo().getSecondVariable() + "' not found in tableClass '" + tableInfo.getTableClass() + "'");
+                    throw new MybatisExtException("Second variable '" + propertyInfo.getFilterableInfo().getSecondVariable() + "' not found in tableClass '" + tableInfo.getTableClass() + "'");
                 }
-                condition.setSecondVariable(new Variable(prefix, propertyInfo.getFilterSpecInfo().getSecondVariable(), secondPropertyInfo.getJavaType()));
+                condition.setSecondVariable(new Variable(prefix, propertyInfo.getFilterableInfo().getSecondVariable(), secondPropertyInfo.getJavaType()));
             }
         }
         for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
