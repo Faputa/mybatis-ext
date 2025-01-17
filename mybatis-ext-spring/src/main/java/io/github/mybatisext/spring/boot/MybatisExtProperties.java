@@ -14,7 +14,7 @@ public class MybatisExtProperties {
     /** 是否启用 */
     private boolean enabled = true;
     /** 默认启用过滤 */
-    private boolean defaultFilterableEnable = false;
+    private boolean defaultFilterable = true;
 
     public boolean isEnabled() {
         return enabled;
@@ -24,17 +24,17 @@ public class MybatisExtProperties {
         this.enabled = enabled;
     }
 
-    public boolean isDefaultFilterableEnable() {
-        return defaultFilterableEnable;
+    public boolean isDefaultFilterable() {
+        return defaultFilterable;
     }
 
-    public void setDefaultFilterableEnable(boolean defaultFilterableEnable) {
-        this.defaultFilterableEnable = defaultFilterableEnable;
+    public void setDefaultFilterable(boolean defaultFilterable) {
+        this.defaultFilterable = defaultFilterable;
     }
 
     public ExtContext toExtContext() {
         ExtContext extContext = new ExtContext();
-        extContext.setDefaultFilterableEnable(defaultFilterableEnable);
+        extContext.setDefaultFilterable(defaultFilterable);
         return extContext;
     }
 }

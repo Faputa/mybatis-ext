@@ -101,11 +101,14 @@ public class ConditionHelper {
         condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setPropertyInfo(propertyInfo);
         condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
-        if (strictMatch || propertyInfo.getFilterableInfo() == null || !propertyInfo.getFilterableInfo().isEnable()) {
-            condition.setTest(propertyInfo.getResultType() == ResultType.COLLECTION ? IfTest.NotEmpty : strictMatch ? IfTest.None : IfTest.NotNull);
+        if (strictMatch) {
+            condition.setTest(propertyInfo.getResultType() == ResultType.COLLECTION ? IfTest.NotEmpty : IfTest.None);
             condition.setCompareOperator(CompareOperator.Equals);
             condition.setLogicalOperator(LogicalOperator.AND);
         } else {
+            if (propertyInfo.getFilterableInfo() == null) {
+                return null;
+            }
             condition.setTest(propertyInfo.getFilterableInfo().getTest());
             condition.setTestTemplate(propertyInfo.getFilterableInfo().getTestTemplate());
             condition.setCompareOperator(propertyInfo.getFilterableInfo().getOperator());
