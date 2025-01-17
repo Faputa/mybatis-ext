@@ -24,8 +24,10 @@ public class TableInfoFactoryTest {
 
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
-        ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
-        TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, TablePermission.class);
+        ExtContext extContext = new ExtContext();
+        ExtConfiguration configuration = new ExtConfiguration(environment, extContext);
+        TableInfoFactory tableInfoFactory = new TableInfoFactory(configuration, extContext);
+        TableInfo tableInfo = tableInfoFactory.getTableInfo(TablePermission.class);
         assertEquals(5, tableInfo.getAliasToJoinTableInfo().size());
         assertTrue(tableInfo.getNameToPropertyInfo().get("tableId2").isReadonly());
     }

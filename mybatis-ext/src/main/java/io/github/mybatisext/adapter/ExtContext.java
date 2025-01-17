@@ -5,15 +5,15 @@ import io.github.mybatisext.dialect.DialectSelector;
 
 public class ExtContext {
 
-    private boolean defaultFilterableEnable;
+    private boolean defaultFilterable = true;
     private DialectSelector dialectSelector = new DefaultDialectSelector();
 
-    public boolean isDefaultFilterableEnable() {
-        return defaultFilterableEnable;
+    public boolean isDefaultFilterable() {
+        return defaultFilterable;
     }
 
-    public void setDefaultFilterableEnable(boolean defaultFilterableEnable) {
-        this.defaultFilterableEnable = defaultFilterableEnable;
+    public void setDefaultFilterable(boolean defaultFilterable) {
+        this.defaultFilterable = defaultFilterable;
     }
 
     public DialectSelector getDialectSelector() {

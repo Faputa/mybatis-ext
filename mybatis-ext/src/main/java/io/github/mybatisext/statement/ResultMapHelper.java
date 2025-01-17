@@ -26,10 +26,12 @@ public class ResultMapHelper {
 
     private final Configuration configuration;
     private final MappedStatementHelper mappedStatementHelper;
+    private final TableInfoFactory tableInfoFactory;
 
-    public ResultMapHelper(Configuration configuration, MappedStatementHelper mappedStatementHelper) {
+    public ResultMapHelper(Configuration configuration, MappedStatementHelper mappedStatementHelper, TableInfoFactory tableInfoFactory) {
         this.configuration = configuration;
         this.mappedStatementHelper = mappedStatementHelper;
+        this.tableInfoFactory = tableInfoFactory;
     }
 
     public ResultMap buildResultMap(GenericType returnType, Dialect dialect, boolean changeConfiguration) {
@@ -40,7 +42,7 @@ public class ResultMapHelper {
         if (configuration.getTypeHandlerRegistry().hasTypeHandler(returnType.getType())) {
             return buildSimpleTypeResultMap(returnType.getType());
         }
-        TableInfo tableInfo = TableInfoFactory.getTableInfo(configuration, returnType);
+        TableInfo tableInfo = tableInfoFactory.getTableInfo(returnType);
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
             resultMappings.add(buildResultMapping(tableInfo, propertyInfo, dialect, changeConfiguration));

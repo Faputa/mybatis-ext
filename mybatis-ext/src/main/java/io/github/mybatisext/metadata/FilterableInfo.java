@@ -8,21 +8,12 @@ import io.github.mybatisext.jpa.LogicalOperator;
 
 public class FilterableInfo {
 
-    private boolean enable;
     private IfTest test;
     private CompareOperator operator;
     private LogicalOperator logicalOperator;
     private String testTemplate;
     private String exprTemplate;
     private String secondVariable;
-
-    public boolean isEnable() {
-        return enable;
-    }
-
-    public void setEnable(boolean enable) {
-        this.enable = enable;
-    }
 
     public IfTest getTest() {
         return test;
@@ -81,11 +72,11 @@ public class FilterableInfo {
             return false;
         }
         FilterableInfo that = (FilterableInfo) o;
-        return enable == that.enable && test == that.test && operator == that.operator && logicalOperator == that.logicalOperator && Objects.equals(testTemplate, that.testTemplate) && Objects.equals(exprTemplate, that.exprTemplate) && Objects.equals(secondVariable, that.secondVariable);
+        return test == that.test && operator == that.operator && logicalOperator == that.logicalOperator && Objects.equals(testTemplate, that.testTemplate) && Objects.equals(exprTemplate, that.exprTemplate) && Objects.equals(secondVariable, that.secondVariable);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enable, test, operator, logicalOperator, testTemplate, exprTemplate, secondVariable);
+        return Objects.hash(test, operator, logicalOperator, testTemplate, exprTemplate, secondVariable);
     }
 }
