@@ -132,7 +132,7 @@ public class Ognl {
     }
 
     /**
-     * 校验参数是否匹配
+     * 校验参数签名是否匹配
      *
      * @param _parameter 参数对象
      * @param signature  签名
