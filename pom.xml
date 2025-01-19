@@ -10,18 +10,18 @@
     <modules>
         <module>mybatis-ext</module>
         <module>mybatis-ext-spring</module>
-        <module>mybatis-ext-spring-test</module>
-        <module>mybatis-ext-test</module>
+        <module>mybatis-ext-spring-boot-starter</module>
         <module>mybatis-flex-test</module>
         <module>mybatis-plus-test</module>
         <module>mybatis-spring-test</module>
         <module>spring-data-jpa-test</module>
     </modules>
     <packaging>pom</packaging>
-    
+
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencyManagement>
