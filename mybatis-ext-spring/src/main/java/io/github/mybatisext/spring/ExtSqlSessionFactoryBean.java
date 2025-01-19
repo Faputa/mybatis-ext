@@ -10,9 +10,9 @@ import io.github.mybatisext.adapter.ExtContext;
 
 public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
 
-    private ExtContext extContext = new ExtContext();
-
     private final SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
+
+    private ExtContext extContext = new ExtContext();
 
     public void setExtContext(ExtContext extContext) {
         this.extContext = extContext;
@@ -29,7 +29,6 @@ public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
             return sqlSessionFactory;
         }
         ExtConfiguration extConfiguration = new ExtConfiguration(configuration, extContext);
-        extConfiguration.validateAllMapperMethod();
         return sqlSessionFactoryBuilder.build(extConfiguration);
     }
 }
