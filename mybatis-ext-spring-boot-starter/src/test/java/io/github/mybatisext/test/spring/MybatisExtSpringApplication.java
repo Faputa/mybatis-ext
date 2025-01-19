@@ -1,7 +1,7 @@
-package io.github.mybatisext.test.jpa;
+package io.github.mybatisext.test.spring;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class SpringDataJpaApplication {
+public class MybatisExtSpringApplication {
 }
