@@ -237,17 +237,22 @@ public abstract class BaseDialect implements Dialect {
     }
 
     protected String buildSelectItems(TableInfo tableInfo, Collection<PropertyInfo> propertyInfos, Dialect dialect) {
+        List<String> selectItemsInner = buildSelectItemsInner(tableInfo, propertyInfos, dialect);
+        return String.join(", ", selectItemsInner);
+    }
+
+    protected List<String> buildSelectItemsInner(TableInfo tableInfo, Collection<PropertyInfo> propertyInfos, Dialect dialect) {
         List<String> selectItems = new ArrayList<>();
         for (PropertyInfo propertyInfo : propertyInfos) {
             if (!propertyInfo.isReadonly()) {
                 if (propertyInfo.getColumnName() != null) {
                     selectItems.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " AS " + dialect.quote(propertyInfo.getFullName()));
                 } else {
-                    selectItems.add(buildSelectItems(tableInfo, propertyInfo.values(), dialect));
+                    selectItems.addAll(buildSelectItemsInner(tableInfo, propertyInfo.values(), dialect));
                 }
             }
         }
-        return String.join(", ", selectItems);
+        return selectItems;
     }
 
     protected String buildGroupBy(List<PropertyInfo> groupBy) {
