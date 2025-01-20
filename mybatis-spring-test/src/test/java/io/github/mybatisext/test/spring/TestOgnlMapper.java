@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface TestOgnlMapper {
+
     List<Object> testOgnlInForeach(Object value);
 
     List<Object> testVaragsToList(Object a, Object b);
