@@ -43,7 +43,7 @@
     </bean>
 
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-        <property name="basePackage" value="io.github.mybatisext.test.spring" />
+        <property name="basePackage" value="io.github.mybatisext.test" />
     </bean>
 
 </beans>

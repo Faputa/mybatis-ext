@@ -9,6 +9,7 @@
     <version>0.0.1</version>
     <modules>
         <module>mybatis-ext</module>
+        <module>mybatis-ext-test</module>
         <module>mybatis-ext-spring</module>
         <module>mybatis-ext-spring-boot-starter</module>
         <module>mybatis-flex-test</module>

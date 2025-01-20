@@ -21,7 +21,7 @@ public class SpringJdbcTest {
     public void test() {
         HashMap<String, Object> params = new HashMap<>();
         params.put("a", 1);
-        params.put("b", null);
-        jdbcTemplate.queryForList("select * from camera where camera_id=:a and org_id=:b", params);
+        params.put("b", 103);
+        jdbcTemplate.queryForList("select * from sys_user where user_id=:a and dept_id=:b", params);
     }
 }

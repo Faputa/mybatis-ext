@@ -54,7 +54,7 @@ public class TestOgnlTest {
         testOgnlMapper.testParameterObject1(1);
         testOgnlMapper.testParameterObject2(1);
         testOgnlMapper.testParameterObject3(1, 2);
-        testOgnlMapper.testParameterObject4(new Org());
+        testOgnlMapper.testParameterObject4(new SysDept());
         testOgnlMapper.testParameterObject5(new HashMap<>());
         testOgnlMapper.testParameterObject6(new ArrayList<>());
         testOgnlMapper.testParameterObject7(new HashSet<>());

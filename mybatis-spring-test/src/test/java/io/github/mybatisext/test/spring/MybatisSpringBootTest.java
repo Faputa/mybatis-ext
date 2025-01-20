@@ -11,11 +11,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class MybatisSpringBootTest {
 
 	@Autowired
-	private CameraMapper cameraMapper;
+	private SysUserMapper sysUserMapper;
 
 	@Test
 	public void test() {
-		System.out.println("########" + cameraMapper.countCamera());
-		assertThrows(BindingException.class, () -> cameraMapper.countCamera2());
+		System.out.println("########" + sysUserMapper.countSysUser());
+		assertThrows(BindingException.class, () -> sysUserMapper.countSysUser2());
 	}
 }
