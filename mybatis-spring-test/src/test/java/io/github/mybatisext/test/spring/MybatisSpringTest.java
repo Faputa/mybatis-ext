@@ -11,9 +11,9 @@ public class MybatisSpringTest {
 	@Test
 	public void test() {
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
-		CameraMapper cameraMapper = context.getBean(CameraMapper.class);
-		System.out.println("########" + cameraMapper.countCamera());
-		assertThrows(BindingException.class, () -> cameraMapper.countCamera2());
+		SysUserMapper sysUserMapper = context.getBean(SysUserMapper.class);
+		System.out.println("########" + sysUserMapper.countSysUser());
+		assertThrows(BindingException.class, () -> sysUserMapper.countSysUser2());
 		context.close();
 	}
 }

@@ -23,7 +23,7 @@ public interface TestOgnlMapper {
 
     int testParameterObject3(@Param("a") int a, @Param("b") int b);
 
-    int testParameterObject4(Org a);
+    int testParameterObject4(SysDept a);
 
     int testParameterObject5(Map<String, Object> a);
 

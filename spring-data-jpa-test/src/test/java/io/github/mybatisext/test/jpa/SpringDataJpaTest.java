@@ -8,10 +8,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class SpringDataJpaTest {
 
 	@Autowired
-	private CameraRepository cameraRepository;
+	private SysUserRepository sysUserRepository;
 
 	@Test
 	public void test() {
-		System.out.println("########" + cameraRepository.countByOrgId(13L));
+		System.out.println("########" + sysUserRepository.countByDeptId(103L));
 	}
 }
