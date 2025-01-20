@@ -2,7 +2,6 @@ package io.github.mybatisext.spring.boot;
 
 import java.util.Map;
 
-import io.github.mybatisext.spring.MybatisExtBeanPostProcessor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,6 +12,7 @@ import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.DefaultDialectSelector;
 import io.github.mybatisext.dialect.DialectSelector;
 import io.github.mybatisext.spring.MapperMethodValidator;
+import io.github.mybatisext.spring.MybatisExtBeanPostProcessor;
 
 @ConditionalOnProperty(prefix = MybatisExtProperties.PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 @Configuration

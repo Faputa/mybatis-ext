@@ -22,7 +22,6 @@
             <groupId>io.github.mybatis-ext</groupId>
             <artifactId>mybatis-ext</artifactId>
             <version>0.0.1</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.mybatis</groupId>

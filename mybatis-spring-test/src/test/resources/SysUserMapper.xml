@@ -62,7 +62,7 @@
 		<result property="loginDate" column="login_date" />
 		<result property="pwdUpdateDate" column="pwd_update_date" />
 		<!-- <result property="deptName" column="dept_name" /> -->
-		<association property="dept" resultMap="dept" />
+		<association property="dept" resultMap="SysDept" />
 		<!-- https://github.com/mybatis/mybatis-3/issues/364 -->
 		<!-- https://github.com/mybatis/mybatis-3/wiki/FAQ#how-do-i-map-a-list-of-simple-type-objects-string-integer-etc-to-a-bean-or-map- -->
 		<association property="deptName" javaType="java.lang.String">
@@ -96,15 +96,15 @@
 		a.*,
 		b.*
 		from sys_user a
-		left join sys_dept b on b.deptId=a.deptId
+		left join sys_dept b on b.dept_id=a.dept_id
 	</select>
 
 	<select id="selectSysDept" resultMap="SysDept">
-		select * from sys_dept where deptId=#{deptId}
+		select * from sys_dept where dept_id=#{deptId}
 	</select>
 
 	<select id="selectSysDeptName" resultType="java.lang.String">
-		select dept_name from sys_dept where deptId=#{deptId}
+		select dept_name from sys_dept where dept_id=#{deptId}
 	</select>
 
 	<select id="countSysUser" resultType="long">

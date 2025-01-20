@@ -17,6 +17,7 @@ public class JpaTokenizer implements Tokenizer {
 
     private final TableInfo tableInfo;
     private final String text;
+    private final Configuration configuration;
     private final GenericParameter[] parameters;
     private final GenericType returnType;
     private final List<Variable> variables;
@@ -31,6 +32,7 @@ public class JpaTokenizer implements Tokenizer {
     public JpaTokenizer(TableInfo tableInfo, String text, Configuration configuration, GenericParameter[] parameters, GenericType returnType) {
         this.tableInfo = tableInfo;
         this.text = text;
+        this.configuration = configuration;
         this.returnType = returnType;
         this.parameters = Arrays.stream(parameters).filter(v -> !CommonUtils.isSpecialParameter(v.getType())).toArray(GenericParameter[]::new);
         this.variables = buildVariables(configuration, parameters);
@@ -46,11 +48,13 @@ public class JpaTokenizer implements Tokenizer {
         if (parameters.length == 1 && VariableFactory.hasSubVariable(configuration, parameters[0].getType())) {
             Param param = parameters[0].getAnnotation(Param.class);
             if (param != null) {
-                Variable variable = VariableFactory.build(configuration, param.value(), parameters[0].getGenericType());
+                Variable variable = new Variable(param.value(), parameters[0].getGenericType());
+                VariableFactory.addChildren(configuration, variable);
                 variables.add(variable);
                 variables.addAll(variable.values());
             } else {
-                Variable variable = VariableFactory.build(configuration, "", parameters[0].getGenericType());
+                Variable variable = new Variable("", parameters[0].getGenericType());
+                VariableFactory.addChildren(configuration, variable);
                 variables.addAll(variable.values());
             }
             return variables;
@@ -165,6 +169,7 @@ public class JpaTokenizer implements Tokenizer {
     }
 
     public List<Variable> variable(Variable prevVariable) {
+        VariableFactory.addChildren(configuration, prevVariable);
         List<Variable> ss = new ArrayList<>();
         int _cursor = cursor;
         for (Variable variable : prevVariable.values()) {
