@@ -9,8 +9,11 @@ public class DefaultDialectSelector implements DialectSelector {
         if (jdbcUrl.contains(":mysql:")) {
             return new MySqlDialect();
         }
-        if (jdbcUrl.contains(":oracle:") || jdbcUrl.contains(":dm:")) {
+        if (jdbcUrl.contains(":oracle:")) {
             return new OracleDialect();
+        }
+        if (jdbcUrl.contains(":dm:")) {
+            return new DmDialect();
         }
         if (jdbcUrl.contains(":postgresql:")) {
             return new PostgreSqlDialect();
