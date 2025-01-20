@@ -5,19 +5,19 @@
         <!-- <foreach collection="@Ognl@objToList(value)" item="item" separator=" union all "> --> <!-- 必须用@Param指定参数名 -->
         <!-- <foreach collection="@Ognl@objToList(arg0)" item="item" separator=" union all "> -->
         <foreach collection="@Ognl@objToList(param1)" item="item" separator=" union all ">
-            select #{item} value
+            select CAST(#{item} as VARCHAR)
         </foreach>
 	</select>
 
     <select id="testVaragsToList" resultType="java.lang.String">
         <foreach collection="@Ognl@varagsToList(param1,param2)" item="item" separator=" union all ">
-            select #{item} value
+            select CAST(#{item} as VARCHAR)
         </foreach>
 	</select>
 
     <select id="testOgnlCallMapperStatement" resultType="java.lang.String">
         <foreach collection="@Ognl@callMapperStatement('testVaragsToList','abc','def')" item="item" separator=" union all ">
-            select #{item} value
+            select CAST(#{item} as VARCHAR)
         </foreach>
 	</select>
 
