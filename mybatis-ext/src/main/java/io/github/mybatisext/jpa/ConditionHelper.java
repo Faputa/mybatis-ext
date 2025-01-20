@@ -228,6 +228,9 @@ public class ConditionHelper {
         if (condition.getTest() == IfTest.NotNull) {
             return condition.getVariable() + " != null";
         }
+        if (condition.getTest() == IfTest.False) {
+            return "false";
+        }
         return null;
     }
 
