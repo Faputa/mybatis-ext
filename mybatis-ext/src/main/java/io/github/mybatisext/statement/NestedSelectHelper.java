@@ -87,17 +87,22 @@ public class NestedSelectHelper {
         return orderAliases.stream().map(v -> tableInfo.getAliasToJoinTableInfo().get(v)).collect(Collectors.toList());
     }
 
-    private static String buildSelectItems(PropertyInfo propertyInfo, Dialect dialect) {
+    protected static String buildSelectItems(PropertyInfo propertyInfo, Dialect dialect) {
+        List<String> selectItemsInner = buildSelectItemsInner(propertyInfo, dialect);
+        return String.join(", ", selectItemsInner);
+    }
+
+    protected static List<String> buildSelectItemsInner(PropertyInfo propertyInfo, Dialect dialect) {
         List<String> selectItems = new ArrayList<>();
         if (propertyInfo.getColumnName() != null) {
             selectItems.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " AS " + dialect.quote(propertyInfo.getFullName()));
         }
         for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
             if (!subPropertyInfo.isReadonly()) {
-                selectItems.add(buildSelectItems(subPropertyInfo, dialect));
+                selectItems.addAll(buildSelectItemsInner(subPropertyInfo, dialect));
             }
         }
-        return String.join(", ", selectItems);
+        return selectItems;
     }
 
     public static String toString(NestedSelect nestedSelect) {
