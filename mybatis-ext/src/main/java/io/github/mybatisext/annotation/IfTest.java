@@ -7,4 +7,6 @@ public enum IfTest {
     NotNull,
 
     NotEmpty,
+
+    False,
 }
