@@ -19,29 +19,30 @@ import io.github.mybatisext.reflect.GenericType;
 
 public class VariableFactory {
 
-    public static Variable build(Configuration configuration, String name, GenericType javaType) {
-        return build(configuration, "", name, javaType);
-    }
-
-    public static Variable build(Configuration configuration, String prefix, String name, GenericType javaType) {
-        Variable variable = new Variable(prefix, name, javaType);
-        if (!hasSubVariable(configuration, javaType.getType())) {
-            return variable;
+    public static void addChildren(Configuration configuration, Variable variable) {
+        if (!variable.isEmpty()) {
+            return;
+        }
+        GenericType javaType = variable.getJavaType();
+        if (!hasSubVariable(configuration, javaType)) {
+            return;
         }
         for (GenericType c = javaType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
             for (GenericField field : c.getDeclaredFields()) {
                 if (variable.containsKey(field.getName())) {
                     continue;
                 }
-                variable.put(field.getName(), build(configuration, variable.getFullName(), field.getName(), field.getGenericType()));
+                variable.put(field.getName(), new Variable(variable.getFullName(), field.getName(), field.getGenericType()));
             }
         }
+
         BeanInfo beanInfo;
         try {
             beanInfo = Introspector.getBeanInfo(javaType.getType(), Introspector.IGNORE_ALL_BEANINFO);
         } catch (IntrospectionException e) {
             throw new MybatisExtException(e);
         }
+
         Map<Method, GenericMethod> methodMap = Arrays.stream(javaType.getMethods()).collect(Collectors.toMap(GenericMethod::getMethod, v -> v));
         for (PropertyDescriptor propertyDescriptor : beanInfo.getPropertyDescriptors()) {
             if (variable.containsKey(propertyDescriptor.getName())) {
@@ -54,9 +55,12 @@ public class VariableFactory {
             if (readMethod.getMethod().getDeclaringClass() == Object.class) {
                 continue;
             }
-            variable.put(propertyDescriptor.getName(), build(configuration, variable.getFullName(), propertyDescriptor.getName(), readMethod.getGenericReturnType()));
+            variable.put(propertyDescriptor.getName(), new Variable(variable.getFullName(), propertyDescriptor.getName(), readMethod.getGenericReturnType()));
         }
-        return variable;
+    }
+
+    public static boolean hasSubVariable(Configuration configuration, GenericType genericType) {
+        return hasSubVariable(configuration, genericType.getType());
     }
 
     public static boolean hasSubVariable(Configuration configuration, Class<?> javaType) {
