@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.github.mybatisext.test.spring.SysDeptMapper">
+
+	<resultMap id="SysDept" type="io.github.mybatisext.test.spring.SysDept">
+		<id property="deptId" column="dept_id" />
+		<result property="parentId" column="parent_id" />
+		<result property="ancestors" column="ancestors" />
+		<result property="deptName" column="dept_name" />
+		<result property="orderNum" column="order_num" />
+		<result property="leader" column="leader" />
+		<result property="phone" column="phone" />
+		<result property="email" column="email" />
+		<result property="status" column="status" />
+		<result property="delFlag" column="del_flag" />
+		<collection property="users" column="{deptId=dept_id}" select="selectSysUser" />
+		<collection property="userNames" column="{deptId=dept_id}" select="selectSysUserName" />
+	</resultMap>
+
+	<resultMap id="SysDept_lazy" type="io.github.mybatisext.test.spring.SysDept">
+		<id property="deptId" column="dept_id" />
+		<result property="parentId" column="parent_id" />
+		<result property="ancestors" column="ancestors" />
+		<result property="deptName" column="dept_name" />
+		<result property="orderNum" column="order_num" />
+		<result property="leader" column="leader" />
+		<result property="phone" column="phone" />
+		<result property="email" column="email" />
+		<result property="status" column="status" />
+		<result property="delFlag" column="del_flag" />
+		<collection property="users" column="{deptId=dept_id}" select="selectSysUser" fetchType="lazy" />
+		<collection property="userNames" column="{deptId=dept_id}" select="selectSysUserName" fetchType="lazy" />
+	</resultMap>
+
+	<resultMap id="SysDept_join" type="io.github.mybatisext.test.spring.SysDept">
+		<id property="deptId" column="dept_id" />
+		<result property="parentId" column="parent_id" />
+		<result property="ancestors" column="ancestors" />
+		<result property="deptName" column="dept_name" />
+		<result property="orderNum" column="order_num" />
+		<result property="leader" column="leader" />
+		<result property="phone" column="phone" />
+		<result property="email" column="email" />
+		<result property="status" column="status" />
+		<result property="delFlag" column="del_flag" />
+		<!-- https://github.com/mybatis/mybatis-3/issues/364 -->
+		<!-- https://github.com/mybatis/mybatis-3/wiki/FAQ#how-do-i-map-a-list-of-simple-type-objects-string-integer-etc-to-a-bean-or-map- -->
+		<collection property="userNames" ofType="java.lang.String" javaType="list">
+			<result column="user_name" javaType="java.lang.String" />
+		</collection>
+	</resultMap>
+
+	<resultMap id="SysUser" type="io.github.mybatisext.test.spring.SysUser">
+		<id property="userId" column="user_id" />
+		<result property="deptId" column="dept_id" />
+		<result property="loginName" column="login_name" />
+		<result property="userName" column="user_name" />
+		<result property="userType" column="user_type" />
+		<result property="email" column="email" />
+		<result property="phonenumber" column="phonenumber" />
+		<result property="sex" column="sex" />
+		<result property="avatar" column="avatar" />
+		<result property="password" column="password" />
+		<result property="salt" column="salt" />
+		<result property="status" column="status" />
+		<result property="delFlag" column="del_flag" />
+		<result property="loginIp" column="login_ip" />
+		<result property="loginDate" column="login_date" />
+		<result property="pwdUpdateDate" column="pwd_update_date" />
+	</resultMap>
+
+	<select id="selectSysDept" resultMap="SysDept">
+		select * from sys_dept
+	</select>
+
+	<select id="selectSysDeptLazy" resultMap="SysDept_lazy">
+		select * from sys_dept
+	</select>
+
+	<select id="selectSysDeptJoin" resultMap="SysDept_join">
+		select
+		a.*,
+		b.*
+		from sys_dept a
+		left join sys_user b on b.dept_id=a.dept_id
+	</select>
+
+	<select id="selectSysUser" resultMap="SysUser">
+		select * from sys_user where dept_id=#{deptId}
+	</select>
+
+	<select id="selectSysUserName" resultType="java.lang.String">
+		select user_name from sys_user where dept_id=#{deptId}
+	</select>
+</mapper>

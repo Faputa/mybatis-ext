@@ -10,15 +10,15 @@ import com.mybatisflex.core.query.QueryWrapper;
 public class MybatisFlexTest {
 
 	@Autowired
-	private CameraMapper cameraMapper;
+	private SysUserMapper sysUserMapper;
 
 	@Test
 	public void test() {
-		System.out.println("########" + cameraMapper.countCamera());
+		System.out.println("########" + sysUserMapper.countSysUser());
 		// 预期10000
-		System.out.println("########" + cameraMapper.selectCountByQuery(new QueryWrapper()));
-		System.out.println("########" + cameraMapper.countByOrgId(16));
-		System.out.println("########" + cameraMapper.listByOrgId(16));
-		System.out.println("########" + cameraMapper.listOneByOrgIdOrderByCameraId(16));
+		System.out.println("########" + sysUserMapper.selectCountByQuery(new QueryWrapper()));
+		System.out.println("########" + sysUserMapper.countByDeptId(103));
+		System.out.println("########" + sysUserMapper.listByDeptId(103));
+		System.out.println("########" + sysUserMapper.listTop10ByDeptIdOrderByUserId(103));
 	}
 }

@@ -8,15 +8,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class MybatisPlusTest {
 
 	@Autowired
-	private CameraMapper cameraMapper;
+	private SysUserMapper sysUserMapper;
 
 	@Test
 	public void test() {
-		System.out.println("########" + cameraMapper.countCamera());
+		System.out.println("########" + sysUserMapper.countSysUser());
 		// 预期10000
-		System.out.println("########" + cameraMapper.selectCount(null));
-		System.out.println("########" + cameraMapper.countByOrgId(16));
-		System.out.println("########" + cameraMapper.listByOrgId(16));
-		System.out.println("########" + cameraMapper.listOneByOrgIdOrderByCameraId(16));
+		System.out.println("########" + sysUserMapper.selectCount(null));
+		System.out.println("########" + sysUserMapper.countByDeptId(103));
+		System.out.println("########" + sysUserMapper.listByDeptId(103));
+		System.out.println("########" + sysUserMapper.listTop10ByDeptIdOrderByUserId(103));
 	}
 }
