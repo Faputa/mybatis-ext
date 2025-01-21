@@ -5,12 +5,11 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.mybatis.spring.SqlSessionFactoryBean;
 
+import io.github.mybatisext.adapter.ConfigurationInterface;
 import io.github.mybatisext.adapter.ExtConfiguration;
 import io.github.mybatisext.adapter.ExtContext;
 
 public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
-
-    private final SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
 
     private ExtContext extContext = new ExtContext();
 
@@ -25,10 +24,11 @@ public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
 
     public SqlSessionFactory buildSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
         Configuration configuration = sqlSessionFactory.getConfiguration();
-        if (configuration instanceof ExtConfiguration) {
+        if (configuration instanceof ConfigurationInterface) {
             return sqlSessionFactory;
         }
         ExtConfiguration extConfiguration = new ExtConfiguration(configuration, extContext);
+        SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
         return sqlSessionFactoryBuilder.build(extConfiguration);
     }
 }

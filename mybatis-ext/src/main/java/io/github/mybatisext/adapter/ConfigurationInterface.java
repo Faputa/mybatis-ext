@@ -52,272 +52,274 @@ import org.apache.ibatis.type.TypeHandlerRegistry;
  */
 public interface ConfigurationInterface {
 
-    public String getLogPrefix();
+    String getLogPrefix();
 
-    public void setLogPrefix(String logPrefix);
+    void setLogPrefix(String logPrefix);
 
-    public Class<? extends Log> getLogImpl();
+    Class<? extends Log> getLogImpl();
 
-    public void setLogImpl(Class<? extends Log> logImpl);
+    void setLogImpl(Class<? extends Log> logImpl);
 
-    public Class<? extends VFS> getVfsImpl();
+    Class<? extends VFS> getVfsImpl();
 
-    public void setVfsImpl(Class<? extends VFS> vfsImpl);
+    void setVfsImpl(Class<? extends VFS> vfsImpl);
 
-    public Class<?> getDefaultSqlProviderType();
+    Class<?> getDefaultSqlProviderType();
 
-    public void setDefaultSqlProviderType(Class<?> defaultSqlProviderType);
+    void setDefaultSqlProviderType(Class<?> defaultSqlProviderType);
 
-    public boolean isCallSettersOnNulls();
+    boolean isCallSettersOnNulls();
 
-    public void setCallSettersOnNulls(boolean callSettersOnNulls);
+    void setCallSettersOnNulls(boolean callSettersOnNulls);
 
-    public boolean isUseActualParamName();
+    boolean isUseActualParamName();
 
-    public void setUseActualParamName(boolean useActualParamName);
+    void setUseActualParamName(boolean useActualParamName);
 
-    public boolean isReturnInstanceForEmptyRow();
+    boolean isReturnInstanceForEmptyRow();
 
-    public void setReturnInstanceForEmptyRow(boolean returnEmptyInstance);
+    void setReturnInstanceForEmptyRow(boolean returnEmptyInstance);
 
-    public boolean isShrinkWhitespacesInSql();
+    boolean isShrinkWhitespacesInSql();
 
-    public void setShrinkWhitespacesInSql(boolean shrinkWhitespacesInSql);
+    void setShrinkWhitespacesInSql(boolean shrinkWhitespacesInSql);
 
-    public void setNullableOnForEach(boolean nullableOnForEach);
+    void setNullableOnForEach(boolean nullableOnForEach);
 
-    public boolean isNullableOnForEach();
+    boolean isNullableOnForEach();
 
-    public boolean isArgNameBasedConstructorAutoMapping();
+    boolean isArgNameBasedConstructorAutoMapping();
 
-    public void setArgNameBasedConstructorAutoMapping(boolean argNameBasedConstructorAutoMapping);
+    void setArgNameBasedConstructorAutoMapping(boolean argNameBasedConstructorAutoMapping);
 
-    public String getDatabaseId();
+    String getDatabaseId();
 
-    public void setDatabaseId(String databaseId);
+    void setDatabaseId(String databaseId);
 
-    public Class<?> getConfigurationFactory();
+    Class<?> getConfigurationFactory();
 
-    public void setConfigurationFactory(Class<?> configurationFactory);
+    void setConfigurationFactory(Class<?> configurationFactory);
 
-    public boolean isSafeResultHandlerEnabled();
+    boolean isSafeResultHandlerEnabled();
 
-    public void setSafeResultHandlerEnabled(boolean safeResultHandlerEnabled);
+    void setSafeResultHandlerEnabled(boolean safeResultHandlerEnabled);
 
-    public boolean isSafeRowBoundsEnabled();
+    boolean isSafeRowBoundsEnabled();
 
-    public void setSafeRowBoundsEnabled(boolean safeRowBoundsEnabled);
+    void setSafeRowBoundsEnabled(boolean safeRowBoundsEnabled);
 
-    public boolean isMapUnderscoreToCamelCase();
+    boolean isMapUnderscoreToCamelCase();
 
-    public void setMapUnderscoreToCamelCase(boolean mapUnderscoreToCamelCase);
+    void setMapUnderscoreToCamelCase(boolean mapUnderscoreToCamelCase);
 
-    public void addLoadedResource(String resource);
+    void addLoadedResource(String resource);
 
-    public boolean isResourceLoaded(String resource);
+    boolean isResourceLoaded(String resource);
 
-    public Environment getEnvironment();
+    Environment getEnvironment();
 
-    public void setEnvironment(Environment environment);
+    void setEnvironment(Environment environment);
 
-    public AutoMappingBehavior getAutoMappingBehavior();
+    AutoMappingBehavior getAutoMappingBehavior();
 
-    public void setAutoMappingBehavior(AutoMappingBehavior autoMappingBehavior);
+    void setAutoMappingBehavior(AutoMappingBehavior autoMappingBehavior);
 
-    public AutoMappingUnknownColumnBehavior getAutoMappingUnknownColumnBehavior();
+    AutoMappingUnknownColumnBehavior getAutoMappingUnknownColumnBehavior();
 
-    public void setAutoMappingUnknownColumnBehavior(AutoMappingUnknownColumnBehavior autoMappingUnknownColumnBehavior);
+    void setAutoMappingUnknownColumnBehavior(AutoMappingUnknownColumnBehavior autoMappingUnknownColumnBehavior);
 
-    public boolean isLazyLoadingEnabled();
+    boolean isLazyLoadingEnabled();
 
-    public void setLazyLoadingEnabled(boolean lazyLoadingEnabled);
+    void setLazyLoadingEnabled(boolean lazyLoadingEnabled);
 
-    public ProxyFactory getProxyFactory();
+    ProxyFactory getProxyFactory();
 
-    public void setProxyFactory(ProxyFactory proxyFactory);
+    void setProxyFactory(ProxyFactory proxyFactory);
 
-    public boolean isAggressiveLazyLoading();
+    boolean isAggressiveLazyLoading();
 
-    public void setAggressiveLazyLoading(boolean aggressiveLazyLoading);
+    void setAggressiveLazyLoading(boolean aggressiveLazyLoading);
 
-    public boolean isMultipleResultSetsEnabled();
+    boolean isMultipleResultSetsEnabled();
 
-    public void setMultipleResultSetsEnabled(boolean multipleResultSetsEnabled);
+    void setMultipleResultSetsEnabled(boolean multipleResultSetsEnabled);
 
-    public Set<String> getLazyLoadTriggerMethods();
+    Set<String> getLazyLoadTriggerMethods();
 
-    public void setLazyLoadTriggerMethods(Set<String> lazyLoadTriggerMethods);
+    void setLazyLoadTriggerMethods(Set<String> lazyLoadTriggerMethods);
 
-    public boolean isUseGeneratedKeys();
+    boolean isUseGeneratedKeys();
 
-    public void setUseGeneratedKeys(boolean useGeneratedKeys);
+    void setUseGeneratedKeys(boolean useGeneratedKeys);
 
-    public ExecutorType getDefaultExecutorType();
+    ExecutorType getDefaultExecutorType();
 
-    public void setDefaultExecutorType(ExecutorType defaultExecutorType);
+    void setDefaultExecutorType(ExecutorType defaultExecutorType);
 
-    public boolean isCacheEnabled();
+    boolean isCacheEnabled();
 
-    public void setCacheEnabled(boolean cacheEnabled);
+    void setCacheEnabled(boolean cacheEnabled);
 
-    public Integer getDefaultStatementTimeout();
+    Integer getDefaultStatementTimeout();
 
-    public void setDefaultStatementTimeout(Integer defaultStatementTimeout);
+    void setDefaultStatementTimeout(Integer defaultStatementTimeout);
 
-    public Integer getDefaultFetchSize();
+    Integer getDefaultFetchSize();
 
-    public void setDefaultFetchSize(Integer defaultFetchSize);
+    void setDefaultFetchSize(Integer defaultFetchSize);
 
-    public ResultSetType getDefaultResultSetType();
+    ResultSetType getDefaultResultSetType();
 
-    public void setDefaultResultSetType(ResultSetType defaultResultSetType);
+    void setDefaultResultSetType(ResultSetType defaultResultSetType);
 
-    public boolean isUseColumnLabel();
+    boolean isUseColumnLabel();
 
-    public void setUseColumnLabel(boolean useColumnLabel);
+    void setUseColumnLabel(boolean useColumnLabel);
 
-    public LocalCacheScope getLocalCacheScope();
+    LocalCacheScope getLocalCacheScope();
 
-    public void setLocalCacheScope(LocalCacheScope localCacheScope);
+    void setLocalCacheScope(LocalCacheScope localCacheScope);
 
-    public JdbcType getJdbcTypeForNull();
+    JdbcType getJdbcTypeForNull();
 
-    public void setJdbcTypeForNull(JdbcType jdbcTypeForNull);
+    void setJdbcTypeForNull(JdbcType jdbcTypeForNull);
 
-    public Properties getVariables();
+    Properties getVariables();
 
-    public void setVariables(Properties variables);
+    void setVariables(Properties variables);
 
-    public TypeHandlerRegistry getTypeHandlerRegistry();
+    TypeHandlerRegistry getTypeHandlerRegistry();
 
     @SuppressWarnings("rawtypes")
-    public void setDefaultEnumTypeHandler(Class<? extends TypeHandler> typeHandler);
+    void setDefaultEnumTypeHandler(Class<? extends TypeHandler> typeHandler);
 
-    public TypeAliasRegistry getTypeAliasRegistry();
+    TypeAliasRegistry getTypeAliasRegistry();
 
-    public MapperRegistry getMapperRegistry();
+    MapperRegistry getMapperRegistry();
 
-    public ReflectorFactory getReflectorFactory();
+    ReflectorFactory getReflectorFactory();
 
-    public void setReflectorFactory(ReflectorFactory reflectorFactory);
+    void setReflectorFactory(ReflectorFactory reflectorFactory);
 
-    public ObjectFactory getObjectFactory();
+    ObjectFactory getObjectFactory();
 
-    public void setObjectFactory(ObjectFactory objectFactory);
+    void setObjectFactory(ObjectFactory objectFactory);
 
-    public ObjectWrapperFactory getObjectWrapperFactory();
+    ObjectWrapperFactory getObjectWrapperFactory();
 
-    public void setObjectWrapperFactory(ObjectWrapperFactory objectWrapperFactory);
+    void setObjectWrapperFactory(ObjectWrapperFactory objectWrapperFactory);
 
-    public List<Interceptor> getInterceptors();
+    List<Interceptor> getInterceptors();
 
-    public LanguageDriverRegistry getLanguageRegistry();
+    LanguageDriverRegistry getLanguageRegistry();
 
-    public void setDefaultScriptingLanguage(Class<? extends LanguageDriver> driver);
+    void setDefaultScriptingLanguage(Class<? extends LanguageDriver> driver);
 
-    public LanguageDriver getDefaultScriptingLanguageInstance();
+    LanguageDriver getDefaultScriptingLanguageInstance();
 
-    public LanguageDriver getLanguageDriver(Class<? extends LanguageDriver> langClass);
+    LanguageDriver getLanguageDriver(Class<? extends LanguageDriver> langClass);
 
-    public LanguageDriver getDefaultScriptingLanuageInstance();
+    LanguageDriver getDefaultScriptingLanuageInstance();
 
-    public MetaObject newMetaObject(Object object);
+    MetaObject newMetaObject(Object object);
 
-    public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameterObject, BoundSql boundSql);
-
-    @SuppressWarnings("rawtypes")
-    public ResultSetHandler newResultSetHandler(Executor executor, MappedStatement mappedStatement, RowBounds rowBounds, ParameterHandler parameterHandler, ResultHandler resultHandler, BoundSql boundSql);
+    ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameterObject, BoundSql boundSql);
 
     @SuppressWarnings("rawtypes")
-    public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql);
+    ResultSetHandler newResultSetHandler(Executor executor, MappedStatement mappedStatement, RowBounds rowBounds, ParameterHandler parameterHandler, ResultHandler resultHandler, BoundSql boundSql);
 
-    public Executor newExecutor(Transaction transaction);
+    @SuppressWarnings("rawtypes")
+    StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql);
 
-    public Executor newExecutor(Transaction transaction, ExecutorType executorType);
+    Executor newExecutor(Transaction transaction);
 
-    public void addKeyGenerator(String id, KeyGenerator keyGenerator);
+    Executor newExecutor(Transaction transaction, ExecutorType executorType);
 
-    public Collection<String> getKeyGeneratorNames();
+    void addKeyGenerator(String id, KeyGenerator keyGenerator);
 
-    public Collection<KeyGenerator> getKeyGenerators();
+    Collection<String> getKeyGeneratorNames();
 
-    public KeyGenerator getKeyGenerator(String id);
+    Collection<KeyGenerator> getKeyGenerators();
 
-    public boolean hasKeyGenerator(String id);
+    KeyGenerator getKeyGenerator(String id);
 
-    public void addCache(Cache cache);
+    boolean hasKeyGenerator(String id);
 
-    public Collection<String> getCacheNames();
+    void addCache(Cache cache);
 
-    public Collection<Cache> getCaches();
+    Collection<String> getCacheNames();
 
-    public Cache getCache(String id);
+    Collection<Cache> getCaches();
 
-    public boolean hasCache(String id);
+    Cache getCache(String id);
 
-    public void addResultMap(ResultMap rm);
+    boolean hasCache(String id);
 
-    public Collection<String> getResultMapNames();
+    void addResultMap(ResultMap rm);
 
-    public Collection<ResultMap> getResultMaps();
+    Collection<String> getResultMapNames();
 
-    public ResultMap getResultMap(String id);
+    Collection<ResultMap> getResultMaps();
 
-    public boolean hasResultMap(String id);
+    ResultMap getResultMap(String id);
 
-    public void addParameterMap(ParameterMap pm);
+    boolean hasResultMap(String id);
 
-    public Collection<String> getParameterMapNames();
+    void addParameterMap(ParameterMap pm);
 
-    public Collection<ParameterMap> getParameterMaps();
+    Collection<String> getParameterMapNames();
 
-    public ParameterMap getParameterMap(String id);
+    Collection<ParameterMap> getParameterMaps();
 
-    public boolean hasParameterMap(String id);
+    ParameterMap getParameterMap(String id);
 
-    public void addMappedStatement(MappedStatement ms);
+    boolean hasParameterMap(String id);
 
-    public Collection<String> getMappedStatementNames();
+    void addMappedStatement(MappedStatement ms);
 
-    public Collection<MappedStatement> getMappedStatements();
+    Collection<String> getMappedStatementNames();
 
-    public Collection<XMLStatementBuilder> getIncompleteStatements();
+    Collection<MappedStatement> getMappedStatements();
 
-    public void addIncompleteStatement(XMLStatementBuilder incompleteStatement);
+    Collection<XMLStatementBuilder> getIncompleteStatements();
 
-    public Collection<CacheRefResolver> getIncompleteCacheRefs();
+    void addIncompleteStatement(XMLStatementBuilder incompleteStatement);
 
-    public void addIncompleteCacheRef(CacheRefResolver incompleteCacheRef);
+    Collection<CacheRefResolver> getIncompleteCacheRefs();
 
-    public Collection<ResultMapResolver> getIncompleteResultMaps();
+    void addIncompleteCacheRef(CacheRefResolver incompleteCacheRef);
 
-    public void addIncompleteResultMap(ResultMapResolver resultMapResolver);
+    Collection<ResultMapResolver> getIncompleteResultMaps();
 
-    public void addIncompleteMethod(MethodResolver builder);
+    void addIncompleteResultMap(ResultMapResolver resultMapResolver);
 
-    public Collection<MethodResolver> getIncompleteMethods();
+    void addIncompleteMethod(MethodResolver builder);
 
-    public MappedStatement getMappedStatement(String id);
+    Collection<MethodResolver> getIncompleteMethods();
 
-    public MappedStatement getMappedStatement(String id, boolean validateIncompleteStatements);
+    MappedStatement getMappedStatement(String id);
 
-    public Map<String, XNode> getSqlFragments();
+    MappedStatement getMappedStatement(String id, boolean validateIncompleteStatements);
 
-    public void addInterceptor(Interceptor interceptor);
+    Map<String, XNode> getSqlFragments();
 
-    public void addMappers(String packageName, Class<?> superType);
+    void addInterceptor(Interceptor interceptor);
 
-    public void addMappers(String packageName);
+    void addMappers(String packageName, Class<?> superType);
 
-    public <T> void addMapper(Class<T> type);
+    void addMappers(String packageName);
 
-    public <T> T getMapper(Class<T> type, SqlSession sqlSession);
+    <T> void addMapper(Class<T> type);
 
-    public boolean hasMapper(Class<?> type);
+    <T> T getMapper(Class<T> type, SqlSession sqlSession);
 
-    public boolean hasStatement(String statementName);
+    boolean hasMapper(Class<?> type);
 
-    public boolean hasStatement(String statementName, boolean validateIncompleteStatements);
+    boolean hasStatement(String statementName);
 
-    public void addCacheRef(String namespace, String referencedNamespace);
+    boolean hasStatement(String statementName, boolean validateIncompleteStatements);
+
+    void addCacheRef(String namespace, String referencedNamespace);
+
+    void validateAllMapperMethod();
 }
