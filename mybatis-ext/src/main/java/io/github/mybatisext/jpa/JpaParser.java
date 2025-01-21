@@ -554,6 +554,7 @@ public class JpaParser extends BaseParser {
             return null;
         }
         Condition condition = new Condition(ConditionType.COMPLEX);
+        condition.getSubConditions().addAll(conditions);
         condition.setLogicalOperator(LogicalOperator.AND);
         condition.setPropertyInfos(jpaTokenizer.getTableInfo().getNameToPropertyInfo());
         return ConditionHelper.simplifyCondition(condition);
