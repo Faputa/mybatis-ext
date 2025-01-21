@@ -737,6 +737,7 @@ public class ExtConfiguration extends Configuration implements ConfigurationInte
         this.originConfiguration.addCacheRef(namespace, referencedNamespace);
     }
 
+    @Override
     public void validateAllMapperMethod() {
         this.extEnhancer.validateAllMapperMethod();
     }
