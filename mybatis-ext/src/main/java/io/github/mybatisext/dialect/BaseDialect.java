@@ -201,7 +201,7 @@ public abstract class BaseDialect implements Dialect {
             ss.add("ON");
             List<String> conditions = new ArrayList<>();
             joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
-                conditions.add(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName());
+                conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = " + leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
             });
             ss.add(String.join(" AND ", conditions));
         }
