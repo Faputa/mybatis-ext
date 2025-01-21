@@ -6,7 +6,7 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 
-import io.github.mybatisext.adapter.ExtConfiguration;
+import io.github.mybatisext.adapter.ConfigurationInterface;
 
 public class MapperMethodValidator implements SmartInitializingSingleton {
 
@@ -20,9 +20,9 @@ public class MapperMethodValidator implements SmartInitializingSingleton {
     public void afterSingletonsInstantiated() {
         for (SqlSessionFactory sqlSessionFactory : sqlSessionFactoryMap.values()) {
             Configuration configuration = sqlSessionFactory.getConfiguration();
-            if (configuration instanceof ExtConfiguration) {
-                ExtConfiguration extConfiguration = (ExtConfiguration) configuration;
-                extConfiguration.validateAllMapperMethod();
+            if (configuration instanceof ConfigurationInterface) {
+                ConfigurationInterface configurationInterface = (ConfigurationInterface) configuration;
+                configurationInterface.validateAllMapperMethod();
             }
         }
     }
