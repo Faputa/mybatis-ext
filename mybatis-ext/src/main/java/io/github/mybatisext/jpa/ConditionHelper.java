@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 import io.github.mybatisext.annotation.IfTest;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.metadata.FilterableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.ResultType;
 import io.github.mybatisext.metadata.TableInfo;
@@ -112,20 +113,9 @@ public class ConditionHelper {
             if (propertyInfo.getFilterableInfo() == null) {
                 return null;
             }
-            condition.setTest(propertyInfo.getFilterableInfo().getTest());
-            condition.setTestTemplate(propertyInfo.getFilterableInfo().getTestTemplate());
-            condition.setCompareOperator(propertyInfo.getFilterableInfo().getOperator());
-            condition.setLogicalOperator(propertyInfo.getFilterableInfo().getLogicalOperator());
-            condition.setTestTemplate(propertyInfo.getFilterableInfo().getExprTemplate());
+            applyFilterableInfo(condition, propertyInfo.getFilterableInfo(), tableInfo, prefix);
             if (propertyInfo.getResultType() == ResultType.COLLECTION && (condition.getTest() == IfTest.None || condition.getTest() == IfTest.NotNull)) {
                 condition.setTest(IfTest.NotEmpty);
-            }
-            if (condition.getCompareOperator().isRequiredSecondVariable()) {
-                PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, propertyInfo.getFilterableInfo().getSecondVariable());
-                if (secondPropertyInfo == null) {
-                    throw new MybatisExtException("Second variable '" + propertyInfo.getFilterableInfo().getSecondVariable() + "' not found in tableClass '" + tableInfo.getTableClass() + "'");
-                }
-                condition.setSecondVariable(new Variable(prefix, propertyInfo.getFilterableInfo().getSecondVariable(), secondPropertyInfo.getJavaType()));
             }
         }
         for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
@@ -136,6 +126,23 @@ public class ConditionHelper {
             condition.getSubConditions().add(subCondition);
         }
         return condition;
+    }
+
+    private static void applyFilterableInfo(Condition condition, FilterableInfo filterableInfo, TableInfo tableInfo, String variablePrefix) {
+        condition.setTest(filterableInfo.getTest());
+        condition.setCompareOperator(filterableInfo.getOperator());
+        condition.setLogicalOperator(filterableInfo.getLogicalOperator());
+        condition.setIgnorecase(filterableInfo.isIgnorecase());
+        condition.setNot(filterableInfo.isNot());
+        condition.setTestTemplate(filterableInfo.getTestTemplate());
+        condition.setExprTemplate(filterableInfo.getExprTemplate());
+        if (condition.getCompareOperator().isRequiredSecondVariable()) {
+            PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, filterableInfo.getSecondVariable());
+            if (secondPropertyInfo == null) {
+                throw new MybatisExtException("Second variable '" + filterableInfo.getSecondVariable() + "' not found in tableClass '" + tableInfo.getTableClass() + "'");
+            }
+            condition.setSecondVariable(new Variable(variablePrefix, filterableInfo.getSecondVariable(), secondPropertyInfo.getJavaType()));
+        }
     }
 
     public static void collectUsedTableAliases(Condition condition, Set<String> tableAliases) {

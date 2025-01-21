@@ -18,6 +18,10 @@ public @interface Filterable {
 
     LogicalOperator logicalOperator() default LogicalOperator.AND;
 
+    boolean ignorecase() default false;
+
+    boolean not() default false;
+
     String testTemplate() default "";
 
     String exprTemplate() default "";

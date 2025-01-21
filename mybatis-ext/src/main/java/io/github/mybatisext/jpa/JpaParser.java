@@ -601,6 +601,8 @@ public class JpaParser extends BaseParser {
         filterableInfo.setTest(filterable.test());
         filterableInfo.setOperator(filterable.operator());
         filterableInfo.setLogicalOperator(filterable.logicalOperator());
+        filterableInfo.setIgnorecase(filterable.ignorecase());
+        filterableInfo.setNot(filterable.not());
         filterableInfo.setTestTemplate(filterable.testTemplate());
         filterableInfo.setExprTemplate(filterable.exprTemplate());
         filterableInfo.setSecondVariable(filterable.secondVariable());
@@ -609,10 +611,12 @@ public class JpaParser extends BaseParser {
 
     private void applyFilterableInfo(Condition condition, FilterableInfo filterableInfo, List<Variable> variables, Set<String> usedParamNames) {
         condition.setTest(filterableInfo.getTest());
-        condition.setTestTemplate(filterableInfo.getTestTemplate());
-        condition.setExprTemplate(filterableInfo.getExprTemplate());
         condition.setCompareOperator(filterableInfo.getOperator());
         condition.setLogicalOperator(filterableInfo.getLogicalOperator());
+        condition.setIgnorecase(filterableInfo.isIgnorecase());
+        condition.setNot(filterableInfo.isNot());
+        condition.setTestTemplate(filterableInfo.getTestTemplate());
+        condition.setExprTemplate(filterableInfo.getExprTemplate());
         if (condition.getCompareOperator().isRequiredSecondVariable()) {
             Variable secondVariable = deepGet(variables, filterableInfo.getSecondVariable());
             if (secondVariable == null) {
