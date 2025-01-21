@@ -72,9 +72,9 @@ public class NestedSelectHelper {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
                 if (leftJoinTableInfo.getTableInfo() == tableInfo) {
-                    conditions.add("#{" + joinColumnInfo.getRightColumn().getFullName() + "} = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
+                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = #{" + joinColumnInfo.getRightColumn().getFullName() + "}");
                 } else {
-                    conditions.add(leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName() + " = " + joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName());
+                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = " + leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
                 }
             });
         }
