@@ -120,7 +120,7 @@ public class ConditionHelper {
             if (propertyInfo.getResultType() == ResultType.COLLECTION && (condition.getTest() == IfTest.None || condition.getTest() == IfTest.NotNull)) {
                 condition.setTest(IfTest.NotEmpty);
             }
-            if (condition.getCompareOperator() == CompareOperator.Between) {
+            if (condition.getCompareOperator().isRequiredSecondVariable()) {
                 PropertyInfo secondPropertyInfo = TableInfoFactory.deepGet(tableInfo, propertyInfo.getFilterableInfo().getSecondVariable());
                 if (secondPropertyInfo == null) {
                     throw new MybatisExtException("Second variable '" + propertyInfo.getFilterableInfo().getSecondVariable() + "' not found in tableClass '" + tableInfo.getTableClass() + "'");
