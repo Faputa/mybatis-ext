@@ -2,31 +2,48 @@ package io.github.mybatisext.jpa;
 
 public enum CompareOperator {
 
-    Equals,
+    Equals(true, false),
 
-    LessThan,
+    LessThan(true, false),
 
-    LessThanEqual,
+    LessThanEqual(true, false),
 
-    GreaterThan,
+    GreaterThan(true, false),
 
-    GreaterThanEqual,
+    GreaterThanEqual(true, false),
 
-    Like,
+    Like(true, false),
 
-    StartWith,
+    StartWith(true, false),
 
-    EndWith,
+    EndWith(true, false),
 
-    Between,
+    Between(true, true),
 
-    In,
+    In(true, false),
 
-    IsNull,
+    IsNull(false, false),
 
-    IsNotNull,
+    IsNotNull(false, false),
 
-    IsTrue,
+    IsTrue(false, false),
 
-    IsFalse,
+    IsFalse(false, false),
+    ;
+
+    private final boolean requiredVariable;
+    private final boolean requiredSecondVariable;
+
+    private CompareOperator(boolean requiredVariable, boolean requiredSecondVariable) {
+        this.requiredVariable = requiredVariable;
+        this.requiredSecondVariable = requiredSecondVariable;
+    }
+
+    public boolean isRequiredVariable() {
+        return requiredVariable;
+    }
+
+    public boolean isRequiredSecondVariable() {
+        return requiredSecondVariable;
+    }
 }
