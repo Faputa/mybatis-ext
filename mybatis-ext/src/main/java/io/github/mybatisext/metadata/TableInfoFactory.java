@@ -753,6 +753,8 @@ public class TableInfoFactory {
         filterableInfo.setTest(filterable.test());
         filterableInfo.setOperator(filterable.operator());
         filterableInfo.setLogicalOperator(filterable.logicalOperator());
+        filterableInfo.setIgnorecase(filterable.ignorecase());
+        filterableInfo.setNot(filterable.not());
         filterableInfo.setTestTemplate(filterable.testTemplate());
         filterableInfo.setExprTemplate(filterable.exprTemplate());
         filterableInfo.setSecondVariable(filterable.secondVariable());

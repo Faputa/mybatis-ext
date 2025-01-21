@@ -11,6 +11,8 @@ public class FilterableInfo {
     private IfTest test;
     private CompareOperator operator;
     private LogicalOperator logicalOperator;
+    private boolean ignorecase;
+    private boolean not;
     private String testTemplate;
     private String exprTemplate;
     private String secondVariable;
@@ -37,6 +39,22 @@ public class FilterableInfo {
 
     public void setLogicalOperator(LogicalOperator logicalOperator) {
         this.logicalOperator = logicalOperator;
+    }
+
+    public boolean isIgnorecase() {
+        return ignorecase;
+    }
+
+    public void setIgnorecase(boolean ignorecase) {
+        this.ignorecase = ignorecase;
+    }
+
+    public boolean isNot() {
+        return not;
+    }
+
+    public void setNot(boolean not) {
+        this.not = not;
     }
 
     public String getTestTemplate() {
@@ -72,11 +90,11 @@ public class FilterableInfo {
             return false;
         }
         FilterableInfo that = (FilterableInfo) o;
-        return test == that.test && operator == that.operator && logicalOperator == that.logicalOperator && Objects.equals(testTemplate, that.testTemplate) && Objects.equals(exprTemplate, that.exprTemplate) && Objects.equals(secondVariable, that.secondVariable);
+        return ignorecase == that.ignorecase && not == that.not && test == that.test && operator == that.operator && logicalOperator == that.logicalOperator && Objects.equals(testTemplate, that.testTemplate) && Objects.equals(exprTemplate, that.exprTemplate) && Objects.equals(secondVariable, that.secondVariable);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(test, operator, logicalOperator, testTemplate, exprTemplate, secondVariable);
+        return Objects.hash(test, operator, logicalOperator, ignorecase, not, testTemplate, exprTemplate, secondVariable);
     }
 }
