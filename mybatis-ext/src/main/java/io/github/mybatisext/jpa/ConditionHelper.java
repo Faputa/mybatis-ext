@@ -345,7 +345,7 @@ public class ConditionHelper {
                 ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
                 ss.add(dialect.upper("{propertyInfo}") + " LIKE #{__{variable.##name}__bind}");
             } else {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + ${{variable}} + '%'\"/>");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + {variable} + '%'\"/>");
                 ss.add("{propertyInfo} LIKE #{__{variable.##name}__bind}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
@@ -355,7 +355,7 @@ public class ConditionHelper {
                 ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
                 ss.add(dialect.upper("{propertyInfo}") + " LIKE #{__{variable.##name}__bind}");
             } else {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"${{variable}} + '%'\"/>");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"{variable} + '%'\"/>");
                 ss.add("{propertyInfo} LIKE #{__{variable.##name}__bind}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
@@ -365,7 +365,7 @@ public class ConditionHelper {
                 ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable})\"/>");
                 ss.add(dialect.upper("{propertyInfo}") + " LIKE #{__{variable.##name}__bind}");
             } else {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + ${{variable}}\"/>");
+                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + {variable}\"/>");
                 ss.add("{propertyInfo} LIKE #{__{variable.##name}__bind}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
