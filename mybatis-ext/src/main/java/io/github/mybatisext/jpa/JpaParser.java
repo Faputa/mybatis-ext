@@ -463,7 +463,7 @@ public class JpaParser extends BaseParser {
         return false;
     }
 
-    private Variable buildSemanticParameter(State state, boolean required) {
+    private Variable buildSemanticParameter(State state, boolean requiredTableParameter) {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
         GenericParameter[] parameters = jpaTokenizer.getParameters();
         if (parameters.length == 0) {
@@ -484,8 +484,16 @@ public class JpaParser extends BaseParser {
         if (TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType)) {
             return new Variable(param != null ? param.value() : (parameters.length == 1 ? "" : "param1"), parameterType);
         }
-        if (required) {
+        if (requiredTableParameter) {
             throw new MybatisExtException("Invalid parameter type. Expected: " + tableClass + ", but was: " + parameterType);
+        }
+        if (param != null && parameters.length == 1) {
+            if (parameterType.isArray() && configuration.getTypeHandlerRegistry().hasTypeHandler(parameterType.getComponentType().getType())) {
+                return new Variable(param.value(), parameterType);
+            }
+            if (Collection.class.isAssignableFrom(parameterType.getType()) && configuration.getTypeHandlerRegistry().hasTypeHandler(TypeArgumentResolver.resolveType(parameterType, Collection.class, 0))) {
+                return new Variable(param.value(), parameterType);
+            }
         }
         return null;
     }
@@ -515,6 +523,21 @@ public class JpaParser extends BaseParser {
             }
         } else if (TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType)) {
             paramName = param != null ? param.value() : "";
+        } else if (param != null) {
+            Variable variable;
+            if (parameterType.isArray() && configuration.getTypeHandlerRegistry().hasTypeHandler(parameterType.getComponentType().getType())) {
+                variable = new Variable("__" + param.value() + "__item", parameterType.getComponentType());
+            } else if (Collection.class.isAssignableFrom(parameterType.getType()) && configuration.getTypeHandlerRegistry().hasTypeHandler(TypeArgumentResolver.resolveType(parameterType, Collection.class, 0))) {
+                variable = new Variable("__" + param.value() + "__item", TypeArgumentResolver.resolveGenericType(parameterType, Collection.class, 0));
+            } else {
+                return buildMultiParamCondition(jpaTokenizer, usedParamNames, parameter);
+            }
+            Condition condition = new Condition(ConditionType.BASIC);
+            condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
+            condition.setPropertyInfo(parseProperty(tableInfo, param.value()));
+            condition.setVariable(variable);
+            applyFilterableInfo(condition, buildFilterableInfo(parameter.getAnnotation(Filterable.class)), variables, usedParamNames);
+            return ConditionHelper.simplifyCondition(condition);
         } else {
             return buildMultiParamCondition(jpaTokenizer, usedParamNames, parameter);
         }
