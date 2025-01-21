@@ -161,16 +161,23 @@ public class JpaParser extends BaseParser {
             if (state.getMatch("Not") != null) {
                 condition.setNot(true);
             }
-            MatchResult _variable = state.getMatch(variable);
-            if (_variable == null) {
-                if (CompareOperator.Between != compareOperator) {
-                    JpaTokenizer jpaTokenizer = state.getTokenizer();
-                    jpaTokenizer.getVariables().stream().filter(v -> condition.getPropertyInfo().getName().equals(v.getName())).findFirst().ifPresent(condition::setVariable);
-                }
-            } else {
-                condition.setVariable(_variable.val());
-                if (CompareOperator.Between == compareOperator) {
+            if (compareOperator.isRequiredSecondVariable()) {
+                MatchResult _variable = state.getMatch(variable);
+                if (_variable != null) {
+                    condition.setVariable(_variable.val());
                     condition.setSecondVariable(state.getMatch(variableB).val());
+                }
+            } else if (compareOperator.isRequiredVariable()) {
+                MatchResult _variable = state.getMatch(variable);
+                if (_variable != null) {
+                    condition.setVariable(_variable.val());
+                } else {
+                    for (Variable variable : state.<JpaTokenizer>getTokenizer().getVariables()) {
+                        if (condition.getPropertyInfo().getName().equals(variable.getName())) {
+                            condition.setVariable(variable);
+                            break;
+                        }
+                    }
                 }
             }
             state.setReturn(condition);
@@ -606,7 +613,7 @@ public class JpaParser extends BaseParser {
         condition.setExprTemplate(filterableInfo.getExprTemplate());
         condition.setCompareOperator(filterableInfo.getOperator());
         condition.setLogicalOperator(filterableInfo.getLogicalOperator());
-        if (condition.getCompareOperator() == CompareOperator.Between) {
+        if (condition.getCompareOperator().isRequiredSecondVariable()) {
             Variable secondVariable = deepGet(variables, filterableInfo.getSecondVariable());
             if (secondVariable == null) {
                 throw new MybatisExtException("Second variable '" + filterableInfo.getSecondVariable() + "' not found in variables.");
@@ -637,52 +644,28 @@ public class JpaParser extends BaseParser {
         AtomicInteger paramIndex = new AtomicInteger(0);
         for (ConditionList list = conditionList; list != null; list = list.getTailList()) {
             Condition condition = list.getCondition();
-            if (condition.getVariable() == null) {
-                setConditionVariable(usedParamNames, paramIndex, parameters, condition, jpaTokenizer);
+            if (condition.getCompareOperator().isRequiredVariable() && condition.getVariable() == null) {
+                condition.setVariable(buildNextUnusedVariable(usedParamNames, paramIndex, parameters, condition, jpaTokenizer));
             }
-            if (condition.getCompareOperator() == CompareOperator.Between) {
-                if (condition.getSecondVariable() == null) {
-                    setConditionSecondVariable(usedParamNames, paramIndex, parameters, condition, jpaTokenizer);
-                }
+            if (condition.getCompareOperator().isRequiredSecondVariable() && condition.getSecondVariable() == null) {
+                condition.setSecondVariable(buildNextUnusedVariable(usedParamNames, paramIndex, parameters, condition, jpaTokenizer));
             }
         }
         return ConditionHelper.simplifyCondition(ConditionHelper.fromConditionList(conditionList));
     }
 
-    private void setConditionVariable(Set<String> usedParamNames, AtomicInteger paramIndex, GenericParameter[] parameters, Condition condition, JpaTokenizer jpaTokenizer) {
-        int i = paramIndex.get();
-        for (; i < parameters.length; i++) {
+    private Variable buildNextUnusedVariable(Set<String> usedParamNames, AtomicInteger paramIndex, GenericParameter[] parameters, Condition condition, JpaTokenizer jpaTokenizer) {
+        for (int i = paramIndex.get(); i < parameters.length; i++) {
             Param param = parameters[i].getAnnotation(Param.class);
             if (param == null || !usedParamNames.contains(param.value())) {
-                condition.setVariable(new Variable(param != null ? param.value() : "param" + (i + 1), parameters[i].getGenericType()));
                 if (param != null) {
                     usedParamNames.add(param.value());
                 }
-                break;
+                paramIndex.set(i + 1);
+                return new Variable(param != null ? param.value() : "param" + (i + 1), parameters[i].getGenericType());
             }
         }
-        if (i >= parameters.length) {
-            throw new MybatisExtException("Insufficient parameters for method: " + jpaTokenizer.getText());
-        }
-        paramIndex.set(i + 1);
-    }
-
-    private void setConditionSecondVariable(Set<String> usedParamNames, AtomicInteger paramIndex, GenericParameter[] parameters, Condition condition, JpaTokenizer jpaTokenizer) {
-        int i = paramIndex.get();
-        for (; i < parameters.length; i++) {
-            Param param = parameters[i].getAnnotation(Param.class);
-            if (param == null || !usedParamNames.contains(param.value())) {
-                condition.setSecondVariable(new Variable(param != null ? param.value() : "param" + (i + 1), parameters[i].getGenericType()));
-                if (param != null) {
-                    usedParamNames.add(param.value());
-                }
-                break;
-            }
-        }
-        if (i >= parameters.length) {
-            throw new MybatisExtException("Insufficient parameters for method: " + jpaTokenizer.getText());
-        }
-        paramIndex.set(i + 1);
+        throw new MybatisExtException("Insufficient parameters for method: " + jpaTokenizer.getText());
     }
 
     private final Symbol propertyEnd = join(property, end);
