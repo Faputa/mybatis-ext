@@ -50,8 +50,11 @@ public class ConditionHelper {
     }
 
     public static @Nullable Condition simplifyCondition(Condition condition) {
+        if (condition.getTest() == IfTest.False && StringUtils.isBlank(condition.getTestTemplate())) {
+            return null;
+        }
         if (condition.getType() == ConditionType.COMPLEX) {
-            if (condition.getSubConditions().size() == 1 && condition.getTest() == IfTest.None) {
+            if (condition.getSubConditions().size() == 1 && condition.getTest() == IfTest.None && StringUtils.isBlank(condition.getTestTemplate())) {
                 return simplifyCondition(condition.getSubConditions().iterator().next());
             }
             for (Condition c : new ArrayList<>(condition.getSubConditions())) {
