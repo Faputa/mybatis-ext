@@ -30,4 +30,6 @@ public interface Dialect {
     String isFalse();
 
     String quote(String name);
+
+    String subSelect(String select);
 }

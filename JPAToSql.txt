@@ -213,6 +213,24 @@ WHERE
 AND a.ID = 2
 );
 
+inSubSelect
+SELECT * FROM a
+WHERE
+    a.id IN (
+    SELECT a.id FROM a,b
+    WHERE
+        b.id=a.b_id
+    AND b.xxx=#{bXxx}
+    )
+existSubSelect
+SELECT * FROM a
+WHERE
+    EXISTS (
+    SELECT b.id FROM b
+    WHERE
+        b.id=a.b_id
+    AND b.xxx=#{bXxx}
+    )
 
 
 
