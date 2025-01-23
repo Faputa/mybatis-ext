@@ -43,8 +43,8 @@ public class OracleDialect extends BaseSimpleDialect {
             if (StringUtils.isNotBlank(where)) {
                 ss.add(where);
             }
-            ss.add(") x");
-            ss.add(buildUpdateSet("x", tableInfo, variable, ignoreNull));
+            ss.add(") __x");
+            ss.add(buildUpdateSet("__x", tableInfo, variable, ignoreNull));
             return String.join(" ", ss);
         }
         return buildSimpleUpdate(tableInfo, variable, ignoreNull, where);
@@ -68,7 +68,7 @@ public class OracleDialect extends BaseSimpleDialect {
             if (StringUtils.isNotBlank(where)) {
                 ss.add(where);
             }
-            ss.add(") x");
+            ss.add(") __x");
             return String.join(" ", ss);
         }
         return buildSimpleDelete(tableInfo, where);
@@ -125,5 +125,10 @@ public class OracleDialect extends BaseSimpleDialect {
     @Override
     public String quote(String name) {
         return "\"" + name + "\"";
+    }
+
+    @Override
+    public String subSelect(String select) {
+        return "(" + select + ")";
     }
 }

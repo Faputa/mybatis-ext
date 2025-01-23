@@ -24,7 +24,7 @@ public class H2Dialect extends BaseDialect {
         ss.add("SELECT COUNT(1) FROM");
         ss.add(buildTableAndJoin(tableInfo, where, null, null, null));
         if (where != null) {
-            ss.add(buildWhere(where));
+            ss.add(buildWhere(tableInfo, where));
         }
         return String.join(" ", ss);
     }
@@ -36,7 +36,7 @@ public class H2Dialect extends BaseDialect {
         ss.add("SELECT 1 FROM");
         ss.add(buildTableAndJoin(tableInfo, where, null, null, null));
         if (where != null) {
-            ss.add(buildWhere(where));
+            ss.add(buildWhere(tableInfo, where));
         }
         ss.add(")");
         return String.join(" ", ss);
@@ -47,19 +47,19 @@ public class H2Dialect extends BaseDialect {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (groupBy != null) {
-            ss.add(buildSelectItems(tableInfo, groupBy, this));
+            ss.add(buildSelectItems(groupBy, this));
         } else {
-            ss.add(buildSelectItems(tableInfo, selectItems, this));
+            ss.add(buildSelectItems(selectItems, this));
         }
         ss.add("FROM");
         ss.add(buildTableAndJoin(tableInfo, where, selectItems, groupBy, orderBy));
         if (where != null) {
-            ss.add(buildWhere(where));
+            ss.add(buildWhere(tableInfo, where));
         }
         if (groupBy != null) {
             ss.add(buildGroupBy(groupBy));
             if (having != null) {
-                ss.add(buildHaving(having));
+                ss.add(buildHaving(tableInfo, having));
             }
         }
         if (orderBy != null) {
@@ -119,10 +119,10 @@ public class H2Dialect extends BaseDialect {
             ss.add(tableInfo.getName());
             ss.add(tableInfo.getJoinTableInfo().getAlias());
             ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, parameter, ignoreNull));
-            ss.add(buildWhereExistsJoin(joinTableInfos, where));
+            ss.add(buildWhereExistsJoin(tableInfo, joinTableInfos, where));
             return String.join(" ", ss);
         }
-        return buildSimpleUpdate(tableInfo, parameter, ignoreNull, buildWhere(where));
+        return buildSimpleUpdate(tableInfo, parameter, ignoreNull, buildWhere(tableInfo, where));
     }
 
     private String buildDelete(TableInfo tableInfo, Variable parameter, Condition where, List<JoinTableInfo> joinTableInfos, boolean batch, boolean join) {
@@ -138,10 +138,10 @@ public class H2Dialect extends BaseDialect {
             ss.add("DELETE FROM");
             ss.add(tableInfo.getName());
             ss.add(tableInfo.getJoinTableInfo().getAlias());
-            ss.add(buildWhereExistsJoin(joinTableInfos, where));
+            ss.add(buildWhereExistsJoin(tableInfo, joinTableInfos, where));
             return String.join(" ", ss);
         }
-        return buildSimpleDelete(tableInfo, buildWhere(where));
+        return buildSimpleDelete(tableInfo, buildWhere(tableInfo, where));
     }
 
     private String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
@@ -180,7 +180,7 @@ public class H2Dialect extends BaseDialect {
         return String.join(" ", ss);
     }
 
-    private String buildWhereExistsJoin(List<JoinTableInfo> joinTableInfos, Condition where) {
+    private String buildWhereExistsJoin(TableInfo tableInfo, List<JoinTableInfo> joinTableInfos, Condition where) {
         List<String> ss = new ArrayList<>();
         ss.add("WHERE EXISTS (");
         ss.add("SELECT 1 FROM");
@@ -197,7 +197,7 @@ public class H2Dialect extends BaseDialect {
         }
         conditions.add(where);
         ss.add(String.join(", ", tables));
-        ss.add(ConditionHelper.toWhere(conditions, LogicalOperator.AND, this));
+        ss.add(ConditionHelper.toWhere(tableInfo, conditions, LogicalOperator.AND, this));
         ss.add(")");
         return String.join(" ", ss);
     }
@@ -220,5 +220,10 @@ public class H2Dialect extends BaseDialect {
     @Override
     public String quote(String name) {
         return "\"" + name + "\"";
+    }
+
+    @Override
+    public String subSelect(String select) {
+        return "(" + select + ")";
     }
 }

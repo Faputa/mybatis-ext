@@ -236,19 +236,19 @@ public abstract class BaseDialect implements Dialect {
         return orderAliases.stream().map(v -> tableInfo.getAliasToJoinTableInfo().get(v)).collect(Collectors.toList());
     }
 
-    protected String buildSelectItems(TableInfo tableInfo, Collection<PropertyInfo> propertyInfos, Dialect dialect) {
-        List<String> selectItemsInner = buildSelectItemsInner(tableInfo, propertyInfos, dialect);
+    protected String buildSelectItems(Collection<PropertyInfo> propertyInfos, Dialect dialect) {
+        List<String> selectItemsInner = buildSelectItemsInner(propertyInfos, dialect);
         return String.join(", ", selectItemsInner);
     }
 
-    protected List<String> buildSelectItemsInner(TableInfo tableInfo, Collection<PropertyInfo> propertyInfos, Dialect dialect) {
+    protected List<String> buildSelectItemsInner(Collection<PropertyInfo> propertyInfos, Dialect dialect) {
         List<String> selectItems = new ArrayList<>();
         for (PropertyInfo propertyInfo : propertyInfos) {
             if (!propertyInfo.isReadonly()) {
                 if (propertyInfo.getColumnName() != null) {
                     selectItems.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " AS " + dialect.quote(propertyInfo.getFullName()));
                 } else {
-                    selectItems.addAll(buildSelectItemsInner(tableInfo, propertyInfo.values(), dialect));
+                    selectItems.addAll(buildSelectItemsInner(propertyInfo.values(), dialect));
                 }
             }
         }
@@ -267,9 +267,9 @@ public abstract class BaseDialect implements Dialect {
         List<String> ss = new ArrayList<>();
         for (OrderByElement orderByElement : orderBy) {
             String s = orderByElement.getPropertyInfo().getJoinTableInfo().getAlias() + "." + orderByElement.getPropertyInfo().getColumnName();
-            if (OrderByType.ASC == orderByElement.getType()) {
+            if (orderByElement.getType() == OrderByType.ASC) {
                 s += " ASC";
-            } else if (OrderByType.DESC == orderByElement.getType()) {
+            } else if (orderByElement.getType() == OrderByType.DESC) {
                 s += " DESC";
             }
             ss.add(s);
@@ -277,11 +277,11 @@ public abstract class BaseDialect implements Dialect {
         return "ORDER BY " + String.join(", ", ss);
     }
 
-    protected String buildWhere(Condition condition) {
-        return ConditionHelper.toWhere(condition, this);
+    protected String buildWhere(TableInfo tableInfo, Condition condition) {
+        return ConditionHelper.toWhere(tableInfo, condition, this);
     }
 
-    protected String buildHaving(Condition condition) {
-        return ConditionHelper.toHaving(condition, this);
+    protected String buildHaving(TableInfo tableInfo, Condition condition) {
+        return ConditionHelper.toHaving(tableInfo, condition, this);
     }
 }
