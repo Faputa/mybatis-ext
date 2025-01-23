@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import io.github.mybatisext.annotation.IfTest;
+import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.FilterableInfo;
@@ -17,6 +18,7 @@ import io.github.mybatisext.metadata.ResultType;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.ognl.Ognl;
+import io.github.mybatisext.statement.NestedSelectHelper;
 import io.github.mybatisext.util.SimpleStringTemplate;
 import io.github.mybatisext.util.StringUtils;
 
@@ -146,6 +148,9 @@ public class ConditionHelper {
     }
 
     public static void collectUsedTableAliases(Condition condition, Set<String> tableAliases) {
+        if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
+            return;
+        }
         if (StringUtils.isNotBlank(condition.getExprTemplate())) {
             ConditionHook conditionHook = new ConditionHook(condition);
             SimpleStringTemplate.build(condition.getExprTemplate(), conditionHook, false);
@@ -159,73 +164,71 @@ public class ConditionHelper {
         }
     }
 
-    public static String toWhere(Condition condition, Dialect dialect) {
+    public static String toWhere(TableInfo tableInfo, Condition condition, Dialect dialect) {
         if (condition.hasTest()) {
-            return "<where>" + toScript(condition, condition.getLogicalOperator(), dialect) + "</where>";
+            return "<where>" + toScript(tableInfo, condition, condition.getLogicalOperator(), dialect) + "</where>";
         }
         if (condition.getType() == ConditionType.COMPLEX) {
-            return toWhere(condition.getSubConditions(), condition.getLogicalOperator(), dialect);
+            return toWhere(tableInfo, condition.getSubConditions(), condition.getLogicalOperator(), dialect);
         }
-        return "WHERE " + toExpr(condition, dialect);
+        return "WHERE " + toExpr(tableInfo, condition, dialect);
     }
 
-    public static String toWhere(Collection<Condition> conditions, LogicalOperator logicalOperator, Dialect dialect) {
+    public static String toWhere(TableInfo tableInfo, Collection<Condition> conditions, LogicalOperator logicalOperator, Dialect dialect) {
         if (conditions.size() == 1) {
-            return toWhere(conditions.stream().findFirst().get(), dialect);
+            return toWhere(tableInfo, conditions.stream().findFirst().get(), dialect);
         }
         List<String> ss = new ArrayList<>();
         if (conditions.stream().anyMatch(Condition::hasTest)) {
-            ss.add("<where>");
             for (Condition condition : conditions) {
-                ss.add(toScript(condition, logicalOperator, dialect));
+                ss.add(toScript(tableInfo, condition, logicalOperator, dialect));
             }
-            ss.add("</where>");
-            return String.join(" ", ss);
+            return "<where>" + String.join(" ", ss) + "</where>";
         }
         {
             for (Condition condition : conditions) {
-                ss.add(toExpr(condition, dialect));
+                ss.add(toExpr(tableInfo, condition, dialect));
             }
             return "WHERE " + String.join(" " + logicalOperator + " ", ss);
         }
     }
 
-    public static String toHaving(Condition condition, Dialect dialect) {
+    public static String toHaving(TableInfo tableInfo, Condition condition, Dialect dialect) {
         if (condition.hasTest()) {
-            return "<trim prefix=\"HAVING\" prefixOverrides=" + condition.getLogicalOperator() + ">" + toScript(condition, condition.getLogicalOperator(), dialect) + "</trim>";
+            return "<trim prefix=\"HAVING\" prefixOverrides=" + condition.getLogicalOperator() + ">" + toScript(tableInfo, condition, condition.getLogicalOperator(), dialect) + "</trim>";
         }
         if (condition.getType() == ConditionType.COMPLEX) {
-            return toHaving(condition.getSubConditions(), condition.getLogicalOperator(), dialect);
+            return toHaving(tableInfo, condition.getSubConditions(), condition.getLogicalOperator(), dialect);
         }
-        return "HAVING " + toExpr(condition, dialect);
+        return "HAVING " + toExpr(tableInfo, condition, dialect);
     }
 
-    public static String toHaving(Collection<Condition> conditions, LogicalOperator logicalOperator, Dialect dialect) {
+    public static String toHaving(TableInfo tableInfo, Collection<Condition> conditions, LogicalOperator logicalOperator, Dialect dialect) {
         if (conditions.size() == 1) {
-            return toHaving(conditions.stream().findFirst().get(), dialect);
+            return toHaving(tableInfo, conditions.stream().findFirst().get(), dialect);
         }
         List<String> ss = new ArrayList<>();
         if (conditions.stream().anyMatch(Condition::hasTest)) {
             ss.add("<trim prefix=\"HAVING\" prefixOverrides=" + LogicalOperator.AND + ">");
             for (Condition condition : conditions) {
-                ss.add(toScript(condition, LogicalOperator.AND, dialect));
+                ss.add(toScript(tableInfo, condition, LogicalOperator.AND, dialect));
             }
             ss.add("</trim>");
             return String.join(" ", ss);
         }
         {
             for (Condition condition : conditions) {
-                ss.add(toExpr(condition, dialect));
+                ss.add(toExpr(tableInfo, condition, dialect));
             }
             return "HAVING " + String.join(" " + logicalOperator + " ", ss);
         }
     }
 
-    private static String toScript(Condition condition, @Nullable LogicalOperator prefix, Dialect dialect) {
+    private static String toScript(TableInfo tableInfo, Condition condition, @Nullable LogicalOperator prefix, Dialect dialect) {
         if (condition.hasTest()) {
-            return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(condition, prefix, dialect) + "</if>";
+            return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(tableInfo, condition, prefix, dialect) + "</if>";
         }
-        return toExprWithPrefix(condition, prefix, dialect);
+        return toExprWithPrefix(tableInfo, condition, prefix, dialect);
     }
 
     private static String toTestOgnl(Condition condition) {
@@ -244,21 +247,33 @@ public class ConditionHelper {
         return null;
     }
 
-    private static String toExprWithPrefix(Condition condition, @Nullable LogicalOperator prefix, Dialect dialect) {
+    private static String toExprWithPrefix(TableInfo tableInfo, Condition condition, @Nullable LogicalOperator prefix, Dialect dialect) {
         if (prefix == null) {
-            return toExpr(condition, dialect);
+            return toExpr(tableInfo, condition, dialect);
         }
         if (StringUtils.isNotBlank(condition.getExprTemplate())) {
-            return prefix + " " + SimpleStringTemplate.build(condition.getExprTemplate(), condition);
+            String expr = SimpleStringTemplate.build(condition.getExprTemplate(), condition);
+            if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
+                expr = NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), "(" + expr + ")", dialect);
+            }
+            return prefix + " " + expr;
         }
         if (condition.getType() == ConditionType.BASIC) {
-            return prefix + " " + toBasicExpr(condition, condition.getCompareOperator(), condition.isNot(), condition.isIgnorecase(), dialect);
+            String expr = toBasicExpr(condition, condition.getCompareOperator(), condition.isNot(), condition.isIgnorecase(), dialect);
+            if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
+                expr = NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), expr, dialect);
+            }
+            return prefix + " " + expr;
         }
         if (condition.getType() == ConditionType.COMPLEX) {
             List<String> ss = new ArrayList<>();
-            ss.add("<trim prefix=\"" + prefix + " (\" suffix=\")\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
+            if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
+                ss.add("<trim prefix=\"" + prefix + " " + NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), "(\" suffix=\")", dialect) + "\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
+            } else {
+                ss.add("<trim prefix=\"" + prefix + " (\" suffix=\")\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
+            }
             for (Condition subCondition : condition.getSubConditions()) {
-                ss.addAll(buildSubConditionExpr(subCondition, condition.getLogicalOperator(), dialect));
+                ss.addAll(buildSubConditionExpr(tableInfo, subCondition, condition.getLogicalOperator(), dialect));
             }
             ss.add("</trim>");
             return String.join(" ", ss);
@@ -266,18 +281,30 @@ public class ConditionHelper {
         throw new MybatisExtException("Unsupported condition type:" + condition.getType());
     }
 
-    private static String toExpr(Condition condition, Dialect dialect) {
+    private static String toExpr(TableInfo tableInfo, Condition condition, Dialect dialect) {
         if (StringUtils.isNotBlank(condition.getExprTemplate())) {
-            return SimpleStringTemplate.build(condition.getExprTemplate(), condition);
+            String expr = SimpleStringTemplate.build(condition.getExprTemplate(), condition);
+            if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
+                return NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), "(" + expr + ")", dialect);
+            }
+            return expr;
         }
         if (condition.getType() == ConditionType.BASIC) {
-            return toBasicExpr(condition, condition.getCompareOperator(), condition.isNot(), condition.isIgnorecase(), dialect);
+            String expr = toBasicExpr(condition, condition.getCompareOperator(), condition.isNot(), condition.isIgnorecase(), dialect);
+            if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
+                return NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), expr, dialect);
+            }
+            return expr;
         }
         if (condition.getType() == ConditionType.COMPLEX) {
             List<String> ss = new ArrayList<>();
-            ss.add("<trim prefix=\"(\" suffix=\")\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
+            if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
+                ss.add("<trim prefix=\"" + NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), "(\" suffix=\")", dialect) + "\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
+            } else {
+                ss.add("<trim prefix=\"(\" suffix=\")\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
+            }
             for (Condition subCondition : condition.getSubConditions()) {
-                ss.addAll(buildSubConditionExpr(subCondition, condition.getLogicalOperator(), dialect));
+                ss.addAll(buildSubConditionExpr(tableInfo, subCondition, condition.getLogicalOperator(), dialect));
             }
             ss.add("</trim>");
             return String.join(" ", ss);
@@ -285,14 +312,14 @@ public class ConditionHelper {
         throw new MybatisExtException("Unsupported condition type:" + condition.getType());
     }
 
-    private static List<String> buildSubConditionExpr(Condition condition, LogicalOperator logicalOperator, Dialect dialect) {
+    private static List<String> buildSubConditionExpr(TableInfo tableInfo, Condition condition, LogicalOperator logicalOperator, Dialect dialect) {
         List<String> ss = new ArrayList<>();
         if (condition.getType() == ConditionType.COMPLEX && !condition.hasTest() && condition.getLogicalOperator() == logicalOperator) {
             for (Condition subCondition : condition.getSubConditions()) {
-                ss.addAll(buildSubConditionExpr(subCondition, logicalOperator, dialect));
+                ss.addAll(buildSubConditionExpr(tableInfo, subCondition, logicalOperator, dialect));
             }
         } else {
-            ss.add(toScript(condition, logicalOperator, dialect));
+            ss.add(toScript(tableInfo, condition, logicalOperator, dialect));
         }
         return ss;
     }

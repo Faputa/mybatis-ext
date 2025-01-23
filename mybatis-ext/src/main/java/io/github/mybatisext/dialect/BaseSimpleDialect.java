@@ -27,7 +27,7 @@ public abstract class BaseSimpleDialect extends BaseDialect {
     @Override
     public String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull) {
         String tableAndJoin = buildTableAndJoin(tableInfo, where, null, null, null);
-        String whereSql = where != null ? buildWhere(where) : null;
+        String whereSql = where != null ? buildWhere(tableInfo, where) : null;
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
         return buildUpdate(
                 tableInfo,
@@ -41,7 +41,7 @@ public abstract class BaseSimpleDialect extends BaseDialect {
     @Override
     public String delete(TableInfo tableInfo, Variable parameter, Condition where) {
         String tableAndJoin = buildTableAndJoin(tableInfo, where, null, null, null);
-        String whereSql = where != null ? buildWhere(where) : null;
+        String whereSql = where != null ? buildWhere(tableInfo, where) : null;
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
         return buildDelete(
                 tableInfo,
@@ -69,19 +69,19 @@ public abstract class BaseSimpleDialect extends BaseDialect {
             ss.add("DISTINCT");
         }
         if (groupBy != null) {
-            ss.add(buildSelectItems(tableInfo, groupBy, this));
+            ss.add(buildSelectItems(groupBy, this));
         } else {
-            ss.add(buildSelectItems(tableInfo, selectItems, this));
+            ss.add(buildSelectItems(selectItems, this));
         }
         ss.add("FROM");
         ss.add(buildTableAndJoin(tableInfo, where, selectItems, groupBy, orderBy));
         if (where != null) {
-            ss.add(buildWhere(where));
+            ss.add(buildWhere(tableInfo, where));
         }
         if (groupBy != null) {
             ss.add(buildGroupBy(groupBy));
             if (having != null) {
-                ss.add(buildHaving(having));
+                ss.add(buildHaving(tableInfo, having));
             }
         }
         if (orderBy != null) {
@@ -99,7 +99,7 @@ public abstract class BaseSimpleDialect extends BaseDialect {
         ss.add("SELECT 1 FROM");
         ss.add(buildTableAndJoin(tableInfo, where, null, null, null));
         if (where != null) {
-            ss.add(buildWhere(where));
+            ss.add(buildWhere(tableInfo, where));
         }
         return buildExists(String.join(" ", ss));
     }
@@ -110,7 +110,7 @@ public abstract class BaseSimpleDialect extends BaseDialect {
         ss.add("SELECT COUNT(1) FROM");
         ss.add(buildTableAndJoin(tableInfo, where, null, null, null));
         if (where != null) {
-            ss.add(buildWhere(where));
+            ss.add(buildWhere(tableInfo, where));
         }
         return String.join(" ", ss);
     }

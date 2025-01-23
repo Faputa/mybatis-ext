@@ -117,4 +117,9 @@ public class MySqlDialect extends BaseSimpleDialect {
     public String quote(String name) {
         return "`" + name + "`";
     }
+
+    @Override
+    public String subSelect(String select) {
+        return "(" + select + ") __x";
+    }
 }

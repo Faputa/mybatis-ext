@@ -57,6 +57,27 @@ public class NestedSelectHelper {
         return "<script>" + String.join(" ", ss) + "</script>";
     }
 
+    public static String buildExistSubSelect(TableInfo tableInfo, PropertyInfo propertyInfo, String nestedCondition, Dialect dialect) {
+        List<String> ss = new ArrayList<>();
+        ss.add("SELECT 1");
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, propertyInfo);
+        ss.add(buildFrom(joinTableInfos));
+        ss.add(buildExistWhere(tableInfo, joinTableInfos, nestedCondition, dialect));
+        return "EXISTS " + dialect.subSelect(String.join(" ", ss));
+    }
+
+    private static String buildExistWhere(TableInfo tableInfo, List<JoinTableInfo> joinTableInfos, String nestedCondition, Dialect dialect) {
+        List<String> conditions = new ArrayList<>();
+        for (int i = 1; i < joinTableInfos.size(); i++) {
+            JoinTableInfo joinTableInfo = joinTableInfos.get(i);
+            joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
+                conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = " + leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
+            });
+        }
+        conditions.add(nestedCondition);
+        return "WHERE " + String.join(" AND ", conditions);
+    }
+
     private static String buildFrom(List<JoinTableInfo> joinTableInfos) {
         List<String> tables = new ArrayList<>();
         for (int i = 1; i < joinTableInfos.size(); i++) {
