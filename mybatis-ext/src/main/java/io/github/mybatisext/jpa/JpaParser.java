@@ -568,6 +568,9 @@ public class JpaParser extends BaseParser {
             if (param != null && usedParamNames.contains(param.value())) {
                 continue;
             }
+            if (TableInfoFactory.isAssignableEitherWithTable(CommonUtils.unwrapType(parameter.getGenericType()), tableInfo.getTableClass())) {
+                continue;
+            }
             if (param == null || !configuration.getTypeHandlerRegistry().hasTypeHandler(parameter.getType())) {
                 throw new MybatisExtException("Unsupported parameter type: " + parameter.getType().getName() + ". Method: " + jpaTokenizer.getText());
             }
@@ -649,16 +652,16 @@ public class JpaParser extends BaseParser {
         for (ConditionList list = conditionList; list != null; list = list.getTailList()) {
             Condition condition = list.getCondition();
             if (condition.getCompareOperator().isRequiredVariable() && condition.getVariable() == null) {
-                condition.setVariable(buildNextUnusedVariable(usedParamNames, paramIndex, parameters, condition, jpaTokenizer));
+                condition.setVariable(buildNextUnusedVariable(usedParamNames, paramIndex, parameters, jpaTokenizer));
             }
             if (condition.getCompareOperator().isRequiredSecondVariable() && condition.getSecondVariable() == null) {
-                condition.setSecondVariable(buildNextUnusedVariable(usedParamNames, paramIndex, parameters, condition, jpaTokenizer));
+                condition.setSecondVariable(buildNextUnusedVariable(usedParamNames, paramIndex, parameters, jpaTokenizer));
             }
         }
         return ConditionHelper.simplifyCondition(ConditionHelper.fromConditionList(conditionList));
     }
 
-    private Variable buildNextUnusedVariable(Set<String> usedParamNames, AtomicInteger paramIndex, GenericParameter[] parameters, Condition condition, JpaTokenizer jpaTokenizer) {
+    private Variable buildNextUnusedVariable(Set<String> usedParamNames, AtomicInteger paramIndex, GenericParameter[] parameters, JpaTokenizer jpaTokenizer) {
         for (int i = paramIndex.get(); i < parameters.length; i++) {
             Param param = parameters[i].getAnnotation(Param.class);
             if (param == null || !usedParamNames.contains(param.value())) {
