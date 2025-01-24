@@ -723,7 +723,7 @@ public class TableInfoFactory {
         return nameToPropertyInfo;
     }
 
-    private static void copyPropertyInfoProperties(PropertyInfo dest, PropertyInfo origin) {
+    public static void copyPropertyInfoProperties(PropertyInfo dest, PropertyInfo origin) {
         dest.setColumnName(origin.getColumnName());
         dest.setJoinTableInfo(origin.getJoinTableInfo());
         dest.setJavaType(origin.getJavaType());
