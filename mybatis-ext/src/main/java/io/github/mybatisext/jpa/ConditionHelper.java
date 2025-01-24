@@ -90,7 +90,7 @@ public class ConditionHelper {
         condition.setLogicalOperator(LogicalOperator.AND);
         condition.setTest(IfTest.None);
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            Condition subCondition = buildPropertyInfo(tableInfo, propertyInfo, onlyById, strictMatch, param);
+            Condition subCondition = buildPropertyInfo(tableInfo, propertyInfo, onlyById, strictMatch, param, param);
             if (subCondition == null) {
                 continue;
             }
@@ -99,11 +99,14 @@ public class ConditionHelper {
         return condition;
     }
 
-    private static @Nullable Condition buildPropertyInfo(TableInfo tableInfo, PropertyInfo propertyInfo, boolean onlyById, boolean strictMatch, String prefix) {
+    private static @Nullable Condition buildPropertyInfo(TableInfo tableInfo, PropertyInfo propertyInfo, boolean onlyById, boolean strictMatch, String prefix, String param) {
         if (onlyById && (propertyInfo.getResultType() == ResultType.RESULT || !propertyInfo.isOwnColumn())) {
             return null;
         }
-        Condition condition = new Condition(StringUtils.isNotBlank(propertyInfo.getColumnName()) ? ConditionType.BASIC : ConditionType.COMPLEX);
+        if (!strictMatch && propertyInfo.getFilterableInfo() == null) {
+            return null;
+        }
+        Condition condition = new Condition(StringUtils.isBlank(propertyInfo.getColumnName()) || propertyInfo.getResultType() == ResultType.COLLECTION ? ConditionType.COMPLEX : ConditionType.BASIC);
         condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setPropertyInfo(propertyInfo);
         condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
@@ -112,25 +115,53 @@ public class ConditionHelper {
             condition.setCompareOperator(CompareOperator.Equals);
             condition.setLogicalOperator(LogicalOperator.AND);
         } else {
-            if (propertyInfo.getFilterableInfo() == null) {
-                return null;
-            }
-            applyFilterableInfo(condition, propertyInfo.getFilterableInfo(), tableInfo, prefix);
+            applyFilterableInfo(condition, propertyInfo.getFilterableInfo(), tableInfo, param);
             if (propertyInfo.getResultType() == ResultType.COLLECTION && (condition.getTest() == IfTest.None || condition.getTest() == IfTest.NotNull)) {
                 condition.setTest(IfTest.NotEmpty);
             }
         }
         for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
-            Condition subCondition = buildPropertyInfo(tableInfo, subPropertyInfo, onlyById, strictMatch, propertyInfo.getResultType() == ResultType.COLLECTION ? condition.getVariable().getFullName() + "[0]" : condition.getVariable().getFullName());
+            Condition subCondition = buildPropertyInfo(tableInfo, subPropertyInfo, onlyById, strictMatch, propertyInfo.getResultType() == ResultType.COLLECTION ? condition.getVariable().getFullName() + "[0]" : condition.getVariable().getFullName(), param);
             if (subCondition == null) {
                 continue;
             }
             condition.getSubConditions().add(subCondition);
         }
+        if (!onlyById && propertyInfo.getResultType() == ResultType.COLLECTION && StringUtils.isNotBlank(propertyInfo.getColumnName())) {
+            return splitCollectionResultCondition(condition);
+        }
         return condition;
     }
 
-    private static void applyFilterableInfo(Condition condition, FilterableInfo filterableInfo, TableInfo tableInfo, String variablePrefix) {
+    private static Condition splitCollectionResultCondition(Condition condition) {
+        PropertyInfo propertyInfo = condition.getPropertyInfo();
+        PropertyInfo collectionPropertyInfo = new PropertyInfo(propertyInfo.getPrefix(), propertyInfo.getName());
+        TableInfoFactory.copyPropertyInfoProperties(collectionPropertyInfo, propertyInfo);
+        collectionPropertyInfo.setLoadType(null);
+
+        Condition resultCondition = new Condition(ConditionType.BASIC);
+        resultCondition.setCompareOperator(condition.getCompareOperator());
+        resultCondition.setPropertyInfo(propertyInfo);
+        Variable variable = condition.getVariable();
+        resultCondition.setVariable(new Variable(variable.getPrefix(), variable.getName() + "[0]", variable.getJavaType()));
+        resultCondition.setSecondVariable(condition.getSecondVariable());
+
+        Condition collectionCondition = new Condition(ConditionType.COMPLEX);
+        collectionCondition.setTest(condition.getTest());
+        collectionCondition.setTestTemplate(condition.getTestTemplate());
+        collectionCondition.setVariable(condition.getVariable());
+        collectionCondition.setSecondVariable(condition.getSecondVariable());
+        collectionCondition.setExprTemplate(condition.getExprTemplate());
+        collectionCondition.setIgnorecase(condition.isIgnorecase());
+        collectionCondition.setLogicalOperator(LogicalOperator.AND);
+        collectionCondition.setNot(condition.isNot());
+        collectionCondition.setPropertyInfo(collectionPropertyInfo);
+        collectionCondition.setPropertyInfos(condition.getPropertyInfos());
+        collectionCondition.getSubConditions().add(resultCondition);
+        return collectionCondition;
+    }
+
+    private static void applyFilterableInfo(Condition condition, FilterableInfo filterableInfo, TableInfo tableInfo, String param) {
         condition.setTest(filterableInfo.getTest());
         condition.setCompareOperator(filterableInfo.getOperator());
         condition.setLogicalOperator(filterableInfo.getLogicalOperator());
@@ -143,7 +174,7 @@ public class ConditionHelper {
             if (secondPropertyInfo == null) {
                 throw new MybatisExtException("Second variable '" + filterableInfo.getSecondVariable() + "' not found in tableClass '" + tableInfo.getTableClass() + "'");
             }
-            condition.setSecondVariable(new Variable(variablePrefix, filterableInfo.getSecondVariable(), secondPropertyInfo.getJavaType()));
+            condition.setSecondVariable(new Variable(param, filterableInfo.getSecondVariable(), secondPropertyInfo.getJavaType()));
         }
     }
 
@@ -224,11 +255,17 @@ public class ConditionHelper {
         }
     }
 
-    private static String toScript(TableInfo tableInfo, Condition condition, @Nullable LogicalOperator prefix, Dialect dialect) {
+    private static String toScript(TableInfo tableInfo, Condition condition, @Nullable LogicalOperator logicalOperator, Dialect dialect) {
         if (condition.hasTest()) {
-            return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(tableInfo, condition, prefix, dialect) + "</if>";
+            if (condition.getSubConditions().size() == 1 && StringUtils.isBlank(condition.getExprTemplate())) {
+                Condition subCondition = condition.getSubConditions().iterator().next();
+                if (!subCondition.hasTest()) {
+                    return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(tableInfo, subCondition, logicalOperator, dialect) + "</if>";
+                }
+            }
+            return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(tableInfo, condition, logicalOperator, dialect) + "</if>";
         }
-        return toExprWithPrefix(tableInfo, condition, prefix, dialect);
+        return toExprWithPrefix(tableInfo, condition, logicalOperator, dialect);
     }
 
     private static String toTestOgnl(Condition condition) {

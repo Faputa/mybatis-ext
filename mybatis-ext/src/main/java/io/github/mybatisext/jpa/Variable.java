@@ -26,6 +26,10 @@ public class Variable extends HashMap<String, Variable> {
         return name;
     }
 
+    public String getPrefix() {
+        return prefix;
+    }
+
     public String getFullName() {
         return StringUtils.isNotBlank(prefix) ? prefix + "." + name : name;
     }
