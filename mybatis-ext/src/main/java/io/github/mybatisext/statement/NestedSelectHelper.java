@@ -62,11 +62,11 @@ public class NestedSelectHelper {
         ss.add("SELECT 1");
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, propertyInfo);
         ss.add(buildFrom(joinTableInfos));
-        ss.add(buildExistWhere(tableInfo, joinTableInfos, nestedCondition, dialect));
+        ss.add(buildExistWhere(tableInfo, joinTableInfos, nestedCondition));
         return "EXISTS " + dialect.subSelect(String.join(" ", ss));
     }
 
-    private static String buildExistWhere(TableInfo tableInfo, List<JoinTableInfo> joinTableInfos, String nestedCondition, Dialect dialect) {
+    private static String buildExistWhere(TableInfo tableInfo, List<JoinTableInfo> joinTableInfos, String nestedCondition) {
         List<String> conditions = new ArrayList<>();
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
