@@ -283,23 +283,33 @@ public class JpaParser extends BaseParser {
                     if (state.getMatch("IgnoreNull") != null) {
                         semantic.setIgnoreNull(true);
                     }
+                    Condition condition;
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
-                        semantic.setWhere(ensureConditionVariable(state, collectUsedParamNames(_conditionList.<ConditionList>val()), _conditionList.val()));
+                        condition = ensureConditionVariable(state, collectUsedParamNames(_conditionList.<ConditionList>val()), _conditionList.val());
                     } else {
-                        semantic.setWhere(buildDefaultCondition(state, new HashSet<>()));
+                        condition = buildDefaultCondition(state, new HashSet<>());
                     }
+                    if (condition == null) {
+                        throw new MybatisExtException("Condition cannot be null for update: " + state.<JpaTokenizer>getTokenizer().getText());
+                    }
+                    semantic.setWhere(condition);
                     state.setReturn(semantic);
                 })),
                 join(choice(keyword("delete"), keyword("remove")), optional(keyword("Batch")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.DELETE);
                     semantic.setParameter(buildSemanticParameter(state, false));
+                    Condition condition;
                     MatchResult _conditionList = state.getMatch(conditionList);
                     if (_conditionList != null) {
-                        semantic.setWhere(ensureConditionVariable(state, collectUsedParamNames(_conditionList.<ConditionList>val()), _conditionList.val()));
+                        condition = ensureConditionVariable(state, collectUsedParamNames(_conditionList.<ConditionList>val()), _conditionList.val());
                     } else {
-                        semantic.setWhere(buildDefaultCondition(state, new HashSet<>()));
+                        condition = buildDefaultCondition(state, new HashSet<>());
                     }
+                    if (condition == null) {
+                        throw new MybatisExtException("Condition cannot be null for delete: " + state.<JpaTokenizer>getTokenizer().getText());
+                    }
+                    semantic.setWhere(condition);
                     state.setReturn(semantic);
                 })),
                 join(choice(keyword("save"), keyword("insert")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), end, action(state -> {
