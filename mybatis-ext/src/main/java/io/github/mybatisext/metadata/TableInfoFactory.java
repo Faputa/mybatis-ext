@@ -144,7 +144,7 @@ public class TableInfoFactory {
                 }
                 ColumnRef columnRef = field.getAnnotation(ColumnRef.class);
                 if (columnRef != null) {
-                    processRefPropertyInfo(field.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : field.getName(), refTableInfo, field.getGenericType(), field.getAnnotation(Filterable.class), true);
+                    processRefPropertyInfo(field.getName(), tableInfo, StringUtils.isNotBlank(columnRef.value()) ? columnRef.value() : field.getName(), refTableInfo, field.getGenericType(), field.getAnnotation(Filterable.class), false);
                 }
             }
 
