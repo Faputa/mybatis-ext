@@ -326,4 +326,26 @@ private static boolean isSpecialParameter(Class<?> clazz) {
 }
 
 
+考虑支持update指定字段
+update(Model)
+update(Model, @Param id)
+updateById(Model)
+updateById(Model, @Param id)
+updateName(Model)
+updateNameById(Model, @Param id)
+updateNameById(@Param name, @Param id)
 
+update(List<Model>)
+update(List<Model>, @Param id)
+updateById(List<Model>)
+updateById(List<Model>, @Param id)
+updateName(List<Model>)
+updateNameById(List<Model>, @Param id)
+updateNameById(@Param List<name>, @Param id)
+
+PASS
+updateNameAndEmailById(@Param name, @Param email, @Param id)
+ERROR
+updateNameAndEmailById(@Param List<name>, @Param email, @Param id)
+ERROR
+updateNameAndEmailById(@Param List<name>, @Param List<email>, @Param id)
