@@ -5,23 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.github.mybatis-ext</groupId>
-        <artifactId>mybatis-ext-root</artifactId>
-        <version>0.0.1</version>
+        <artifactId>mybatis-ext-parent</artifactId>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>mybatis-ext-test</artifactId>
-
-    <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <dependencies>
         <dependency>
             <groupId>io.github.mybatis-ext</groupId>
             <artifactId>mybatis-ext</artifactId>
-            <version>0.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.mybatis</groupId>
