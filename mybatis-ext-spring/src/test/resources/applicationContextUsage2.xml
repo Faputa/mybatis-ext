@@ -39,9 +39,9 @@
 
     <bean id="mapperMethodValidator" class="io.github.mybatisext.spring.MapperMethodValidator">
         <constructor-arg>
-            <map>
-                <entry key="sqlSessionFactory" value-ref="sqlSessionFactory"/>
-            </map>
+            <list>
+                <ref bean="sqlSessionFactory" />
+            </list>
         </constructor-arg>
     </bean>
 
