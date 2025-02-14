@@ -1,6 +1,6 @@
 package io.github.mybatisext.spring;
 
-import java.util.Map;
+import java.util.Collection;
 
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -10,15 +10,15 @@ import io.github.mybatisext.adapter.ConfigurationInterface;
 
 public class MapperMethodValidator implements SmartInitializingSingleton {
 
-    private final Map<String, SqlSessionFactory> sqlSessionFactoryMap;
+    private final Collection<SqlSessionFactory> sqlSessionFactories;
 
-    public MapperMethodValidator(Map<String, SqlSessionFactory> sqlSessionFactoryMap) {
-        this.sqlSessionFactoryMap = sqlSessionFactoryMap;
+    public MapperMethodValidator(Collection<SqlSessionFactory> sqlSessionFactories) {
+        this.sqlSessionFactories = sqlSessionFactories;
     }
 
     @Override
     public void afterSingletonsInstantiated() {
-        for (SqlSessionFactory sqlSessionFactory : sqlSessionFactoryMap.values()) {
+        for (SqlSessionFactory sqlSessionFactory : sqlSessionFactories) {
             Configuration configuration = sqlSessionFactory.getConfiguration();
             if (configuration instanceof ConfigurationInterface) {
                 ConfigurationInterface configurationInterface = (ConfigurationInterface) configuration;
