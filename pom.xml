@@ -19,6 +19,30 @@
     </modules>
     <packaging>pom</packaging>
 
+    <name>MyBatis-Ext</name>
+    <description>MyBatis-Ext is an enhancement framework for MyBatis.</description>
+    <url>https://github.com/Faputa/mybatis-ext</url>
+
+    <licenses>
+        <license>
+            <name>The MIT License (MIT)</name>
+            <url>https://github.com/Faputa/mybatis-ext/blob/main/LICENSE</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Faputa</name>
+            <email>2238932729@qq.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <url>https://github.com/Faputa/mybatis-ext</url>
+        <connection>scm:git:https://github.com/Faputa/mybatis-ext.git</connection>
+        <developerConnection>scm:git:https://github.com/Faputa/mybatis-ext.git</developerConnection>
+    </scm>
+
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -75,6 +99,48 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <excludeArtifacts>
+                        <artifact>mybatis-flex-test</artifact>
+                        <artifact>mybatis-plus-test</artifact>
+                        <artifact>mybatis-spring-test</artifact>
+                        <artifact>spring-data-jpa-test</artifact>
+                    </excludeArtifacts>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.2.7</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
