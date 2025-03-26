@@ -28,10 +28,10 @@ public class ConditionHelper {
         List<Condition> andConditions = new ArrayList<>();
         List<Condition> orConditions = new ArrayList<>();
         for (ConditionList list = conditionList; list != null; list = list.getTailList()) {
-            andConditions.add(conditionList.getCondition());
-            if (conditionList.getLogicalOperator() == LogicalOperator.OR) {
+            andConditions.add(list.getCondition());
+            if (list.getLogicalOperator() == LogicalOperator.OR) {
                 Condition condition = new Condition(ConditionType.COMPLEX);
-                condition.setPropertyInfos(conditionList.getCondition().getPropertyInfos());
+                condition.setPropertyInfos(list.getCondition().getPropertyInfos());
                 condition.setLogicalOperator(LogicalOperator.AND);
                 condition.getSubConditions().addAll(andConditions);
                 andConditions.clear();
