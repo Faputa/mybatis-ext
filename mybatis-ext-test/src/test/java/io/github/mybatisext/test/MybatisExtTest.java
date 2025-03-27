@@ -3,6 +3,7 @@ package io.github.mybatisext.test;
 import javax.sql.DataSource;
 
 import org.apache.ibatis.mapping.Environment;
+import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
@@ -12,7 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
-import io.github.mybatisext.adapter.ExtConfiguration;
+import io.github.mybatisext.adapter.ConfigurationFactory;
+import io.github.mybatisext.adapter.ConfigurationInterface;
 import io.github.mybatisext.adapter.ExtContext;
 
 public class MybatisExtTest {
@@ -27,13 +29,13 @@ public class MybatisExtTest {
 
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
-        ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
+        Configuration configuration = ConfigurationFactory.create(environment, new ExtContext());
         // 先注册子类，此时无法确定SysUserMapper0中所有的方法
         // mapper.xml的路径默认和mapper.class一样
         configuration.addMapper(SysUserMapper1.class);
         // 再注册父类
         configuration.addMapper(SysUserMapper0.class);
-        configuration.validateAllMapperMethod();
+        ((ConfigurationInterface) configuration).validateAllMapperMethod();
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
         SqlSession session = sqlSessionFactory.openSession();
         SysUserMapper1 sysUserMapper1 = session.getMapper(SysUserMapper1.class);

@@ -6,11 +6,12 @@ import java.util.Set;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ibatis.mapping.Environment;
+import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
 
-import io.github.mybatisext.adapter.ExtConfiguration;
+import io.github.mybatisext.adapter.ConfigurationFactory;
 import io.github.mybatisext.adapter.ExtContext;
 
 public class HasTypeHandlerTest {
@@ -25,7 +26,7 @@ public class HasTypeHandlerTest {
 
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
-        ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
+        Configuration configuration = ConfigurationFactory.create(environment, new ExtContext());
         System.out.println(configuration.getTypeHandlerRegistry().hasTypeHandler(Map.class));
         System.out.println(configuration.getTypeHandlerRegistry().hasTypeHandler(Set.class));
         System.out.println(configuration.getTypeHandlerRegistry().hasTypeHandler(List.class));
