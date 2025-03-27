@@ -1,6 +1,7 @@
 package io.github.mybatisext.spring.boot;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -51,5 +52,11 @@ public class MybatisExtAutoConfiguration {
     @ConditionalOnMissingBean
     MapperMethodValidator mybatisExtMapperMethodValidator(List<SqlSessionFactory> sqlSessionFactories) {
         return new MapperMethodValidator(sqlSessionFactories);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "mybatisExtMapperMethodValidatorSecond")
+    MapperMethodValidator mybatisExtMapperMethodValidatorSecond(Map<Object, SqlSessionFactory> sqlSessionFactoryMap) {
+        return new MapperMethodValidator(sqlSessionFactoryMap.values());
     }
 }
