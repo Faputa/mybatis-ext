@@ -20,5 +20,6 @@ public class MybatisExtBeanTest {
         assertNotNull(applicationContext.getBean("mybatisExtContext"));
         assertNotNull(applicationContext.getBean("mybatisExtBeanPostProcessor"));
         assertNotNull(applicationContext.getBean("mybatisExtMapperMethodValidator"));
+        assertNotNull(applicationContext.getBean("mybatisExtMapperMethodValidatorSecond"));
     }
 }
