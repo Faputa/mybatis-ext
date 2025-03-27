@@ -1,5 +1,6 @@
 package io.github.mybatisext.adapter;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -21,22 +22,42 @@ import io.github.mybatisext.reflect.GenericTypeFactory;
 import io.github.mybatisext.statement.MappedStatementHelper;
 import io.github.mybatisext.util.CommonUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
+import javassist.util.proxy.MethodHandler;
 
-public class ExtEnhancer {
+public class ExtEnhancer implements MethodHandler {
 
-    private final Configuration originConfiguration;
+    private static final MethodSignature GET_MAPPED_STATEMENT = new MethodSignature("getMappedStatement", new Class[]{String.class});
+    private static final MethodSignature HAS_STATEMENT = new MethodSignature("hasStatement", new Class[]{String.class});
+    private static final MethodSignature VALIDATE_ALL_MAPPER_METHOD = new MethodSignature("validateAllMapperMethod", new Class[]{});
+
+    private final Configuration configuration;
     private final MappedStatementHelper mappedStatementHelper;
 
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
 
-    public ExtEnhancer(Configuration originConfiguration, ExtContext extContext) {
-        this.originConfiguration = originConfiguration;
-        this.mappedStatementHelper = new MappedStatementHelper(originConfiguration, extContext);
+    public ExtEnhancer(Configuration configuration, ExtContext extContext) {
+        this.configuration = configuration;
+        this.mappedStatementHelper = new MappedStatementHelper(configuration, extContext);
+    }
+
+    @Override
+    public Object invoke(Object self, Method thisMethod, Method proceed, Object[] args) throws Throwable {
+        if (GET_MAPPED_STATEMENT.match(thisMethod)) {
+            return getMappedStatement((String) args[0]);
+        }
+        if (HAS_STATEMENT.match(thisMethod)) {
+            return hasStatement((String) args[0]);
+        }
+        if (VALIDATE_ALL_MAPPER_METHOD.match(thisMethod)) {
+            validateAllMapperMethod();
+            return null;
+        }
+        return thisMethod.invoke(configuration, args);
     }
 
     public MappedStatement getMappedStatement(String id) {
-        if (originConfiguration.hasStatement(id)) {
-            return originConfiguration.getMappedStatement(id);
+        if (configuration.hasStatement(id)) {
+            return configuration.getMappedStatement(id);
         }
         int lastIndexOf = id.lastIndexOf(".");
         if (lastIndexOf < 0) {
@@ -54,9 +75,9 @@ public class ExtEnhancer {
         }
         ms = buildMappedStatement(id, mapperClass, methodName, true);
         if (ms != null) {
-            synchronized (originConfiguration) {
-                if (!originConfiguration.hasStatement(ms.getId())) {
-                    originConfiguration.addMappedStatement(ms);
+            synchronized (configuration) {
+                if (!configuration.hasStatement(ms.getId())) {
+                    configuration.addMappedStatement(ms);
                 }
             }
         }
@@ -64,7 +85,7 @@ public class ExtEnhancer {
     }
 
     public boolean hasStatement(String statementName) {
-        if (originConfiguration.hasStatement(statementName)) {
+        if (configuration.hasStatement(statementName)) {
             return true;
         }
         MappedStatement ms = getMappedStatement(statementName);
@@ -75,7 +96,7 @@ public class ExtEnhancer {
     }
 
     public void validateAllMapperMethod() {
-        for (Class<?> mapperClass : originConfiguration.getMapperRegistry().getMappers()) {
+        for (Class<?> mapperClass : configuration.getMapperRegistry().getMappers()) {
             if (isNotEnhancedMapper(mapperClass)) {
                 continue;
             }
@@ -101,8 +122,8 @@ public class ExtEnhancer {
             return null;
         }
         String statementId = mapperClass.getName() + "." + methodName;
-        if (originConfiguration.hasStatement(statementId)) {
-            return originConfiguration.getMappedStatement(statementId);
+        if (configuration.hasStatement(statementId)) {
+            return configuration.getMappedStatement(statementId);
         }
         for (Class<?> superInterface : mapperClass.getInterfaces()) {
             MappedStatement ms = resolveMappedStatement(superInterface, methodName);
@@ -152,7 +173,7 @@ public class ExtEnhancer {
     }
 
     private Class<?> getMapperClass(String namespace) {
-        Collection<Class<?>> mappers = originConfiguration.getMapperRegistry().getMappers();
+        Collection<Class<?>> mappers = configuration.getMapperRegistry().getMappers();
         if (!mapperCache.containsKey(namespace)) {
             mapperCache = mappers.stream().collect(Collectors.toMap(Class::getName, v -> v));
         }

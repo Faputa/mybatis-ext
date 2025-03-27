@@ -6,11 +6,12 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ibatis.mapping.Environment;
+import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
 
-import io.github.mybatisext.adapter.ExtConfiguration;
+import io.github.mybatisext.adapter.ConfigurationFactory;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.dialect.H2Dialect;
@@ -26,7 +27,7 @@ import io.github.mybatisext.statement.SemanticScriptHelper;
 
 public class JpaParserTest {
 
-    private final ExtConfiguration configuration;
+    private final Configuration configuration;
     private final TableInfo tableInfo;
     private final JpaParser jpaParser;
 
@@ -39,7 +40,7 @@ public class JpaParserTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtContext extContext = new ExtContext();
-        configuration = new ExtConfiguration(environment, extContext);
+        configuration = ConfigurationFactory.create(environment, extContext);
         TableInfoFactory tableInfoFactory = new TableInfoFactory(configuration, extContext);
         tableInfo = tableInfoFactory.getTableInfo(TablePermission.class);
         jpaParser = new JpaParser(configuration, tableInfoFactory);
