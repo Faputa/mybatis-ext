@@ -90,11 +90,11 @@ TransactionFactory transactionFactory = new JdbcTransactionFactory();
 Environment environment = new Environment("development", transactionFactory, dataSource);
 
 // 使用ExtConfiguration替代原生Configuration
-ExtConfiguration configuration = new ExtConfiguration(environment, new ExtContext());
+Configuration configuration = ConfigurationFactory.create(environment, new ExtContext());
 
 // 注册Mapper
 configuration.addMapper(YourMapper.class);
-configuration.validateAllMapperMethod(); // 验证所有映射方法
+((ConfigurationInterface) configuration).validateAllMapperMethod(); // 验证所有映射方法
 
 // 创建会话工厂
 SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
