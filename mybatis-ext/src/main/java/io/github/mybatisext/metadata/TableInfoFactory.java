@@ -39,7 +39,6 @@ import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.annotation.TableRef;
 import io.github.mybatisext.exception.MybatisExtException;
-import io.github.mybatisext.idgenerator.IdGenerator;
 import io.github.mybatisext.jpa.CompareOperator;
 import io.github.mybatisext.jpa.LogicalOperator;
 import io.github.mybatisext.reflect.GenericField;
@@ -479,11 +478,10 @@ public class TableInfoFactory {
 
     private static void processIdType(PropertyInfo propertyInfo, Id id) {
         if (id.idType() == IdType.CUSTOM) {
-            if (id.customIdGenerator() == void.class) {
-                throw new MybatisExtException("customIdGenerator cannot be null");
-            }
-            if (!IdGenerator.class.isAssignableFrom(id.customIdGenerator())) {
-                throw new MybatisExtException("customIdGenerator must implement the IdGenerator");
+            try {
+                id.customIdGenerator().newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new MybatisExtException("customIdGenerator cannot be instantiated");
             }
             propertyInfo.setCustomIdGenerator(id.customIdGenerator());
         }
