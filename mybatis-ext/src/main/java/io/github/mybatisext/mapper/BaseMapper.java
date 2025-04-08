@@ -2,6 +2,8 @@ package io.github.mybatisext.mapper;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.apache.ibatis.session.RowBounds;
 
 import io.github.mybatisext.annotation.OnlyById;
@@ -28,6 +30,7 @@ public interface BaseMapper<T> extends ExtMapper<T> {
 
     int deleteBatch(@OnlyById List<T> query);
 
+    @Nullable
     T get(@OnlyById T query);
 
     List<T> list(T query);
