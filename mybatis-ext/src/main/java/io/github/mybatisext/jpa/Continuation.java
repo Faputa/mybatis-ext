@@ -1,7 +1,7 @@
 package io.github.mybatisext.jpa;
 
 @FunctionalInterface
-public interface Continuation {
+public interface Continuation<T extends Tokenizer> {
 
-    boolean test(State state);
+    boolean test(State<T> state);
 }

@@ -2,7 +2,7 @@ package io.github.mybatisext.jpa;
 
 import org.junit.jupiter.api.Test;
 
-public class MathParserTest extends BaseParser {
+public class MathParserTest extends BaseParser<MathTokenizer> {
 
     Symbol end = new Symbol("end").set((state, continuation) -> {
         MathTokenizer mathTokenizer = state.getTokenizer();
