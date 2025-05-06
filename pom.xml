@@ -107,6 +107,7 @@
                 <configuration>
                     <publishingServerId>central</publishingServerId>
                     <excludeArtifacts>
+                        <artifact>mybatis-ext-test</artifact>
                         <artifact>mybatis-flex-test</artifact>
                         <artifact>mybatis-plus-test</artifact>
                         <artifact>mybatis-spring-test</artifact>
