@@ -21,7 +21,6 @@ MyBatis-Ext 项目由以下几个主要模块组成：
 - **mybatis-ext** - 核心模块，提供基础功能实现
 - **mybatis-ext-spring** - Spring集成模块
 - **mybatis-ext-spring-boot-starter** - Spring Boot starter，提供自动配置
-- **mybatis-ext-test** - 测试用例和示例代码
 
 ## 集成方式
 
