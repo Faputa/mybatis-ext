@@ -62,6 +62,10 @@ public class GenericMethod {
         return method.getAnnotationsByType(annotationClass);
     }
 
+    public Annotation[][] getParameterAnnotations() {
+        return method.getParameterAnnotations();
+    }
+
     public Class<?> getDeclaringClass() {
         return method.getDeclaringClass();
     }

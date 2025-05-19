@@ -269,6 +269,7 @@ MyBatis-Ext 提供了多种数据库方言支持，以适应不同的数据库�
 
 - MySQL
 - Oracle
+- PostgreSQL
 - DM（达梦）
 - H2
 - 其他（可通过实现 `Dialect` 接口扩展）
