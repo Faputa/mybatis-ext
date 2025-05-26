@@ -19,14 +19,14 @@ public class MySqlDialect extends BaseSimpleDialect {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             if (ignoreNull) {
                 ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
-                ss.add(buildInsert(tableInfo, itemVariable, false, true));
+                ss.add(buildSimpleInsert(tableInfo, itemVariable, true));
                 ss.add("</foreach>");
                 return String.join(" ", ss);
             }
             ss.add("INSERT INTO " + tableInfo.getName());
             ss.add(buildInsertItems(tableInfo, itemVariable, false));
             ss.add("VALUES");
-            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
+            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\",\">");
             ss.add(buildInsertValues(tableInfo, itemVariable, false));
             ss.add("</foreach>");
             return String.join(" ", ss);

@@ -18,7 +18,7 @@ public class OracleDialect extends BaseSimpleDialect {
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
-            ss.add(buildInsert(tableInfo, itemVariable, false, ignoreNull));
+            ss.add(buildSimpleInsert(tableInfo, itemVariable, ignoreNull));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
