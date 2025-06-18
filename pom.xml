@@ -19,7 +19,7 @@
     </modules>
     <packaging>pom</packaging>
 
-    <name>MyBatis-Ext</name>
+    <name>mybatis-ext-parent</name>
     <description>MyBatis-Ext is an enhancement framework for MyBatis.</description>
     <url>https://github.com/Faputa/mybatis-ext</url>
 
@@ -47,7 +47,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <revision>0.0.5</revision>
+        <revision>0.0.6</revision>
     </properties>
 
     <dependencyManagement>
