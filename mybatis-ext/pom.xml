@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>mybatis-ext</artifactId>
+    <name>mybatis-ext</name>
 
     <dependencies>
         <dependency>

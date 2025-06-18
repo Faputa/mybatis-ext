@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>mybatis-ext-spring</artifactId>
+    <name>mybatis-ext-spring</name>
 
     <dependencies>
         <dependency>
