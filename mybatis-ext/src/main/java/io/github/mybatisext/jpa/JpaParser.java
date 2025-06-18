@@ -667,13 +667,30 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
 
     private Variable buildNextUnusedVariable(Set<String> usedParamNames, AtomicInteger paramIndex, GenericParameter[] parameters, JpaTokenizer jpaTokenizer) {
         for (int i = paramIndex.get(); i < parameters.length; i++) {
-            Param param = parameters[i].getAnnotation(Param.class);
+            GenericParameter parameter = parameters[i];
+            Param param = parameter.getAnnotation(Param.class);
             if (param == null || !usedParamNames.contains(param.value())) {
                 if (param != null) {
                     usedParamNames.add(param.value());
                 }
                 paramIndex.set(i + 1);
-                return new Variable(param != null ? param.value() : "param" + (i + 1), parameters[i].getGenericType());
+                // TODO paramName应该提前计算好
+                String paramName;
+                if (param == null) {
+                    paramName = "param" + (i + 1);
+                    if (parameters.length == 1) {
+                        if (List.class.isAssignableFrom(parameter.getType())) {
+                            paramName = "list";
+                        } else if (Collection.class.isAssignableFrom(parameter.getType())) {
+                            paramName = "collection";
+                        } else if (parameter.getType().isArray()) {
+                            paramName = "array";
+                        }
+                    }
+                } else {
+                    paramName = param.value();
+                }
+                return new Variable(paramName, parameter.getGenericType());
             }
         }
         throw new MybatisExtException("Insufficient parameters for method: " + jpaTokenizer.getText());
