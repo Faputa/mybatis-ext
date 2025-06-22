@@ -2,6 +2,7 @@ package io.github.mybatisext.jpa;
 
 import java.util.List;
 
+import io.github.mybatisext.annotation.OnlyById;
 import org.apache.ibatis.annotations.Param;
 
 import io.github.mybatisext.mapper.BaseMapper;
@@ -30,6 +31,12 @@ public interface JpaParserExample extends BaseMapper<TablePermission> {
     int deleteByDataSourceName(TablePermission query);
 
     int updateIgnoreNullByDataSourceName(TablePermission query);
+
+    int updatePermissionType(@OnlyById TablePermission query);
+
+    int updatePermissionTypeAndUpdatedAt(@OnlyById TablePermission query);
+
+    int updatePermissionTypeAndUpdatedAtByRoleId(TablePermission query);
 
     List<TablePermission> findAll();
 }

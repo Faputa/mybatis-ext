@@ -253,7 +253,7 @@ BaseMapper 默认提供以下方法：
 
 #### 更新操作
 
-命名规则：`(update|modify)[Batch][IgnoreNull][(By|Where)<conditionList>]`
+命名规则：`(update|modify)[Batch][<propertyList>][IgnoreNull][(By|Where)<conditionList>]`
 
 #### 删除操作
 

@@ -43,7 +43,7 @@ public class H2Dialect extends BaseDialect {
     }
 
     @Override
-    public String select(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
+    public String select(TableInfo tableInfo, List<PropertyInfo> selectItems, Condition where, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (groupBy != null) {
@@ -72,10 +72,11 @@ public class H2Dialect extends BaseDialect {
     }
 
     @Override
-    public String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
+    public String update(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable parameter, Condition where, boolean ignoreNull) {
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, selectItems, null, null);
         return buildUpdate(
                 tableInfo,
+                selectItems,
                 parameter,
                 where,
                 ignoreNull,
@@ -105,12 +106,12 @@ public class H2Dialect extends BaseDialect {
                 ignoreNull);
     }
 
-    private String buildUpdate(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull, List<JoinTableInfo> joinTableInfos, boolean batch, boolean join) {
+    private String buildUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable parameter, Condition where, boolean ignoreNull, List<JoinTableInfo> joinTableInfos, boolean batch, boolean join) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeArgumentResolver.resolveGenericType(parameter.getJavaType(), Collection.class, 0));
             ss.add("<foreach collection=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
-            ss.add(buildUpdate(tableInfo, itemVariable, where, ignoreNull, joinTableInfos, false, join));
+            ss.add(buildUpdate(tableInfo, selectItems, itemVariable, where, ignoreNull, joinTableInfos, false, join));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -118,11 +119,11 @@ public class H2Dialect extends BaseDialect {
             ss.add("UPDATE");
             ss.add(tableInfo.getName());
             ss.add(tableInfo.getJoinTableInfo().getAlias());
-            ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, parameter, ignoreNull));
+            ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), selectItems, parameter, ignoreNull));
             ss.add(buildWhereExistsJoin(tableInfo, joinTableInfos, where));
             return String.join(" ", ss);
         }
-        return buildSimpleUpdate(tableInfo, parameter, ignoreNull, buildWhere(tableInfo, where));
+        return buildSimpleUpdate(tableInfo, selectItems, parameter, ignoreNull, buildWhere(tableInfo, where));
     }
 
     private String buildDelete(TableInfo tableInfo, Variable parameter, Condition where, List<JoinTableInfo> joinTableInfos, boolean batch, boolean join) {
