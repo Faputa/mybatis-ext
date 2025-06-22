@@ -6,6 +6,7 @@ import java.util.List;
 
 import io.github.mybatisext.jpa.Limit;
 import io.github.mybatisext.jpa.Variable;
+import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.util.StringUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
@@ -35,25 +36,25 @@ public class MySqlDialect extends BaseSimpleDialect {
     }
 
     @Override
-    public String buildUpdate(TableInfo tableInfo, Variable variable, String tableAndJoin, String where, boolean batch, boolean join, boolean ignoreNull) {
+    public String buildUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable variable, String tableAndJoin, String where, boolean batch, boolean join, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + "__" + variable.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
-            ss.add(buildUpdate(tableInfo, itemVariable, tableAndJoin, where, false, join, ignoreNull));
+            ss.add(buildUpdate(tableInfo, selectItems, itemVariable, tableAndJoin, where, false, join, ignoreNull));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
         if (join) {
             ss.add("UPDATE");
             ss.add(tableAndJoin);
-            ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, variable, ignoreNull));
+            ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), selectItems, variable, ignoreNull));
             if (StringUtils.isNotBlank(where)) {
                 ss.add(where);
             }
             return String.join(" ", ss);
         }
-        return buildSimpleUpdate(tableInfo, variable, ignoreNull, where);
+        return buildSimpleUpdate(tableInfo, selectItems, variable, ignoreNull, where);
     }
 
     @Override

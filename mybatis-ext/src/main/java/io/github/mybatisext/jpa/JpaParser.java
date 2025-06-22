@@ -277,8 +277,15 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
                     }
                     state.setReturn(semantic);
                 })),
-                join(choice(keyword("update"), keyword("modify")), optional(keyword("Batch")), optional(keyword("IgnoreNull")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
+                join(choice(keyword("update"), keyword("modify")), optional(keyword("Batch")), optional(propertyList), optional(keyword("IgnoreNull")), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.UPDATE);
+                    // TODO 考虑支持updateSet
+                    MatchResult _propertyList = state.findMatch(propertyList);
+                    if (_propertyList != null) {
+                        semantic.setSelectItems(ensureJoinRelationColumns(state.getTokenizer(), _propertyList.val()));
+                    } else {
+                        semantic.setSelectItems(new ArrayList<>(state.getTokenizer().getTableInfo().getNameToPropertyInfo().values()));
+                    }
                     semantic.setParameter(buildSemanticParameter(state.getTokenizer(), true));
                     if (state.findMatch("IgnoreNull") != null) {
                         semantic.setIgnoreNull(true);

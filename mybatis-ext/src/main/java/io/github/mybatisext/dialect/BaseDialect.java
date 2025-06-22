@@ -35,12 +35,12 @@ public abstract class BaseDialect implements Dialect {
         return String.join(" ", ss);
     }
 
-    protected String buildSimpleUpdate(TableInfo tableInfo, Variable variable, boolean ignoreNull, String where) {
+    protected String buildSimpleUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable variable, boolean ignoreNull, String where) {
         List<String> ss = new ArrayList<>();
         ss.add("UPDATE");
         ss.add(tableInfo.getName());
         ss.add(tableInfo.getJoinTableInfo().getAlias());
-        ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), tableInfo, variable, ignoreNull));
+        ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), selectItems, variable, ignoreNull));
         if (StringUtils.isNotBlank(where)) {
             ss.add(where);
         }
@@ -141,8 +141,8 @@ public abstract class BaseDialect implements Dialect {
         return String.join(" ", ss);
     }
 
-    protected String buildUpdateSet(String tableAlias, TableInfo tableInfo, Variable variable, boolean ignoreNull) {
-        Map<PropertyInfo, Variable> map = collectUpdateColumns(tableInfo.getNameToPropertyInfo().values(), variable);
+    protected String buildUpdateSet(String tableAlias, List<PropertyInfo> selectItems, Variable variable, boolean ignoreNull) {
+        Map<PropertyInfo, Variable> map = collectUpdateColumns(selectItems, variable);
         if (ignoreNull) {
             return "<set>" + buildUpdateSet(map, true, tableAlias) + "</set>";
         }

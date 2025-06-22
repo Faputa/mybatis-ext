@@ -14,7 +14,7 @@ import io.github.mybatisext.metadata.TableInfo;
 
 public abstract class BaseSimpleDialect extends BaseDialect {
 
-    protected abstract String buildUpdate(TableInfo tableInfo, Variable parameter, String tableAndJoin, String where, boolean batch, boolean join, boolean ignoreNull);
+    protected abstract String buildUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable parameter, String tableAndJoin, String where, boolean batch, boolean join, boolean ignoreNull);
 
     protected abstract String buildDelete(TableInfo tableInfo, Variable parameter, String tableAndJoin, String where, boolean batch, boolean join);
 
@@ -25,12 +25,13 @@ public abstract class BaseSimpleDialect extends BaseDialect {
     protected abstract String buildExists(String select);
 
     @Override
-    public String update(TableInfo tableInfo, Variable parameter, Condition where, boolean ignoreNull) {
-        String tableAndJoin = buildTableAndJoin(tableInfo, where, null, null, null);
+    public String update(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable parameter, Condition where, boolean ignoreNull) {
+        String tableAndJoin = buildTableAndJoin(tableInfo, where, selectItems, null, null);
         String whereSql = where != null ? buildWhere(tableInfo, where) : null;
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
         return buildUpdate(
                 tableInfo,
+                selectItems,
                 parameter,
                 tableAndJoin,
                 whereSql,
@@ -62,7 +63,7 @@ public abstract class BaseSimpleDialect extends BaseDialect {
     }
 
     @Override
-    public String select(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
+    public String select(TableInfo tableInfo, List<PropertyInfo> selectItems, Condition where, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (distinct) {

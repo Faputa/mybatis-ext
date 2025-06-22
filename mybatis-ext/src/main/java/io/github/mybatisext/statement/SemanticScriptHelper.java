@@ -35,7 +35,7 @@ public class SemanticScriptHelper {
             return dialect.exists(semantic.getTableInfo(), semantic.getWhere());
         }
         if (semantic.getType() == SemanticType.SELECT) {
-            return dialect.select(semantic.getTableInfo(), semantic.getWhere(), semantic.getSelectItems(), semantic.isDistinct(), semantic.getOrderBy(), semantic.getGroupBy(), semantic.getHaving(), semantic.getLimit());
+            return dialect.select(semantic.getTableInfo(), semantic.getSelectItems(), semantic.getWhere(), semantic.isDistinct(), semantic.getOrderBy(), semantic.getGroupBy(), semantic.getHaving(), semantic.getLimit());
         }
         if (semantic.getType() == SemanticType.DELETE) {
             return dialect.delete(semantic.getTableInfo(), semantic.getParameter(), semantic.getWhere());
@@ -44,7 +44,7 @@ public class SemanticScriptHelper {
             return dialect.insert(semantic.getTableInfo(), semantic.getParameter(), semantic.isIgnoreNull());
         }
         if (semantic.getType() == SemanticType.UPDATE) {
-            return dialect.update(semantic.getTableInfo(), semantic.getParameter(), semantic.getWhere(), semantic.isIgnoreNull());
+            return dialect.update(semantic.getTableInfo(), semantic.getSelectItems(), semantic.getParameter(), semantic.getWhere(), semantic.isIgnoreNull());
         }
         throw new MybatisExtException("Unsupported semantic type: " + semantic.getType());
     }
