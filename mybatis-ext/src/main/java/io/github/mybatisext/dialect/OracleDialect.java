@@ -6,6 +6,7 @@ import java.util.List;
 
 import io.github.mybatisext.jpa.Limit;
 import io.github.mybatisext.jpa.Variable;
+import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.util.StringUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
@@ -26,12 +27,12 @@ public class OracleDialect extends BaseSimpleDialect {
     }
 
     @Override
-    public String buildUpdate(TableInfo tableInfo, Variable variable, String tableAndJoin, String where, boolean batch, boolean join, boolean ignoreNull) {
+    public String buildUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable variable, String tableAndJoin, String where, boolean batch, boolean join, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
-            ss.add(buildUpdate(tableInfo, itemVariable, tableAndJoin, where, false, join, ignoreNull));
+            ss.add(buildUpdate(tableInfo, selectItems, itemVariable, tableAndJoin, where, false, join, ignoreNull));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -44,10 +45,10 @@ public class OracleDialect extends BaseSimpleDialect {
                 ss.add(where);
             }
             ss.add(") __x");
-            ss.add(buildUpdateSet("__x", tableInfo, variable, ignoreNull));
+            ss.add(buildUpdateSet("__x", selectItems, variable, ignoreNull));
             return String.join(" ", ss);
         }
-        return buildSimpleUpdate(tableInfo, variable, ignoreNull, where);
+        return buildSimpleUpdate(tableInfo, selectItems, variable, ignoreNull, where);
     }
 
     @Override
