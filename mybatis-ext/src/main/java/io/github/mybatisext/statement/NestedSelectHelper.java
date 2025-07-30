@@ -57,13 +57,13 @@ public class NestedSelectHelper {
         return "<script>" + String.join(" ", ss) + "</script>";
     }
 
-    public static String buildExistSubSelect(TableInfo tableInfo, PropertyInfo propertyInfo, String nestedCondition, Dialect dialect) {
+    public static String buildExistSubSelect(TableInfo tableInfo, PropertyInfo propertyInfo, String nestedCondition) {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT 1");
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, propertyInfo);
         ss.add(buildFrom(joinTableInfos));
         ss.add(buildExistWhere(tableInfo, joinTableInfos, nestedCondition));
-        return "EXISTS " + dialect.subSelect(String.join(" ", ss));
+        return "EXISTS (" + String.join(" ", ss) + ")";
     }
 
     private static String buildExistWhere(TableInfo tableInfo, List<JoinTableInfo> joinTableInfos, String nestedCondition) {
