@@ -222,9 +222,4 @@ public class H2Dialect extends BaseDialect {
     public String quote(String name) {
         return "\"" + name + "\"";
     }
-
-    @Override
-    public String subSelect(String select) {
-        return "(" + select + ")";
-    }
 }

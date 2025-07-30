@@ -289,21 +289,21 @@ public class ConditionHelper {
         if (StringUtils.isNotBlank(condition.getExprTemplate())) {
             String expr = SimpleStringTemplate.build(condition.getExprTemplate(), condition);
             if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
-                expr = NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), "(" + expr + ")", dialect);
+                expr = NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), "(" + expr + ")");
             }
             return prefix + expr;
         }
         if (condition.getType() == ConditionType.BASIC) {
             String expr = toBasicExpr(condition, condition.getCompareOperator(), condition.isNot(), condition.isIgnorecase(), dialect);
             if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
-                expr = NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), expr, dialect);
+                expr = NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), expr);
             }
             return prefix + expr;
         }
         if (condition.getType() == ConditionType.COMPLEX) {
             List<String> ss = new ArrayList<>();
             if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
-                ss.add("<trim prefix=\"" + prefix + NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), "(\" suffix=\")", dialect) + "\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
+                ss.add("<trim prefix=\"" + prefix + NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), "(\" suffix=\")") + "\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
             } else {
                 ss.add("<trim prefix=\"" + prefix + "(\" suffix=\")\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
             }
