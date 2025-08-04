@@ -284,7 +284,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
                     if (_propertyList != null) {
                         semantic.setSelectItems(ensureJoinRelationColumns(state.getTokenizer(), _propertyList.val()));
                     } else {
-                        semantic.setSelectItems(new ArrayList<>(state.getTokenizer().getTableInfo().getNameToPropertyInfo().values()));
+                        semantic.setSelectItems(state.getTokenizer().getTableInfo().getNameToPropertyInfo().values().stream().filter(PropertyInfo::isOwnColumn).collect(Collectors.toList()));
                     }
                     semantic.setParameter(buildSemanticParameter(state.getTokenizer(), true));
                     if (state.getMatch("IgnoreNull") != null) {
@@ -717,7 +717,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         });
         if (reference.get() == null) {
             jpaTokenizer.getExpectedTokens().printMessage(System.err);
-            throw new ParserException(jpaTokenizer.getExpectedTokens().toString() + " Parameter: " + jpaTokenizer.getText());
+            throw new ParserException(jpaTokenizer.getExpectedTokens().getMessage() + " Parameter: " + jpaTokenizer.getText());
         }
         if (tokenMarkers.size() > 1) {
             tokenMarkers.get(0).printDiff(tokenMarkers.get(tokenMarkers.size() - 1), System.err);
@@ -753,7 +753,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         });
         if (reference.get() == null) {
             jpaTokenizer.getExpectedTokens().printMessage(System.err);
-            throw new ParserException(jpaTokenizer.getExpectedTokens().toString() + " Method: " + jpaTokenizer.getText());
+            throw new ParserException(jpaTokenizer.getExpectedTokens().getMessage() + " Method: " + jpaTokenizer.getText());
         }
         if (tokenMarkers.size() > 1) {
             tokenMarkers.get(0).printDiff(tokenMarkers.get(tokenMarkers.size() - 1), System.err);

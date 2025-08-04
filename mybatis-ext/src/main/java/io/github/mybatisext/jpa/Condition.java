@@ -20,6 +20,7 @@ public class Condition {
     private boolean ignorecase;
     private boolean not;
     private Variable variable;
+    private Variable collectionVariable;
     private Variable secondVariable;
     private IfTest test = IfTest.None;
     private String testTemplate;
@@ -91,6 +92,14 @@ public class Condition {
 
     public void setVariable(Variable variable) {
         this.variable = variable;
+    }
+
+    public Variable getCollectionVariable() {
+        return collectionVariable;
+    }
+
+    public void setCollectionVariable(Variable collectionVariable) {
+        this.collectionVariable = collectionVariable;
     }
 
     public Variable getSecondVariable() {

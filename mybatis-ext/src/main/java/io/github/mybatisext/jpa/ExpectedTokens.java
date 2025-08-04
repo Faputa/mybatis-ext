@@ -38,8 +38,7 @@ public class ExpectedTokens {
         return cursor;
     }
 
-    @Override
-    public String toString() {
+    public String getMessage() {
         return "Expected " + String.join(" or ", expects) + ", but found '" + text.substring(cursor) + "'.";
     }
 
@@ -52,6 +51,6 @@ public class ExpectedTokens {
             printStream.print('~');
         }
         printStream.println();
-        printStream.println(this);
+        printStream.println(getMessage());
     }
 }
