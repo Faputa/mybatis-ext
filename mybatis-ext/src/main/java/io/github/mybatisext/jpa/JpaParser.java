@@ -144,6 +144,18 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         }));
     }
 
+    private final Symbol returnTypeName = new Symbol("returnTypeName").set((state, continuation) -> {
+        JpaTokenizer jpaTokenizer = state.getTokenizer();
+        GenericType returnType = CommonUtils.unwrapType(jpaTokenizer.getReturnType());
+        int cursor = jpaTokenizer.getCursor();
+        if (jpaTokenizer.keyword(returnType.getSimpleName()).isEmpty()) {
+            jpaTokenizer.getExpectedTokens().record(cursor, "'" + returnType.getSimpleName() + "'");
+            return false;
+        }
+        jpaTokenizer.getTokenMarker().record(jpaTokenizer.getCursor());
+        return continuation.test(state);
+    });
+
     private final Symbol property = new Symbol("property").set(join(propertyName, star(join(keyword("Dot"), subPropertyName))));
     private final Symbol variable = new Symbol("variable").set(join(variableName, star(join(keyword("Dot"), subVariableName))));
     private final Symbol integerB = new Symbol("integerB").set(integer);
@@ -193,7 +205,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         this.tableInfoFactory = tableInfoFactory;
 
         grammar.set(choice(
-                join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(propertyList), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(join(groupBy, optional(having))), optional(orderBy), optional(limit), end, action(state -> {
+                join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(choice(propertyList, returnTypeName)), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(join(groupBy, optional(having))), optional(orderBy), optional(limit), end, action(state -> {
                     Semantic semantic = new Semantic(SemanticType.SELECT);
                     MatchResult _propertyList = state.getMatch(propertyList);
                     if (_propertyList != null) {

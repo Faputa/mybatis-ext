@@ -26,6 +26,8 @@ public interface JpaParserExample extends BaseMapper<TablePermission> {
 
     TablePermission getByTableIdGroupByIdAndTableId(TablePermission query);
 
+    TablePermission getTablePermissionByTableIdGroupByIdAndTableId(TablePermission query);
+
     int deleteByDataSourceName(String dbName);
 
     int deleteByDataSourceName(TablePermission query);
@@ -39,4 +41,6 @@ public interface JpaParserExample extends BaseMapper<TablePermission> {
     int updatePermissionTypeAndUpdatedAtByRoleId(TablePermission query);
 
     List<TablePermission> findAll();
+
+    List<TablePermission> findAllTablePermission();
 }

@@ -201,7 +201,7 @@ BaseMapper 默认提供以下方法：
 
 #### 查询方法
 
-命名规则：`(find|select|list|get)[Distinct][All|One|(Top(<integer>|<variable>))][<propertyList>][(By|Where)<conditionList>][<groupBy>[<having>]][<orderBy>][<limit>]`
+命名规则：`(find|select|list|get)[Distinct][All|One|(Top(<integer>|<variable>))][<propertyList>|<returnTypeName>][(By|Where)<conditionList>][<groupBy>[<having>]][<orderBy>][<limit>]`
 
 其中：
 
@@ -210,6 +210,8 @@ BaseMapper 默认提供以下方法：
 - `variable` - 变量，来自方法参数，支持`Dot`语法获取参数内部属性
 
 - `propertyList` - 属性列表，命名规则`<property>And<propertyList>`
+
+- `returnTypeName` - 返回值实体类型名称
 
 - `property` - 属性，来自实体类或DTO类中对应列的属性，支持`Dot`语法获取内部属性
 
