@@ -264,6 +264,9 @@ public class ConditionHelper {
 
     private static String toExprWithPrefix(TableInfo tableInfo, Condition condition, @Nullable LogicalOperator logicalOperator, Dialect dialect) {
         String prefix = LogicalOperator.AND == logicalOperator ? "AND " : LogicalOperator.OR == logicalOperator ? "OR " : "";
+        if (condition.isNot()) {
+            prefix += "NOT ";
+        }
         if (StringUtils.isNotBlank(condition.getExprTemplate())) {
             String expr = SimpleStringTemplate.build(condition.getExprTemplate(), condition);
             if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
@@ -279,11 +282,11 @@ public class ConditionHelper {
                 } else {
                     ss.add("<foreach collection=\"" + condition.getCollectionVariable() + "\" item=\"" + condition.getVariable() + "\" open=\"" + prefix + "(\" close=\")\" separator=\"OR\">");
                 }
-                ss.add(toBasicExpr(condition, condition.getCompareOperator(), condition.isNot(), condition.isIgnorecase(), dialect));
+                ss.add(toBasicExpr(condition, condition.getCompareOperator(), condition.isIgnorecase(), dialect));
                 ss.add("</foreach>");
                 return String.join(" ", ss);
             }
-            String expr = toBasicExpr(condition, condition.getCompareOperator(), condition.isNot(), condition.isIgnorecase(), dialect);
+            String expr = toBasicExpr(condition, condition.getCompareOperator(), condition.isIgnorecase(), dialect);
             if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getLoadType() != null && condition.getPropertyInfo().getLoadType() != LoadType.JOIN) {
                 expr = NestedSelectHelper.buildExistSubSelect(tableInfo, condition.getPropertyInfo(), expr);
             }
@@ -325,7 +328,7 @@ public class ConditionHelper {
 
     private static List<String> buildSubConditionExpr(TableInfo tableInfo, Condition condition, LogicalOperator logicalOperator, Dialect dialect) {
         List<String> ss = new ArrayList<>();
-        if (condition.getType() == ConditionType.COMPLEX && !condition.hasTest() && condition.getLogicalOperator() == logicalOperator) {
+        if (condition.getType() == ConditionType.COMPLEX && !condition.hasTest() && condition.getLogicalOperator() == logicalOperator && condition.getCollectionVariable() == null && !condition.isNot()) {
             for (Condition subCondition : condition.getSubConditions()) {
                 ss.addAll(buildSubConditionExpr(tableInfo, subCondition, logicalOperator, dialect));
             }
@@ -335,11 +338,8 @@ public class ConditionHelper {
         return ss;
     }
 
-    private static String toBasicExpr(Condition condition, CompareOperator compareOperator, boolean not, boolean ignorecase, Dialect dialect) {
+    private static String toBasicExpr(Condition condition, CompareOperator compareOperator, boolean ignorecase, Dialect dialect) {
         List<String> ss = new ArrayList<>();
-        if (not) {
-            ss.add("NOT");
-        }
         if (CompareOperator.Equals == compareOperator) {
             if (ignorecase) {
                 ss.add("<bind name=\"__" + condition.getVariable().getName() + "__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
