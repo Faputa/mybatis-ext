@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
 import io.github.mybatisext.adapter.ExtContext;
@@ -12,9 +13,15 @@ import io.github.mybatisext.adapter.ExtContext;
 public class MybatisExtBeanPostProcessor implements BeanPostProcessor {
 
     private ExtContext extContext = new ExtContext();
+    // 延迟依赖注入
+    private ObjectFactory<ExtContext> extContextFactory = () -> extContext;
 
     public void setExtContext(ExtContext extContext) {
         this.extContext = extContext;
+    }
+
+    public void setExtContextFactory(ObjectFactory<ExtContext> extContextFactory) {
+        this.extContextFactory = extContextFactory;
     }
 
     @Override
@@ -33,7 +40,7 @@ public class MybatisExtBeanPostProcessor implements BeanPostProcessor {
 
     private SqlSessionFactory buildSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
         ExtSqlSessionFactoryBean extSqlSessionFactoryBean = new ExtSqlSessionFactoryBean();
-        extSqlSessionFactoryBean.setExtContext(extContext);
+        extSqlSessionFactoryBean.setExtContext(extContextFactory.getObject());
         return extSqlSessionFactoryBean.buildSqlSessionFactory(sqlSessionFactory);
     }
 }

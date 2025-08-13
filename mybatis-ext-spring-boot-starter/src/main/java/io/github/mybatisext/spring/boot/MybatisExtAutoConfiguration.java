@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -42,9 +43,9 @@ public class MybatisExtAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    MybatisExtBeanPostProcessor mybatisExtBeanPostProcessor(ExtContext extContext) {
+    static MybatisExtBeanPostProcessor mybatisExtBeanPostProcessor(ObjectFactory<ExtContext> extContextFactory) {
         MybatisExtBeanPostProcessor mybatisExtBeanPostProcessor = new MybatisExtBeanPostProcessor();
-        mybatisExtBeanPostProcessor.setExtContext(extContext);
+        mybatisExtBeanPostProcessor.setExtContextFactory(extContextFactory);
         return mybatisExtBeanPostProcessor;
     }
 
