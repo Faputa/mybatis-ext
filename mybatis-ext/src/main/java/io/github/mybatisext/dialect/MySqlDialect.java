@@ -67,17 +67,14 @@ public class MySqlDialect extends BaseTemplateDialect {
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
-        if (join) {
-            ss.add("DELETE");
-            ss.add(tableInfo.getJoinTableInfo().getAlias());
-            ss.add("FROM");
-            ss.add(tableAndJoin);
-            if (StringUtils.isNotBlank(where)) {
-                ss.add(where);
-            }
-            return String.join(" ", ss);
+        ss.add("DELETE");
+        ss.add(tableInfo.getJoinTableInfo().getAlias());
+        ss.add("FROM");
+        ss.add(tableAndJoin);
+        if (StringUtils.isNotBlank(where)) {
+            ss.add(where);
         }
-        return buildSimpleDelete(tableInfo, where);
+        return String.join(" ", ss);
     }
 
     @Override
