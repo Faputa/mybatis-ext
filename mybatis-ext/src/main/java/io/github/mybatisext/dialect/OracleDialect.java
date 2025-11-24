@@ -4,11 +4,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import io.github.mybatisext.jpa.Condition;
 import io.github.mybatisext.jpa.Limit;
 import io.github.mybatisext.jpa.Variable;
+import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
-import io.github.mybatisext.util.StringUtils;
 import io.github.mybatisext.util.TypeArgumentResolver;
 
 public class OracleDialect extends BaseTemplateDialect {
@@ -27,12 +28,12 @@ public class OracleDialect extends BaseTemplateDialect {
     }
 
     @Override
-    public String buildUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable variable, String tableAndJoin, String where, boolean batch, boolean join, boolean ignoreNull) {
+    public String buildUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable variable, List<JoinTableInfo> joinTableInfos, Condition where, boolean batch, boolean join, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
-            ss.add(buildUpdate(tableInfo, selectItems, itemVariable, tableAndJoin, where, false, join, ignoreNull));
+            ss.add(buildUpdate(tableInfo, selectItems, itemVariable, joinTableInfos, where, false, join, ignoreNull));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -40,9 +41,9 @@ public class OracleDialect extends BaseTemplateDialect {
             ss.add("UPDATE (");
             ss.add("SELECT");
             ss.add(tableInfo.getJoinTableInfo().getAlias() + ".* FROM");
-            ss.add(tableAndJoin);
-            if (StringUtils.isNotBlank(where)) {
-                ss.add(where);
+            ss.add(buildTableAndJoin(joinTableInfos));
+            if (where != null) {
+                ss.add(buildWhere(tableInfo, where));
             }
             ss.add(") __x");
             ss.add(buildUpdateSet("__x", selectItems, variable, ignoreNull));
@@ -52,12 +53,12 @@ public class OracleDialect extends BaseTemplateDialect {
     }
 
     @Override
-    public String buildDelete(TableInfo tableInfo, Variable variable, String tableAndJoin, String where, boolean batch, boolean join) {
+    public String buildDelete(TableInfo tableInfo, Variable variable, List<JoinTableInfo> joinTableInfos, Condition where, boolean batch, boolean join) {
         List<String> ss = new ArrayList<>();
         if (batch) {
             Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeArgumentResolver.resolveGenericType(variable.getJavaType(), Collection.class, 0));
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
-            ss.add(buildDelete(tableInfo, itemVariable, tableAndJoin, where, false, join));
+            ss.add(buildDelete(tableInfo, itemVariable, joinTableInfos, where, false, join));
             ss.add("</foreach>");
             return String.join(" ", ss);
         }
@@ -65,9 +66,9 @@ public class OracleDialect extends BaseTemplateDialect {
             ss.add("DELETE FROM (");
             ss.add("SELECT");
             ss.add(tableInfo.getJoinTableInfo().getAlias() + ".* FROM");
-            ss.add(tableAndJoin);
-            if (StringUtils.isNotBlank(where)) {
-                ss.add(where);
+            ss.add(buildTableAndJoin(joinTableInfos));
+            if (where != null) {
+                ss.add(buildWhere(tableInfo, where));
             }
             ss.add(") __x");
             return String.join(" ", ss);

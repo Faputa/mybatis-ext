@@ -37,25 +37,25 @@ public abstract class BaseDialect implements Dialect {
         return String.join(" ", ss);
     }
 
-    protected String buildSimpleUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable variable, boolean ignoreNull, String where) {
+    protected String buildSimpleUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable variable, boolean ignoreNull, Condition where) {
         List<String> ss = new ArrayList<>();
         ss.add("UPDATE");
         ss.add(tableInfo.getName());
         ss.add(tableInfo.getJoinTableInfo().getAlias());
         ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), selectItems, variable, ignoreNull));
-        if (StringUtils.isNotBlank(where)) {
-            ss.add(where);
+        if (where != null) {
+            ss.add(buildWhere(tableInfo, where));
         }
         return String.join(" ", ss);
     }
 
-    protected String buildSimpleDelete(TableInfo tableInfo, String where) {
+    protected String buildSimpleDelete(TableInfo tableInfo, Condition where) {
         List<String> ss = new ArrayList<>();
         ss.add("DELETE FROM");
         ss.add(tableInfo.getName());
         ss.add(tableInfo.getJoinTableInfo().getAlias());
-        if (StringUtils.isNotBlank(where)) {
-            ss.add(where);
+        if (where != null) {
+            ss.add(buildWhere(tableInfo, where));
         }
         return String.join(" ", ss);
     }
@@ -195,9 +195,8 @@ public abstract class BaseDialect implements Dialect {
         return String.join(" ", ss);
     }
 
-    protected String buildTableAndJoin(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, List<PropertyInfo> groupBy, List<OrderByElement> orderBy) {
+    protected String buildTableAndJoin(List<JoinTableInfo> joinTableInfos) {
         List<String> ss = new ArrayList<>();
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, selectItems, groupBy, orderBy);
         ss.add(joinTableInfos.get(0).getTableInfo().getName());
         ss.add(joinTableInfos.get(0).getAlias());
         for (int i = 1; i < joinTableInfos.size(); i++) {
