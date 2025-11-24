@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.jpa.Condition;
 import io.github.mybatisext.jpa.ConditionHelper;
@@ -141,7 +143,7 @@ public abstract class BaseDialect implements Dialect {
         return String.join(" ", ss);
     }
 
-    protected String buildUpdateSet(String tableAlias, List<PropertyInfo> selectItems, Variable variable, boolean ignoreNull) {
+    protected String buildUpdateSet(@Nullable String tableAlias, List<PropertyInfo> selectItems, Variable variable, boolean ignoreNull) {
         Map<PropertyInfo, Variable> map = collectUpdateColumns(selectItems, variable);
         if (ignoreNull) {
             return "<set>" + buildUpdateSet(map, true, tableAlias) + "</set>";
@@ -176,7 +178,12 @@ public abstract class BaseDialect implements Dialect {
             Map.Entry<PropertyInfo, Variable> entry = iterator.next();
             PropertyInfo propertyInfo = entry.getKey();
             Variable variable = entry.getValue();
-            String updateItem = tableAlias + "." + propertyInfo.getColumnName() + " = #{" + variable + "}";
+            String updateItem;
+            if (StringUtils.isNotBlank(tableAlias)) {
+                updateItem = tableAlias + "." + propertyInfo.getColumnName() + " = #{" + variable + "}";
+            } else {
+                updateItem = propertyInfo.getColumnName() + " = #{" + variable + "}";
+            }
             if (iterator.hasNext()) {
                 updateItem += ",";
             }
