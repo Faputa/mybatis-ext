@@ -183,9 +183,9 @@ public class PostgreSqlDialect extends BaseDialect {
             ss.add(limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}");
         } else {
             ss.add("LIMIT");
-            ss.add(limit.getOffset() != null ? limit.getOffset().toString() : "#{" + limit.getOffsetVariable() + "}");
-            ss.add("OFFSET");
             ss.add(limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}");
+            ss.add("OFFSET");
+            ss.add(limit.getOffset() != null ? limit.getOffset().toString() : "#{" + limit.getOffsetVariable() + "}");
         }
         return String.join(" ", ss);
     }
