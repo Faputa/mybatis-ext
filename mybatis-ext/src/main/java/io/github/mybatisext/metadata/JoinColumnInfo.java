@@ -2,27 +2,49 @@ package io.github.mybatisext.metadata;
 
 public class JoinColumnInfo {
 
-    private PropertyInfo leftColumn;
-    private PropertyInfo rightColumn;
+    private JoinTableInfo leftJoinTableInfo;
+    private String leftFullName;
+    private String leftColumnName;
+    private String rightFullName;
+    private String rightColumnName;
 
-    public PropertyInfo getLeftColumn() {
-        return leftColumn;
+    public JoinTableInfo getLeftJoinTableInfo() {
+        return leftJoinTableInfo;
     }
 
-    public void setLeftColumn(PropertyInfo leftColumn) {
-        this.leftColumn = leftColumn;
+    public void setLeftJoinTableInfo(JoinTableInfo leftJoinTableInfo) {
+        this.leftJoinTableInfo = leftJoinTableInfo;
     }
 
-    public PropertyInfo getRightColumn() {
-        return rightColumn;
+    public String getLeftFullName() {
+        return leftFullName;
     }
 
-    public void setRightColumn(PropertyInfo rightColumn) {
-        this.rightColumn = rightColumn;
+    public void setLeftFullName(String leftFullName) {
+        this.leftFullName = leftFullName;
     }
 
-    @Override
-    public String toString() {
-        return "left." + leftColumn.getFullName() + "=right." + rightColumn.getFullName();
+    public String getLeftColumnName() {
+        return leftColumnName;
+    }
+
+    public void setLeftColumnName(String leftColumnName) {
+        this.leftColumnName = leftColumnName;
+    }
+
+    public String getRightFullName() {
+        return rightFullName;
+    }
+
+    public void setRightFullName(String rightFullName) {
+        this.rightFullName = rightFullName;
+    }
+
+    public String getRightColumnName() {
+        return rightColumnName;
+    }
+
+    public void setRightColumnName(String rightColumnName) {
+        this.rightColumnName = rightColumnName;
     }
 }

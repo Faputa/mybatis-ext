@@ -38,19 +38,17 @@ public class MappedStatementHelper {
     private final Configuration configuration;
     private final ExtContext extContext;
     private final ResultMapHelper resultMapHelper;
-    private final TableInfoFactory tableInfoFactory;
 
     public MappedStatementHelper(Configuration configuration, ExtContext extContext) {
         this.configuration = configuration;
         this.extContext = extContext;
-        this.tableInfoFactory = new TableInfoFactory(configuration, extContext);
-        this.resultMapHelper = new ResultMapHelper(configuration, this, tableInfoFactory);
-        this.jpaParser = new JpaParser(configuration, tableInfoFactory);
+        this.resultMapHelper = new ResultMapHelper(configuration, extContext);
+        this.jpaParser = new JpaParser(configuration, extContext);
     }
 
     public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType, boolean writeConfiguration) {
         log.debug(id);
-        TableInfo tableInfo = tableInfoFactory.getTableInfo(tableType);
+        TableInfo tableInfo = TableInfoFactory.buildTableInfo(tableType, configuration, extContext);
         Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(tableInfo, methods, returnType);
         Dialect dialect = selectDialect();
         String script = SemanticScriptHelper.buildScript(signatureToSemantic, dialect);
@@ -60,17 +58,6 @@ public class MappedStatementHelper {
         resultMaps.add(resultMapHelper.buildResultMap(returnType, dialect, writeConfiguration));
         SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(configuration, script, Object.class);
         Builder builder = new MappedStatement.Builder(configuration, id, sqlSource, sqlCommandType);
-        return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
-    }
-
-    public MappedStatement buildForNestedSelect(String id, NestedSelect nestedSelect, Dialect dialect, boolean writeConfiguration) {
-        log.debug(id);
-        List<ResultMap> resultMaps = new ArrayList<>();
-        resultMaps.add(resultMapHelper.buildPropertyResultMap(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo(), dialect, writeConfiguration));
-        String script = NestedSelectHelper.buildNestedSelectScript(nestedSelect, dialect);
-        log.debug(script);
-        SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(configuration, script, Object.class);
-        Builder builder = new MappedStatement.Builder(configuration, id, sqlSource, SqlCommandType.SELECT);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }
 

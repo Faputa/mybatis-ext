@@ -1,38 +1,46 @@
 package io.github.mybatisext.metadata;
 
-import java.sql.Timestamp;
-import java.util.List;
-
-import io.github.mybatisext.annotation.Column;
-import io.github.mybatisext.annotation.Id;
-import io.github.mybatisext.annotation.IdType;
+import io.github.mybatisext.annotation.Cascade;
+import io.github.mybatisext.annotation.ColumnRef;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.JoinRelations;
 import io.github.mybatisext.annotation.Fetch;
-import io.github.mybatisext.annotation.Table;
+import io.github.mybatisext.annotation.TableRef;
 
-@Table(alias = "tp")
+import java.sql.Timestamp;
+import java.util.List;
+
+@TableRef(value = TablePermission.class, alias = "tp")
 @JoinParent(alias = "dt", joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"))
-public class TablePermission extends DataTable {
+public class TablePermissionVO extends DataTable {
 
-    @Id(idType = IdType.UUID)
-    @Column
+    @ColumnRef
     private String tableId;
-    @Id
-    @Column
+    @ColumnRef
     private String roleId;
-    @Column
+    @ColumnRef
     private String roleIdAndTableId;
-    @Column
+    @ColumnRef
     private String permissionType;
-    @Column
+    @ColumnRef
     private Timestamp createdAt;
-    @Column
+    @ColumnRef
     private Timestamp updatedAt;
 
+    @ColumnRef
+    private String description;
+    @ColumnRef
+    private String dataSourceName3;
+
     // ========回显字段========
+
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"))
+    private DataTable dataTable;
+    @Cascade
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"))
+    private DataTable dataTable2;
 
     @JoinRelation(joinColumn = @JoinColumn(leftTableAlias = "dt", leftColumn = "dataSourceId", rightColumn = "id"), table = DataSource.class, column = "id")
     private String dataSourceId;
@@ -76,7 +84,7 @@ public class TablePermission extends DataTable {
         return tableId;
     }
 
-    @Column
+    @ColumnRef
     public String getTableId2() {
         return tableId;
     }
@@ -101,32 +109,26 @@ public class TablePermission extends DataTable {
         this.permissionType = permissionType;
     }
 
-    @Override
     public Timestamp getCreatedAt() {
         return createdAt;
     }
 
-    @Override
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
     }
 
-    @Override
     public Timestamp getUpdatedAt() {
         return updatedAt;
     }
 
-    @Override
     public void setUpdatedAt(Timestamp updatedAt) {
         this.updatedAt = updatedAt;
     }
 
-    @Override
     public String getDataSourceId() {
         return dataSourceId;
     }
 
-    @Override
     public void setDataSourceId(String dataSourceId) {
         this.dataSourceId = dataSourceId;
     }
@@ -155,12 +157,10 @@ public class TablePermission extends DataTable {
         this.dataTableName = dataTableName;
     }
 
-    @Override
     public String getSchemaName() {
         return schemaName;
     }
 
-    @Override
     public void setSchemaName(String schemaName) {
         this.schemaName = schemaName;
     }

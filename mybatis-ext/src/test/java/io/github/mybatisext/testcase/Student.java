@@ -5,7 +5,7 @@ import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.LoadStrategy;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Table;
 
 import java.util.List;
@@ -36,15 +36,15 @@ public class Student extends ClassInfo {
 
     // ========回显字段========
     /** 学生选课 */
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "studentId"))
     private List<StudentCourse> studentCourses;
     /** 学生考试 */
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "studentId"))
     private List<StudentExam> studentExams;
     /** 学生作业 */
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "studentId"))
     private List<StudentHomework> studentHomeworks;
 

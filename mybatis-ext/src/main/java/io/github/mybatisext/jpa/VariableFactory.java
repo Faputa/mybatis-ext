@@ -20,20 +20,13 @@ import io.github.mybatisext.reflect.GenericType;
 public class VariableFactory {
 
     public static void addChildren(Configuration configuration, Variable variable) {
-        if (!variable.isEmpty()) {
+        Map<String, Variable> nameToVariable = variable.getNameToVariable();
+        if (!nameToVariable.isEmpty()) {
             return;
         }
         GenericType javaType = variable.getJavaType();
         if (!hasSubVariable(configuration, javaType)) {
             return;
-        }
-        for (GenericType c = javaType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
-            for (GenericField field : c.getDeclaredFields()) {
-                if (variable.containsKey(field.getName())) {
-                    continue;
-                }
-                variable.put(field.getName(), new Variable(variable.getFullName(), field.getName(), field.getGenericType()));
-            }
         }
 
         BeanInfo beanInfo;
@@ -42,20 +35,25 @@ public class VariableFactory {
         } catch (IntrospectionException e) {
             throw new MybatisExtException(e);
         }
-
         Map<Method, GenericMethod> methodMap = Arrays.stream(javaType.getMethods()).collect(Collectors.toMap(GenericMethod::getMethod, v -> v));
-        for (PropertyDescriptor propertyDescriptor : beanInfo.getPropertyDescriptors()) {
-            if (variable.containsKey(propertyDescriptor.getName())) {
-                continue;
+
+        for (GenericType c = javaType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
+            for (GenericField field : c.getDeclaredFields()) {
+                if (nameToVariable.containsKey(field.getName())) {
+                    continue;
+                }
+                nameToVariable.put(field.getName(), new Variable(variable.getFullName(), field.getName(), field.getGenericType()));
             }
-            GenericMethod readMethod = methodMap.get(propertyDescriptor.getReadMethod());
-            if (readMethod == null) {
-                continue;
+            for (PropertyDescriptor propertyDescriptor : beanInfo.getPropertyDescriptors()) {
+                if (nameToVariable.containsKey(propertyDescriptor.getName())) {
+                    continue;
+                }
+                GenericMethod readMethod = methodMap.get(propertyDescriptor.getReadMethod());
+                if (readMethod == null || readMethod.getMethod().getDeclaringClass() != c.getType()) {
+                    continue;
+                }
+                nameToVariable.put(propertyDescriptor.getName(), new Variable(variable.getFullName(), propertyDescriptor.getName(), readMethod.getGenericReturnType()));
             }
-            if (readMethod.getMethod().getDeclaringClass() == Object.class) {
-                continue;
-            }
-            variable.put(propertyDescriptor.getName(), new Variable(variable.getFullName(), propertyDescriptor.getName(), readMethod.getGenericReturnType()));
         }
     }
 

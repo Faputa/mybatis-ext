@@ -1,11 +1,12 @@
 package io.github.mybatisext.testcase;
 
+import io.github.mybatisext.annotation.Cascade;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.LoadStrategy;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Table;
 
 import java.util.List;
@@ -34,10 +35,11 @@ public class StudentCourse extends Student {
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "studentId", rightColumn = "id"))
     private Student student;
     /** 课程 */
+    @Cascade
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "courseId", rightColumn = "id"))
     private Course course;
     /** 学生考试 */
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "courseId", rightColumn = "courseId"), table = CourseExam.class)
     @JoinRelation(joinColumn = {
             @JoinColumn(leftTableAlias = "sc", leftColumn = "studentId", rightColumn = "studentId"),
@@ -45,7 +47,7 @@ public class StudentCourse extends Student {
     })
     private List<StudentExam> studentExams;
     /** 学生作业 */
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "courseId", rightColumn = "courseId"), table = CourseHomework.class, tableAlias = "ch")
     @JoinRelation(joinColumn = {
             @JoinColumn(leftTableAlias = "sc", leftColumn = "studentId", rightColumn = "studentId"),

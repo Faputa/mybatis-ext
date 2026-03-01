@@ -3,7 +3,6 @@ package io.github.mybatisext.test;
 import java.util.Objects;
 
 import io.github.mybatisext.annotation.Column;
-import io.github.mybatisext.annotation.EmbedParent;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
@@ -15,7 +14,6 @@ import io.github.mybatisext.annotation.Table;
  * @author ruoyi
  */
 @Table
-@EmbedParent
 public class SysDept extends BaseEntity {
 
     /** 部门ID */

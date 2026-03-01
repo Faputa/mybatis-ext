@@ -1,6 +1,6 @@
 package io.github.mybatisext.annotation;
 
-public enum IfTest {
+public enum TestMode {
 
     None,
 

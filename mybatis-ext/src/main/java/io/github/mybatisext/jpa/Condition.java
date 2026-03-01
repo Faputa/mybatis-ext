@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import io.github.mybatisext.annotation.IfTest;
+import io.github.mybatisext.annotation.TestMode;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.util.StringUtils;
 
@@ -22,7 +22,7 @@ public class Condition {
     private Variable variable;
     private Variable collectionVariable;
     private Variable secondVariable;
-    private IfTest test = IfTest.None;
+    private TestMode testMode = TestMode.None;
     private String testTemplate;
     private String exprTemplate;
 
@@ -110,12 +110,12 @@ public class Condition {
         this.secondVariable = secondVariable;
     }
 
-    public IfTest getTest() {
-        return test;
+    public TestMode getTestMode() {
+        return testMode;
     }
 
-    public void setTest(IfTest test) {
-        this.test = test;
+    public void setTestMode(TestMode testMode) {
+        this.testMode = testMode;
     }
 
     public String getTestTemplate() {
@@ -127,7 +127,7 @@ public class Condition {
     }
 
     public boolean hasTest() {
-        return StringUtils.isNotBlank(testTemplate) || test == IfTest.NotEmpty || test == IfTest.NotNull;
+        return StringUtils.isNotBlank(testTemplate) || testMode == TestMode.NotEmpty || testMode == TestMode.NotNull;
     }
 
     public String getExprTemplate() {
@@ -147,11 +147,11 @@ public class Condition {
             return false;
         }
         Condition condition = (Condition) o;
-        return ignorecase == condition.ignorecase && not == condition.not && type == condition.type && Objects.equals(subConditions, condition.subConditions) && logicalOperator == condition.logicalOperator && compareOperator == condition.compareOperator && Objects.equals(propertyInfo, condition.propertyInfo) && Objects.equals(variable, condition.variable) && Objects.equals(secondVariable, condition.secondVariable) && test == condition.test && Objects.equals(testTemplate, condition.testTemplate) && Objects.equals(exprTemplate, condition.exprTemplate);
+        return ignorecase == condition.ignorecase && not == condition.not && type == condition.type && Objects.equals(subConditions, condition.subConditions) && logicalOperator == condition.logicalOperator && compareOperator == condition.compareOperator && Objects.equals(propertyInfo, condition.propertyInfo) && Objects.equals(variable, condition.variable) && Objects.equals(secondVariable, condition.secondVariable) && testMode == condition.testMode && Objects.equals(testTemplate, condition.testTemplate) && Objects.equals(exprTemplate, condition.exprTemplate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, subConditions, logicalOperator, compareOperator, propertyInfo, ignorecase, not, variable, secondVariable, test, testTemplate, exprTemplate);
+        return Objects.hash(type, subConditions, logicalOperator, compareOperator, propertyInfo, ignorecase, not, variable, secondVariable, testMode, testTemplate, exprTemplate);
     }
 }

@@ -9,6 +9,8 @@ public interface SysDeptMapper {
 
     List<SysDept> selectSysDept();
 
+    List<SysDept> selectSysDeptDot();
+
     List<SysDept> selectSysDeptLazy();
 
     List<SysDept> selectSysDeptJoin();

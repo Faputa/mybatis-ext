@@ -11,7 +11,7 @@ import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.util.CommonUtils;
+import io.github.mybatisext.util.TypeUtils;
 
 public class JpaTokenizer implements Tokenizer {
 
@@ -34,7 +34,7 @@ public class JpaTokenizer implements Tokenizer {
         this.text = text;
         this.configuration = configuration;
         this.returnType = returnType;
-        this.parameters = Arrays.stream(parameters).filter(v -> !CommonUtils.isSpecialParameter(v.getType())).toArray(GenericParameter[]::new);
+        this.parameters = Arrays.stream(parameters).filter(v -> !TypeUtils.isSpecialParameter(v.getType())).toArray(GenericParameter[]::new);
         this.variables = buildVariables(configuration, parameters);
         this.expectedTokens = new ExpectedTokens(text);
         this.tokenMarker = new TokenMarker(text);
@@ -51,11 +51,11 @@ public class JpaTokenizer implements Tokenizer {
                 Variable variable = new Variable(param.value(), parameters[0].getGenericType());
                 VariableFactory.addChildren(configuration, variable);
                 variables.add(variable);
-                variables.addAll(variable.values());
+                variables.addAll(variable.getNameToVariable().values());
             } else {
                 Variable variable = new Variable("", parameters[0].getGenericType());
                 VariableFactory.addChildren(configuration, variable);
-                variables.addAll(variable.values());
+                variables.addAll(variable.getNameToVariable().values());
             }
             return variables;
         }
@@ -133,7 +133,7 @@ public class JpaTokenizer implements Tokenizer {
     public List<PropertyInfo> property(PropertyInfo prevPropertyInfo) {
         List<PropertyInfo> propertyInfos = new ArrayList<>();
         int _cursor = cursor;
-        for (PropertyInfo propertyInfo : prevPropertyInfo.values()) {
+        for (PropertyInfo propertyInfo : prevPropertyInfo.getNameToPropertyInfo().values()) {
             String expect = propertyInfo.getName().substring(0, 1).toUpperCase() + propertyInfo.getName().substring(1);
             if (text.substring(cursor).startsWith(expect)) {
                 String s = "";
@@ -172,7 +172,7 @@ public class JpaTokenizer implements Tokenizer {
         VariableFactory.addChildren(configuration, prevVariable);
         List<Variable> ss = new ArrayList<>();
         int _cursor = cursor;
-        for (Variable variable : prevVariable.values()) {
+        for (Variable variable : prevVariable.getNameToVariable().values()) {
             String expect = variable.getName().substring(0, 1).toUpperCase() + variable.getName().substring(1);
             if (text.substring(cursor).startsWith(expect)) {
                 String s = "";

@@ -74,12 +74,12 @@ public abstract class BaseTemplateDialect extends BaseDialect {
         ss.add("FROM");
         ss.add(buildTableAndJoin(joinTableInfos));
         if (where != null) {
-            ss.add(buildWhere(tableInfo, where));
+            ss.add(buildWhere(where));
         }
         if (groupBy != null) {
             ss.add(buildGroupBy(groupBy));
             if (having != null) {
-                ss.add(buildHaving(tableInfo, having));
+                ss.add(buildHaving(having));
             }
         }
         if (orderBy != null) {
@@ -98,7 +98,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
         ss.add("SELECT 1 FROM");
         ss.add(buildTableAndJoin(joinTableInfos));
         if (where != null) {
-            ss.add(buildWhere(tableInfo, where));
+            ss.add(buildWhere(where));
         }
         return buildExists(String.join(" ", ss));
     }
@@ -110,7 +110,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
         ss.add("SELECT COUNT(1) FROM");
         ss.add(buildTableAndJoin(joinTableInfos));
         if (where != null) {
-            ss.add(buildWhere(tableInfo, where));
+            ss.add(buildWhere(where));
         }
         return String.join(" ", ss);
     }

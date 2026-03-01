@@ -109,6 +109,7 @@ public class SysUserMapperTest {
         assertEquals(1, rowsAffected);
 
         SysUser updatedUser = sysUserMapper.get(testUser);
+        assertNotNull(updatedUser);
         assertEquals("Updated User Name", updatedUser.getUserName());
     }
 
@@ -120,6 +121,7 @@ public class SysUserMapperTest {
         assertEquals(1, rowsAffected);
 
         SysUser updatedUser = sysUserMapper.get(testUser);
+        assertNotNull(updatedUser);
         assertEquals("Updated User Name", updatedUser.getUserName());
     }
 
@@ -131,6 +133,7 @@ public class SysUserMapperTest {
         assertEquals(1, rowsAffected);
 
         SysUser updatedUser = sysUserMapper.get(testUser);
+        assertNotNull(updatedUser);
         assertEquals("Updated User Name", updatedUser.getUserName());
     }
 

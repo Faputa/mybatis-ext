@@ -17,6 +17,21 @@
 		<collection property="userNames" column="{deptId=dept_id}" select="selectSysUserName" />
 	</resultMap>
 
+    <resultMap id="SysDept_dot" type="io.github.mybatisext.test.spring.SysDept">
+        <id property="deptId" column="dept_id" />
+        <result property="parentId" column="parent_id" />
+        <result property="ancestors" column="ancestors" />
+        <result property="deptName" column="dept_name" />
+        <result property="orderNum" column="order_num" />
+        <result property="leader" column="leader" />
+        <result property="phone" column="phone" />
+        <result property="email" column="email" />
+        <result property="status" column="status" />
+        <result property="delFlag" column="del_flag" />
+        <collection property="users" column="{a.b.c=a.b.c}" select="selectSysUser_dot" />
+        <collection property="userNames" column="{a.b.c=a.b.c}" select="selectSysUserName_dot" />
+    </resultMap>
+
 	<resultMap id="SysDept_lazy" type="io.github.mybatisext.test.spring.SysDept">
 		<id property="deptId" column="dept_id" />
 		<result property="parentId" column="parent_id" />
@@ -43,6 +58,7 @@
 		<result property="email" column="email" />
 		<result property="status" column="status" />
 		<result property="delFlag" column="del_flag" />
+        <collection property="users" ofType="io.github.mybatisext.test.spring.SysUser" javaType="list" resultMap="SysUser" columnPrefix="b_" />
 		<!-- https://github.com/mybatis/mybatis-3/issues/364 -->
 		<!-- https://github.com/mybatis/mybatis-3/wiki/FAQ#how-do-i-map-a-list-of-simple-type-objects-string-integer-etc-to-a-bean-or-map- -->
 		<collection property="userNames" ofType="java.lang.String" javaType="list">
@@ -73,6 +89,10 @@
 		select * from sys_dept
 	</select>
 
+    <select id="selectSysDeptDot" resultMap="SysDept_dot">
+        select *, dept_id "a.b.c" from sys_dept
+    </select>
+
 	<select id="selectSysDeptLazy" resultMap="SysDept_lazy">
 		select * from sys_dept
 	</select>
@@ -80,7 +100,22 @@
 	<select id="selectSysDeptJoin" resultMap="SysDept_join">
 		select
 		a.*,
-		b.*
+        b.user_id b_user_id,
+        b.dept_id b_dept_id,
+        b.login_name b_login_name,
+        b.user_name b_user_name,
+        b.user_type b_user_type,
+        b.email b_email,
+        b.phonenumber b_phonenumber,
+        b.sex b_sex,
+        b.avatar b_avatar,
+        b.password b_password,
+        b.salt b_salt,
+        b.status b_status,
+        b.del_flag b_del_flag,
+        b.login_ip b_login_ip,
+        b.login_date b_login_date,
+        b.pwd_update_date b_pwd_update_date
 		from sys_dept a
 		left join sys_user b on b.dept_id=a.dept_id
 	</select>
@@ -92,4 +127,12 @@
 	<select id="selectSysUserName" resultType="java.lang.String">
 		select user_name from sys_user where dept_id=#{deptId}
 	</select>
+
+    <select id="selectSysUser_dot" resultMap="SysUser">
+        select * from sys_user where dept_id=#{a.b.c}
+    </select>
+
+    <select id="selectSysUserName_dot" resultType="java.lang.String">
+        select user_name from sys_user where dept_id=#{a.b.c}
+    </select>
 </mapper>

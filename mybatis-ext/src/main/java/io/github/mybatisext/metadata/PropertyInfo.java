@@ -1,19 +1,21 @@
 package io.github.mybatisext.metadata;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
+import org.apache.ibatis.mapping.FetchType;
 import org.apache.ibatis.type.JdbcType;
 
 import io.github.mybatisext.annotation.IdType;
-import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.util.StringUtils;
+import io.github.mybatisext.util.Getter;
 
-public class PropertyInfo extends HashMap<String, PropertyInfo> {
+public class PropertyInfo implements Getter<PropertyInfo> {
 
-    private final String name;
-    private final String prefix;
+    private String name;
+    private String fullName;
     private JoinTableInfo joinTableInfo;
     private GenericType javaType;
     private JdbcType jdbcType;
@@ -23,37 +25,30 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
     private FilterableInfo filterableInfo;
     // 如果是简单类型属性
     private String columnName;
-
     // resultMap项的类型
-    private ResultType resultType;
-
+    private PropertyType propertyType;
     // resultType=ID
     private IdType idType;
     private Class<?> customIdGenerator;
-
-    private LoadType loadType;
     // resultType=COLLECTION
     private GenericType ofType;
-
-    public PropertyInfo(String name) {
-        this("", name);
-    }
-
-    public PropertyInfo(String prefix, String name) {
-        this.name = name;
-        this.prefix = prefix;
-    }
+    private FetchType fetchType;
+    private final Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
 
     public String getName() {
         return name;
     }
 
-    public String getPrefix() {
-        return prefix;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getFullName() {
-        return StringUtils.isNotBlank(prefix) ? prefix + "." + name : name;
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public JoinTableInfo getJoinTableInfo() {
@@ -112,12 +107,12 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         this.columnName = columnName;
     }
 
-    public ResultType getResultType() {
-        return resultType;
+    public PropertyType getPropertyType() {
+        return propertyType;
     }
 
-    public void setResultType(ResultType resultType) {
-        this.resultType = resultType;
+    public void setPropertyType(PropertyType propertyType) {
+        this.propertyType = propertyType;
     }
 
     public IdType getIdType() {
@@ -136,20 +131,36 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
         this.customIdGenerator = customIdGenerator;
     }
 
-    public LoadType getLoadType() {
-        return loadType;
-    }
-
-    public void setLoadType(LoadType loadType) {
-        this.loadType = loadType;
-    }
-
     public GenericType getOfType() {
         return ofType;
     }
 
     public void setOfType(GenericType ofType) {
         this.ofType = ofType;
+    }
+
+    public FetchType getFetchType() {
+        return fetchType;
+    }
+
+    public void setFetchType(FetchType fetchType) {
+        this.fetchType = fetchType;
+    }
+
+    public Map<String, PropertyInfo> getNameToPropertyInfo() {
+        return nameToPropertyInfo;
+    }
+
+    @Override
+    public PropertyInfo get(String key) {
+        return nameToPropertyInfo.get(key);
+    }
+
+    public void collectUsedJoinTableInfo(Collection<JoinTableInfo> joinTableInfos) {
+        joinTableInfos.add(joinTableInfo);
+        for (PropertyInfo propertyInfo : nameToPropertyInfo.values()) {
+            propertyInfo.collectUsedJoinTableInfo(joinTableInfos);
+        }
     }
 
     @Override
@@ -161,16 +172,19 @@ public class PropertyInfo extends HashMap<String, PropertyInfo> {
             return false;
         }
         PropertyInfo that = (PropertyInfo) o;
-        return ownColumn == that.ownColumn && readonly == that.readonly && Objects.equals(name, that.name) && Objects.equals(prefix, that.prefix) && Objects.equals(joinTableInfo, that.joinTableInfo) && Objects.equals(javaType, that.javaType) && jdbcType == that.jdbcType && Objects.equals(filterableInfo, that.filterableInfo) && Objects.equals(columnName, that.columnName) && resultType == that.resultType && idType == that.idType && Objects.equals(customIdGenerator, that.customIdGenerator) && loadType == that.loadType && Objects.equals(ofType, that.ofType);
+        return Objects.equals(fullName, that.fullName) && Objects.equals(columnName, that.columnName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), name, prefix, joinTableInfo, javaType, jdbcType, ownColumn, readonly, filterableInfo, columnName, resultType, idType, customIdGenerator, loadType, ofType);
+        return Objects.hash(fullName, columnName);
     }
 
     @Override
     public String toString() {
+        if (!nameToPropertyInfo.isEmpty()) {
+            return nameToPropertyInfo.toString();
+        }
         return joinTableInfo.getAlias() + "." + columnName;
     }
 }

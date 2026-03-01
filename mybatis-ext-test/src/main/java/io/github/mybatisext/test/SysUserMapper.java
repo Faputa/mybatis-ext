@@ -10,4 +10,6 @@ import io.github.mybatisext.mapper.BaseMapper;
 public interface SysUserMapper extends BaseMapper<SysUser> {
 
     List<SysUser> list(SysUserVO sysUserVO);
+
+    List<SysUserVO> listSysUserVO(SysUser sysUser);
 }

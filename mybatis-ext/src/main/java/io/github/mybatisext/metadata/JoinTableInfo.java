@@ -1,49 +1,60 @@
 package io.github.mybatisext.metadata;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Set;
 
 public class JoinTableInfo {
 
-    private TableInfo tableInfo;
-    private final Map<JoinColumnInfo, JoinTableInfo> leftJoinTableInfos = new HashMap<>();
-    private final Map<JoinColumnInfo, JoinTableInfo> rightJoinTableInfos = new HashMap<>();
-    private String alias;
+    private TableDef tableDef;
+    private Set<JoinColumnInfo> leftJoinColumnInfos;
+    private JoinNode joinNode;
 
-    public TableInfo getTableInfo() {
-        return tableInfo;
+    public TableDef getTableDef() {
+        return tableDef;
     }
 
-    public void setTableInfo(TableInfo tableInfo) {
-        this.tableInfo = tableInfo;
+    public void setTableDef(TableDef tableDef) {
+        this.tableDef = tableDef;
+    }
+
+    public Set<JoinColumnInfo> getLeftJoinColumnInfos() {
+        return leftJoinColumnInfos;
+    }
+
+    public void setLeftJoinColumnInfos(Set<JoinColumnInfo> leftJoinColumnInfos) {
+        this.leftJoinColumnInfos = leftJoinColumnInfos;
+    }
+
+    public JoinNode getJoinNode() {
+        return joinNode;
+    }
+
+    public void setJoinNode(JoinNode joinNode) {
+        this.joinNode = joinNode;
+    }
+
+    public TableName getTableName() {
+        return tableDef.getTableName();
     }
 
     public String getAlias() {
-        return alias;
+        return joinNode.getAlias();
     }
 
-    public void setAlias(String alias) {
-        this.alias = alias;
-    }
-
-    public Map<JoinColumnInfo, JoinTableInfo> getLeftJoinTableInfos() {
-        return leftJoinTableInfos;
-    }
-
-    public Map<JoinColumnInfo, JoinTableInfo> getRightJoinTableInfos() {
-        return rightJoinTableInfos;
-    }
-
-    public void collectTableAliases(LinkedHashSet<String> tableAliases) {
-        for (JoinTableInfo joinTableInfo : leftJoinTableInfos.values()) {
-            joinTableInfo.collectTableAliases(tableAliases);
+    public void collectJoinTableInfo(LinkedHashMap<String, JoinTableInfo> orderJoinTableInfos) {
+        if (orderJoinTableInfos.containsKey(joinNode.getAlias())) {
+            return;
         }
-        tableAliases.add(alias);
+        if (leftJoinColumnInfos != null) {
+            for (JoinColumnInfo joinColumnInfo : leftJoinColumnInfos) {
+                joinColumnInfo.getLeftJoinTableInfo().collectJoinTableInfo(orderJoinTableInfos);
+            }
+        }
+        orderJoinTableInfos.put(joinNode.getAlias(), this);
     }
 
     @Override
     public String toString() {
-        return (tableInfo != null ? tableInfo.getName() : "") + " AS " + alias;
+        return tableDef.getTableName() + " AS " + joinNode.getAlias();
     }
 }

@@ -5,11 +5,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -19,9 +18,10 @@ import io.github.mybatisext.jpa.ConditionHelper;
 import io.github.mybatisext.jpa.OrderByElement;
 import io.github.mybatisext.jpa.OrderByType;
 import io.github.mybatisext.jpa.Variable;
+import io.github.mybatisext.metadata.JoinColumnInfo;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
-import io.github.mybatisext.metadata.ResultType;
+import io.github.mybatisext.metadata.PropertyType;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.ognl.Ognl;
 import io.github.mybatisext.util.StringUtils;
@@ -44,7 +44,7 @@ public abstract class BaseDialect implements Dialect {
         ss.add(tableInfo.getJoinTableInfo().getAlias());
         ss.add(buildUpdateSet(tableInfo.getJoinTableInfo().getAlias(), selectItems, variable, ignoreNull));
         if (where != null) {
-            ss.add(buildWhere(tableInfo, where));
+            ss.add(buildWhere(where));
         }
         return String.join(" ", ss);
     }
@@ -55,7 +55,7 @@ public abstract class BaseDialect implements Dialect {
         ss.add(tableInfo.getName());
         ss.add(tableInfo.getJoinTableInfo().getAlias());
         if (where != null) {
-            ss.add(buildWhere(tableInfo, where));
+            ss.add(buildWhere(where));
         }
         return String.join(" ", ss);
     }
@@ -78,11 +78,11 @@ public abstract class BaseDialect implements Dialect {
             }
             Variable subVariable = new Variable(variable.getFullName(), propertyInfo.getName(), propertyInfo.getJavaType());
             if (propertyInfo.getColumnName() != null) {
-                if (propertyInfo.getResultType() != ResultType.ID || propertyInfo.getIdType() != IdType.AUTO) {
+                if (propertyInfo.getPropertyType() != PropertyType.ID || propertyInfo.getIdType() != IdType.AUTO) {
                     map.put(propertyInfo, subVariable);
                 }
             } else {
-                map.putAll(collectInsertColumns(propertyInfo.values(), subVariable));
+                map.putAll(collectInsertColumns(propertyInfo.getNameToPropertyInfo().values(), subVariable));
             }
         }
         return map;
@@ -96,9 +96,9 @@ public abstract class BaseDialect implements Dialect {
             PropertyInfo propertyInfo = entry.getKey();
             Variable variable = entry.getValue();
             String value;
-            if (propertyInfo.getResultType() == ResultType.ID && propertyInfo.getIdType() == IdType.UUID) {
+            if (propertyInfo.getPropertyType() == PropertyType.ID && propertyInfo.getIdType() == IdType.UUID) {
                 value = "<bind name=\"__" + variable.getName() + "__bind\" value=\"" + Ognl.GetUuid + "('" + variable + "')\"/>#{__" + variable.getName() + "__bind}";
-            } else if (propertyInfo.getResultType() == ResultType.ID && propertyInfo.getIdType() == IdType.CUSTOM) {
+            } else if (propertyInfo.getPropertyType() == PropertyType.ID && propertyInfo.getIdType() == IdType.CUSTOM) {
                 value = "<bind name=\"__" + variable.getName() + "__bind\" value=\"" + Ognl.GetUuid + "('" + propertyInfo.getCustomIdGenerator().getName() + "','" + variable + "')\"/>#{__" + variable.getName() + "__bind}";
             } else {
                 value = "#{" + variable + "}";
@@ -106,7 +106,7 @@ public abstract class BaseDialect implements Dialect {
             if (iterator.hasNext()) {
                 value += ",";
             }
-            if (ignoreNull && propertyInfo.getResultType() != ResultType.ID) {
+            if (ignoreNull && propertyInfo.getPropertyType() != PropertyType.ID) {
                 value = "<if test=\"" + variable + " != null\">" + value + "</if>";
             }
             ss.add(value);
@@ -135,7 +135,7 @@ public abstract class BaseDialect implements Dialect {
             if (iterator.hasNext()) {
                 columnName += ",";
             }
-            if (ignoreNull && propertyInfo.getResultType() != ResultType.ID) {
+            if (ignoreNull && propertyInfo.getPropertyType() != PropertyType.ID) {
                 columnName = "<if test=\"" + variable + " != null\">" + columnName + "</if>";
             }
             ss.add(columnName);
@@ -161,11 +161,11 @@ public abstract class BaseDialect implements Dialect {
             }
             Variable subVariable = new Variable(variable.getFullName(), propertyInfo.getName(), propertyInfo.getJavaType());
             if (propertyInfo.getColumnName() != null) {
-                if (propertyInfo.getResultType() != ResultType.ID) {
+                if (propertyInfo.getPropertyType() != PropertyType.ID) {
                     map.put(propertyInfo, subVariable);
                 }
             } else {
-                map.putAll(collectInsertColumns(propertyInfo.values(), subVariable));
+                map.putAll(collectInsertColumns(propertyInfo.getNameToPropertyInfo().values(), subVariable));
             }
         }
         return map;
@@ -197,49 +197,49 @@ public abstract class BaseDialect implements Dialect {
 
     protected String buildTableAndJoin(List<JoinTableInfo> joinTableInfos) {
         List<String> ss = new ArrayList<>();
-        ss.add(joinTableInfos.get(0).getTableInfo().getName());
+        ss.add(joinTableInfos.get(0).getTableName().toString());
         ss.add(joinTableInfos.get(0).getAlias());
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             ss.add("LEFT JOIN");
-            ss.add(joinTableInfo.getTableInfo().toString());
+            ss.add(joinTableInfo.getTableName().toString());
             ss.add(joinTableInfo.getAlias());
             ss.add("ON");
             List<String> conditions = new ArrayList<>();
-            joinTableInfo.getLeftJoinTableInfos().forEach((joinColumnInfo, leftJoinTableInfo) -> {
-                conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = " + leftJoinTableInfo.getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
-            });
+            for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
+                conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumnName());
+            }
             ss.add(String.join(" AND ", conditions));
         }
         return String.join(" ", ss);
     }
 
     protected List<JoinTableInfo> collectJoinTableInfo(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, List<PropertyInfo> groupBy, List<OrderByElement> orderBy) {
-        Set<String> directAliases = new HashSet<>();
-        directAliases.add(tableInfo.getJoinTableInfo().getAlias());
+        Set<JoinTableInfo> directJoinTableInfos = new HashSet<>();
+        directJoinTableInfos.add(tableInfo.getJoinTableInfo());
         if (selectItems != null) {
             for (PropertyInfo selectItem : selectItems) {
-                directAliases.add(selectItem.getJoinTableInfo().getAlias());
+                selectItem.collectUsedJoinTableInfo(directJoinTableInfos);
             }
         }
         if (where != null) {
-            ConditionHelper.collectUsedTableAliases(where, directAliases);
+            ConditionHelper.collectUsedJoinTableInfo(where, directJoinTableInfos);
         }
         if (groupBy != null) {
             for (PropertyInfo propertyInfo : groupBy) {
-                directAliases.add(propertyInfo.getJoinTableInfo().getAlias());
+                propertyInfo.collectUsedJoinTableInfo(directJoinTableInfos);
             }
         }
         if (orderBy != null) {
             for (OrderByElement orderByElement : orderBy) {
-                directAliases.add(orderByElement.getPropertyInfo().getJoinTableInfo().getAlias());
+                orderByElement.getPropertyInfo().collectUsedJoinTableInfo(directJoinTableInfos);
             }
         }
-        LinkedHashSet<String> orderAliases = new LinkedHashSet<>();
-        for (String alias : directAliases) {
-            tableInfo.getAliasToJoinTableInfo().get(alias).collectTableAliases(orderAliases);
+        LinkedHashMap<String, JoinTableInfo> orderJoinTableInfos = new LinkedHashMap<>();
+        for (JoinTableInfo joinTableInfo : directJoinTableInfos) {
+            joinTableInfo.collectJoinTableInfo(orderJoinTableInfos);
         }
-        return orderAliases.stream().map(v -> tableInfo.getAliasToJoinTableInfo().get(v)).collect(Collectors.toList());
+        return new ArrayList<>(orderJoinTableInfos.values());
     }
 
     protected String buildSelectItems(Collection<PropertyInfo> propertyInfos, Dialect dialect) {
@@ -254,7 +254,7 @@ public abstract class BaseDialect implements Dialect {
                 if (propertyInfo.getColumnName() != null) {
                     selectItems.add(propertyInfo.getJoinTableInfo().getAlias() + "." + propertyInfo.getColumnName() + " AS " + dialect.quote(propertyInfo.getFullName()));
                 } else {
-                    selectItems.addAll(buildSelectItemsInner(propertyInfo.values(), dialect));
+                    selectItems.addAll(buildSelectItemsInner(propertyInfo.getNameToPropertyInfo().values(), dialect));
                 }
             }
         }
@@ -283,11 +283,11 @@ public abstract class BaseDialect implements Dialect {
         return "ORDER BY " + String.join(", ", ss);
     }
 
-    protected String buildWhere(TableInfo tableInfo, Condition condition) {
-        return ConditionHelper.toWhere(tableInfo, condition, this);
+    protected String buildWhere(Condition condition) {
+        return ConditionHelper.toWhere(condition, this);
     }
 
-    protected String buildHaving(TableInfo tableInfo, Condition condition) {
-        return ConditionHelper.toHaving(tableInfo, condition, this);
+    protected String buildHaving(Condition condition) {
+        return ConditionHelper.toHaving(condition, this);
     }
 }

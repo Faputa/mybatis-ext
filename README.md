@@ -8,7 +8,9 @@ MyBatis-Ext 是一个基于 MyBatis 的扩展插件，旨在简化和增强 MyBa
 
 - **方法名CRUD** - 根据符合规范的方法名自动生成CRUD操作，无需手动编写SQL
 
-- **轻量级设计** - 除了依赖MyBatis核心库外，没有其他第三方库依赖
+- **轻量级设计** - 除了依赖MyBatis等核心库外，没有其他第三方库依赖
+
+- **无感增强** - 在原有的Spring Boot+MyBatis项目中引入本插件starter，无需修改配置即可获得增强能力
 
 - **无侵入性** - 添加或移除插件不会影响原有的代码逻辑，完全兼容现有MyBatis项目
 
@@ -38,8 +40,6 @@ MyBatis-Ext 项目由以下几个主要模块组成：
 
 ### 通过Spring MVC方式集成
 
-配置参考 [applicationContext.xml](mybatis-ext-spring/src/test/resources/applicationContext.xml)
-
 ```xml
 <dependency>
     <groupId>io.github.mybatis-ext</groupId>
@@ -48,56 +48,7 @@ MyBatis-Ext 项目由以下几个主要模块组成：
 </dependency>
 ```
 
-在Spring XML配置中，需要使用 `ExtSqlSessionFactoryBean` 替代原生的 `SqlSessionFactoryBean`：
-
-```xml
-<bean id="sqlSessionFactory" class="io.github.mybatisext.spring.ExtSqlSessionFactoryBean">
-    <property name="dataSource" ref="dataSource" />
-    <property name="mapperLocations" value="${mybatis.mapper-locations}" />
-</bean>
-
-<bean id="mybatisExtBeanPostProcessor" class="io.github.mybatisext.spring.MybatisExtBeanPostProcessor">
-</bean>
-
-<bean id="mapperMethodValidator" class="io.github.mybatisext.spring.MapperMethodValidator">
-    <constructor-arg>
-        <list>
-            <ref bean="sqlSessionFactory" />
-        </list>
-    </constructor-arg>
-</bean>
-```
-
-### 不依赖Spring的集成方式
-
-参考 [MybatisExtTest.java](mybatis-ext-test/src/test/java/io/github/mybatisext/test/MybatisExtTest.java)
-
-```xml
-<dependency>
-    <groupId>io.github.mybatis-ext</groupId>
-    <artifactId>mybatis-ext</artifactId>
-    <version>最新版本</version>
-</dependency>
-```
-
-Java代码集成示例：
-
-```java
-// 创建数据源
-DataSource dataSource = ...;
-TransactionFactory transactionFactory = new JdbcTransactionFactory();
-Environment environment = new Environment("development", transactionFactory, dataSource);
-
-// 使用ExtConfiguration替代原生Configuration
-Configuration configuration = ConfigurationFactory.create(environment, new ExtContext());
-
-// 注册Mapper
-configuration.addMapper(YourMapper.class);
-((ConfigurationInterface) configuration).validateAllMapperMethod(); // 验证所有映射方法
-
-// 创建会话工厂
-SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
-```
+配置参考 [applicationContext.xml](mybatis-ext-spring/src/test/resources/applicationContext.xml)
 
 ### 与其他MyBatis扩展框架集成
 
@@ -135,23 +86,23 @@ mybatis-ext.default-filterable=true
 
 - `@Id` - 描述属性对应的主键列，指定主键生成方式，需与`@Column`一起使用
 
-- `@JoinRelation` - 描述关联关系，表示属性是关联表或关联列，多个`@JoinRelation`一起使用可表示关联路径
-
-- `@JoinParent` - 描述实体类对应的表和父类对应的表之间的关联关系
-
-- `@EmbedParent` - 将父类中的属性嵌入到实体类中作为实体类的属性
-
-其他辅助功能注解：
-
 - `@TableRef` - 注解DTO类，并描述该DTO类对应的实体类
 
 - `@ColumnRef` - 注解DTO属性，并描述该DTO属性对应的实体类属性
 
+- `@JoinRelation` - 描述关联关系，表示属性是关联表或关联列，多个`@JoinRelation`一起使用可表示关联路径
+
+- `@JoinParent` - 描述实体类对应的表和父类对应的表之间的关联关系
+
+- `@Cascade` - 级联，用以获取关联属性的关联属性，需与`@JoinRelation`一起使用
+
+- `@Fetch` - 指定关联属性的加载策略，不指定时使用JOIN方式加载，需与`@JoinRelation`一起使用
+
 - `@Filterable` - 注解实体类属性、DTO属性或CRUD方法参数，可指定被注解元素在过滤时的行为
 
-- `@MapTable` - 如不想继承CRUD接口，可用`@MapTable`注解自定义的CRUD接口，类似于继承`ExtMapper`
+其他辅助功能注解：
 
-- `@IfTest` - 条件测试注解，可用于动态指定SQL条件
+- `@MapTable` - 如不想继承CRUD接口，可用`@MapTable`注解自定义的CRUD接口，类似于继承`ExtMapper`
 
 - `@OnlyById` - 标记参数只使用ID属性作为过滤条件
 
@@ -282,7 +233,7 @@ MyBatis-Ext 提供了多种数据库方言支持，以适应不同的数据库�
 
 MyBatis-Ext 通过以下机制实现其核心功能：
 
-1. **配置替换** - 使用 `ExtConfiguration` 替换原本的 MyBatis `Configuration` 类
+1. **配置替换** - 使用动态代理替换原本的 MyBatis `Configuration` 类
 2. **方法解析** - 通过 `JpaParser` 解析符合命名规则的方法
 3. **元数据分析** - 使用 `TableInfoFactory` 分析实体类的元数据信息
 4. **动态生成语句** - 在运行时动态生成 `MappedStatement`，无需提前定义XML

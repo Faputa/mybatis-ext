@@ -43,10 +43,12 @@ public class MybatisExtSpringBootVOTest {
 		List<SysPost> posts = sysPostMapper.list(new SysPostVO());
 		List<SysRole> roles = sysRoleMapper.list(new SysRoleVO());
 		List<SysUser> users = sysUserMapper.list(new SysUserVO());
+		List<SysUserVO> sysUserVOS = sysUserMapper.listSysUserVO(new SysUser());
 		System.out.println("########" + depts);
 		System.out.println("########" + menus);
 		System.out.println("########" + posts);
 		System.out.println("########" + roles);
 		System.out.println("########" + users);
+		System.out.println("########" + sysUserVOS);
 	}
 }
