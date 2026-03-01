@@ -3,13 +3,13 @@ package io.github.mybatisext.test;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.ibatis.mapping.FetchType;
+
 import io.github.mybatisext.annotation.Column;
-import io.github.mybatisext.annotation.EmbedParent;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.LoadStrategy;
-import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.Table;
 
 /**
@@ -18,7 +18,6 @@ import io.github.mybatisext.annotation.Table;
  * @author ruoyi
  */
 @Table
-@EmbedParent
 public class SysRole extends BaseEntity {
 
     /** 角色ID */
@@ -51,13 +50,13 @@ public class SysRole extends BaseEntity {
     private String delFlag;
 
     /** 菜单组 */
-    @LoadStrategy(LoadType.FETCH_EAGER)
+    @Fetch(FetchType.EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "roleId", rightColumn = "roleId"), table = SysRoleMenu.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "menuId", rightColumn = "menuId"), table = SysMenu.class, column = "menuId")
     private List<Long> menuIds;
 
     /** 部门组（数据权限） */
-    @LoadStrategy(LoadType.FETCH_EAGER)
+    @Fetch(FetchType.EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "roleId", rightColumn = "roleId"), table = SysRoleDept.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "deptId", rightColumn = "deptId"), table = SysDept.class, column = "deptId")
     private List<Long> deptIds;

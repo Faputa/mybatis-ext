@@ -12,7 +12,7 @@ import io.github.mybatisext.jpa.LogicalOperator;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Filterable {
 
-    IfTest test() default IfTest.NotNull;
+    TestMode test() default TestMode.NotNull;
 
     CompareOperator operator() default CompareOperator.Equals;
 

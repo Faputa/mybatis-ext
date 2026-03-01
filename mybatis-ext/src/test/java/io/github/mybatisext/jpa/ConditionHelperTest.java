@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.reflect.GenericTypeFactory;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
@@ -22,7 +24,7 @@ import io.github.mybatisext.metadata.TablePermission;
 public class ConditionHelperTest {
 
     @Test
-    public void testFromTableInfo() {
+    public void testBuildByTableInfo() {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("org.h2.Driver");
         dataSource.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MYSQL");
@@ -33,9 +35,9 @@ public class ConditionHelperTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtContext extContext = new ExtContext();
         Configuration configuration = ConfigurationFactory.create(environment, extContext);
-        TableInfoFactory tableInfoFactory = new TableInfoFactory(configuration, extContext);
-        TableInfo tableInfo = tableInfoFactory.getTableInfo(TablePermission.class);
-        Condition condition = ConditionHelper.fromTableInfo(tableInfo, false, "pt");
+        GenericType genericType = GenericTypeFactory.build(TablePermission.class);
+        TableInfo tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
+        Condition condition = ConditionHelper.buildForTableInfo(tableInfo, false, "pt");
         System.out.println(condition);
     }
 

@@ -2,13 +2,14 @@ package io.github.mybatisext.metadata;
 
 import java.util.Objects;
 
-import io.github.mybatisext.annotation.IfTest;
+import io.github.mybatisext.annotation.Filterable;
+import io.github.mybatisext.annotation.TestMode;
 import io.github.mybatisext.jpa.CompareOperator;
 import io.github.mybatisext.jpa.LogicalOperator;
 
 public class FilterableInfo {
 
-    private IfTest test;
+    private TestMode testMode;
     private CompareOperator operator;
     private LogicalOperator logicalOperator;
     private boolean ignorecase;
@@ -17,12 +18,26 @@ public class FilterableInfo {
     private String exprTemplate;
     private String secondVariable;
 
-    public IfTest getTest() {
-        return test;
+    public FilterableInfo() {
     }
 
-    public void setTest(IfTest test) {
-        this.test = test;
+    public FilterableInfo(Filterable filterable) {
+        this.testMode = filterable.test();
+        this.operator = filterable.operator();
+        this.logicalOperator = filterable.logicalOperator();
+        this.ignorecase = filterable.ignorecase();
+        this.not = filterable.not();
+        this.testTemplate = filterable.testTemplate();
+        this.exprTemplate = filterable.exprTemplate();
+        this.secondVariable = filterable.secondVariable();
+    }
+
+    public TestMode getTestMode() {
+        return testMode;
+    }
+
+    public void setTestMode(TestMode testMode) {
+        this.testMode = testMode;
     }
 
     public CompareOperator getOperator() {
@@ -90,11 +105,11 @@ public class FilterableInfo {
             return false;
         }
         FilterableInfo that = (FilterableInfo) o;
-        return ignorecase == that.ignorecase && not == that.not && test == that.test && operator == that.operator && logicalOperator == that.logicalOperator && Objects.equals(testTemplate, that.testTemplate) && Objects.equals(exprTemplate, that.exprTemplate) && Objects.equals(secondVariable, that.secondVariable);
+        return ignorecase == that.ignorecase && not == that.not && testMode == that.testMode && operator == that.operator && logicalOperator == that.logicalOperator && Objects.equals(testTemplate, that.testTemplate) && Objects.equals(exprTemplate, that.exprTemplate) && Objects.equals(secondVariable, that.secondVariable);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(test, operator, logicalOperator, ignorecase, not, testTemplate, exprTemplate, secondVariable);
+        return Objects.hash(testMode, operator, logicalOperator, ignorecase, not, testTemplate, exprTemplate, secondVariable);
     }
 }

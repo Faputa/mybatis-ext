@@ -5,33 +5,38 @@ import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.apache.ibatis.logging.Log;
+import org.apache.ibatis.logging.LogFactory;
+import org.apache.ibatis.mapping.FetchType;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.ResultFlag;
 import org.apache.ibatis.mapping.ResultMap;
 import org.apache.ibatis.mapping.ResultMapping;
+import org.apache.ibatis.mapping.ResultSetType;
+import org.apache.ibatis.mapping.SqlCommandType;
+import org.apache.ibatis.mapping.SqlSource;
+import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
-import io.github.mybatisext.annotation.LoadType;
+import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
-import io.github.mybatisext.metadata.ResultType;
+import io.github.mybatisext.metadata.PropertyType;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericType;
 
 public class ResultMapHelper {
 
-    public static final String PREFIX = "__MYBATIS_EXT__";
-
+    private static final String PREFIX = "__MYBATIS_EXT__";
+    private static final Log log = LogFactory.getLog(ResultMapHelper.class);
     private final Configuration configuration;
-    private final MappedStatementHelper mappedStatementHelper;
-    private final TableInfoFactory tableInfoFactory;
+    private final ExtContext extContext;
 
-    public ResultMapHelper(Configuration configuration, MappedStatementHelper mappedStatementHelper, TableInfoFactory tableInfoFactory) {
+    public ResultMapHelper(Configuration configuration, ExtContext extContext) {
         this.configuration = configuration;
-        this.mappedStatementHelper = mappedStatementHelper;
-        this.tableInfoFactory = tableInfoFactory;
+        this.extContext = extContext;
     }
 
     public ResultMap buildResultMap(GenericType returnType, Dialect dialect, boolean writeConfiguration) {
@@ -42,10 +47,10 @@ public class ResultMapHelper {
         if (configuration.getTypeHandlerRegistry().hasTypeHandler(returnType.getType())) {
             return buildSimpleTypeResultMap(returnType.getType());
         }
-        TableInfo tableInfo = tableInfoFactory.getTableInfo(returnType);
+        TableInfo tableInfo = TableInfoFactory.buildTableInfo(returnType, configuration, extContext);
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            resultMappings.add(buildResultMapping(tableInfo, propertyInfo, dialect, writeConfiguration));
+            resultMappings.add(buildResultMapping(tableInfo, propertyInfo, dialect, writeConfiguration, false));
         }
         return new ResultMap.Builder(configuration, id, returnType.getType(), resultMappings).build();
     }
@@ -54,25 +59,25 @@ public class ResultMapHelper {
         return new ResultMap.Builder(configuration, type.getName() + "-Inline", type, new ArrayList<>(0)).build();
     }
 
-    public ResultMap buildPropertyResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration) {
-        GenericType tableClass = tableInfo.getTableClass();
+    public ResultMap buildPropertyResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
+        GenericType tableClass = tableInfo.getClassType();
         String id = PREFIX + tableClass.getName() + "|" + propertyInfo.getName();
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
         }
-        GenericType propertyType = propertyInfo.getResultType() == ResultType.COLLECTION ? propertyInfo.getOfType() : propertyInfo.getJavaType();
+        GenericType propertyType = propertyInfo.getPropertyType() == PropertyType.COLLECTION ? propertyInfo.getOfType() : propertyInfo.getJavaType();
         if (propertyInfo.getColumnName() != null) {
             return buildSimpleTypeResultMap(propertyType.getType());
         }
         List<ResultMapping> resultMappings = new ArrayList<>();
-        for (PropertyInfo subPropertyInfo : propertyInfo.values()) {
-            resultMappings.add(buildResultMapping(tableInfo, subPropertyInfo, dialect, writeConfiguration));
+        for (PropertyInfo subPropertyInfo : propertyInfo.getNameToPropertyInfo().values()) {
+            resultMappings.add(buildResultMapping(tableInfo, subPropertyInfo, dialect, writeConfiguration, inNestedSelect));
         }
         return new ResultMap.Builder(configuration, id, propertyType.getType(), resultMappings).build();
     }
 
-    private ResultMapping buildResultMapping(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration) {
-        if (propertyInfo.getResultType() == ResultType.ID) {
+    private ResultMapping buildResultMapping(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
+        if (propertyInfo.getPropertyType() == PropertyType.ID) {
             return new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(propertyInfo.getFullName())
                     .javaType(propertyInfo.getJavaType().getType())
@@ -80,16 +85,17 @@ public class ResultMapHelper {
                     .flags(Collections.singletonList(ResultFlag.ID))
                     .build();
         }
-        if (propertyInfo.getResultType() == ResultType.RESULT) {
+        if (propertyInfo.getPropertyType() == PropertyType.RESULT) {
             return new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(propertyInfo.getFullName())
                     .javaType(propertyInfo.getJavaType().getType())
                     .jdbcType(propertyInfo.getJdbcType())
                     .build();
         }
-        if (propertyInfo.getResultType() == ResultType.ASSOCIATION || propertyInfo.getResultType() == ResultType.COLLECTION) {
-            if (propertyInfo.getLoadType() == null || propertyInfo.getLoadType() == LoadType.JOIN) {
-                ResultMap resultMap = addNestedResultMap(tableInfo, propertyInfo, dialect, writeConfiguration);
+        if (propertyInfo.getPropertyType() == PropertyType.ASSOCIATION || propertyInfo.getPropertyType() == PropertyType.COLLECTION) {
+            // 若已在嵌套查询中，则强制使用嵌套结果映射以避免多层嵌套查询影响性能
+            if (inNestedSelect || propertyInfo.getFetchType() == null) {
+                ResultMap resultMap = addNestedResultMap(tableInfo, propertyInfo, dialect, writeConfiguration, inNestedSelect);
                 return new ResultMapping.Builder(configuration, propertyInfo.getName())
                         .javaType(propertyInfo.getJavaType().getType())
                         .nestedResultMapId(resultMap.getId())
@@ -103,14 +109,14 @@ public class ResultMapHelper {
                     .composites(parseCompositeColumnName(column))
                     .nestedQueryId(mappedStatement.getId())
                     .javaType(propertyInfo.getJavaType().getType());
-            if (propertyInfo.getLoadType() == LoadType.FETCH_LAZY) {
+            if (propertyInfo.getFetchType() == FetchType.LAZY) {
                 builder.lazy(true);
-            } else if (propertyInfo.getLoadType() == LoadType.FETCH_EAGER) {
+            } else if (propertyInfo.getFetchType() == FetchType.EAGER) {
                 builder.lazy(false);
             }
             return builder.build();
         }
-        throw new MybatisExtException("Unknown resultType: " + propertyInfo.getResultType());
+        throw new MybatisExtException("Unknown PropertyType: " + propertyInfo.getPropertyType());
     }
 
     // org.apache.ibatis.builder.MapperBuilderAssistant#parseCompositeColumnName
@@ -128,8 +134,8 @@ public class ResultMapHelper {
         return composites;
     }
 
-    private ResultMap addNestedResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration) {
-        ResultMap resultMap = buildPropertyResultMap(tableInfo, propertyInfo, dialect, writeConfiguration);
+    private ResultMap addNestedResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
+        ResultMap resultMap = buildPropertyResultMap(tableInfo, propertyInfo, dialect, writeConfiguration, inNestedSelect);
         if (writeConfiguration) {
             synchronized (configuration) {
                 if (!configuration.hasResultMap(resultMap.getId())) {
@@ -145,7 +151,7 @@ public class ResultMapHelper {
         if (configuration.hasStatement(id)) {
             return configuration.getMappedStatement(id);
         }
-        MappedStatement ms = mappedStatementHelper.buildForNestedSelect(id, nestedSelect, dialect, writeConfiguration);
+        MappedStatement ms = buildForNestedSelect(id, nestedSelect, dialect, writeConfiguration);
         if (writeConfiguration) {
             synchronized (configuration) {
                 if (!configuration.hasStatement(ms.getId())) {
@@ -154,5 +160,16 @@ public class ResultMapHelper {
             }
         }
         return ms;
+    }
+
+    private MappedStatement buildForNestedSelect(String id, NestedSelect nestedSelect, Dialect dialect, boolean writeConfiguration) {
+        log.debug(id);
+        List<ResultMap> resultMaps = new ArrayList<>();
+        resultMaps.add(buildPropertyResultMap(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo(), dialect, writeConfiguration, true));
+        String script = NestedSelectHelper.buildNestedSelectScript(nestedSelect, dialect);
+        log.debug(script);
+        SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(configuration, script, Object.class);
+        MappedStatement.Builder builder = new MappedStatement.Builder(configuration, id, sqlSource, SqlCommandType.SELECT);
+        return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }
 }

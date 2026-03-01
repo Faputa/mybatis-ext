@@ -5,9 +5,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.apache.ibatis.mapping.FetchType;
+
 @Target({ ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface LoadStrategy {
+public @interface Fetch {
 
-    LoadType value() default LoadType.FETCH_DEFAULT;
+    FetchType value() default FetchType.DEFAULT;
 }

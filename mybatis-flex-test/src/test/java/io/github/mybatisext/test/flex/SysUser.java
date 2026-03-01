@@ -4,13 +4,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.ibatis.mapping.FetchType;
+
 import io.github.mybatisext.annotation.Column;
-import io.github.mybatisext.annotation.EmbedParent;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.LoadStrategy;
-import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.test.BaseEntity;
 import io.github.mybatisext.test.SysDept;
@@ -26,7 +26,6 @@ import io.github.mybatisext.test.SysUserRole;
  */
 @com.mybatisflex.annotation.Table("sys_user")
 @Table
-@EmbedParent
 public class SysUser extends BaseEntity {
 
     /** 用户ID */
@@ -104,19 +103,19 @@ public class SysUser extends BaseEntity {
     private SysDept dept;
 
     /** 角色组 */
-    @LoadStrategy(LoadType.FETCH_EAGER)
+    @Fetch(FetchType.EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "userId", rightColumn = "userId"), table = SysUserRole.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "roleId", rightColumn = "roleId"))
     private List<SysRole> roles;
 
     /** 角色组 */
-    @LoadStrategy(LoadType.FETCH_EAGER)
+    @Fetch(FetchType.EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "userId", rightColumn = "userId"), table = SysUserRole.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "roleId", rightColumn = "roleId"), table = SysRole.class, column = "roleId")
     private List<Long> roleIds;
 
     /** 岗位组 */
-    @LoadStrategy(LoadType.FETCH_EAGER)
+    @Fetch(FetchType.EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "userId", rightColumn = "userId"), table = SysUserPost.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "postId", rightColumn = "postId"), table = SysPost.class, column = "postId")
     private List<Long> postIds;

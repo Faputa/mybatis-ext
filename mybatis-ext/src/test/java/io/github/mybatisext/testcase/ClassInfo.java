@@ -4,7 +4,7 @@ import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.LoadStrategy;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Table;
 
 import java.util.List;
@@ -28,7 +28,7 @@ public class ClassInfo {
 
     // ========回显字段========
     /** 学生 */
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "classId"))
     private List<Student> students;
 

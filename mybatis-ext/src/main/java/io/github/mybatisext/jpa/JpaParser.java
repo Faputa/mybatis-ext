@@ -11,33 +11,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
+import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.annotation.Filterable;
-import io.github.mybatisext.annotation.IfTest;
-import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.OnlyById;
+import io.github.mybatisext.annotation.TestMode;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.FilterableInfo;
+import io.github.mybatisext.metadata.JoinColumnInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.statement.NestedSelectHelper;
-import io.github.mybatisext.util.CommonUtils;
-import io.github.mybatisext.util.ImmutablePair;
 import io.github.mybatisext.util.StringUtils;
-import io.github.mybatisext.util.TypeArgumentResolver;
+import io.github.mybatisext.util.TypeUtils;
 
 public class JpaParser extends BaseParser<JpaTokenizer> {
 
     private final Configuration configuration;
-    private final TableInfoFactory tableInfoFactory;
+    private final ExtContext extContext;
 
     private final Symbol grammar = new Symbol("grammar");
     private final Symbol conditionList = new Symbol("conditionList");
@@ -146,7 +144,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
 
     private final Symbol returnTypeName = new Symbol("returnTypeName").set((state, continuation) -> {
         JpaTokenizer jpaTokenizer = state.getTokenizer();
-        GenericType returnType = CommonUtils.unwrapType(jpaTokenizer.getReturnType());
+        GenericType returnType = TypeUtils.unwrapToGenericType(jpaTokenizer.getReturnType());
         int cursor = jpaTokenizer.getCursor();
         if (jpaTokenizer.keyword(returnType.getSimpleName()).isEmpty()) {
             jpaTokenizer.getExpectedTokens().record(cursor, "'" + returnType.getSimpleName() + "'");
@@ -200,9 +198,9 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
     private final Symbol having = new Symbol("having").set(join(keyword("Having"), conditionList));
     private final Symbol orderBy = new Symbol("orderBy").set(join(keyword("OrderBy"), orderByList));
 
-    public JpaParser(Configuration configuration, TableInfoFactory tableInfoFactory) {
+    public JpaParser(Configuration configuration, ExtContext extContext) {
         this.configuration = configuration;
-        this.tableInfoFactory = tableInfoFactory;
+        this.extContext = extContext;
 
         grammar.set(choice(
                 join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(choice(propertyList, returnTypeName)), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(join(groupBy, optional(having))), optional(orderBy), optional(limit), end, action(state -> {
@@ -434,12 +432,12 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
     }
 
     private List<PropertyInfo> buildDefaultSelectItems(JpaTokenizer jpaTokenizer) {
-        GenericType returnType = CommonUtils.unwrapType(jpaTokenizer.getReturnType());
-        if (!TableInfoFactory.isAssignableEitherWithTable(returnType, jpaTokenizer.getTableInfo().getTableClass())) {
-            throw new MybatisExtException("Incompatible return type: " + returnType.getTypeName() + ", expected: " + jpaTokenizer.getTableInfo().getTableClass().getName());
+        GenericType returnType = TypeUtils.unwrapToGenericType(jpaTokenizer.getReturnType());
+        if (!TableInfoFactory.isAssignableEitherWithTable(returnType, jpaTokenizer.getTableInfo().getClassType())) {
+            throw new MybatisExtException("Incompatible return type: " + returnType.getTypeName() + ", expected: " + jpaTokenizer.getTableInfo().getClassType().getName());
         }
-        TableInfo tableInfo = tableInfoFactory.getTableInfo(returnType);
-        List<PropertyInfo> propertyInfos = tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getLoadType() == null || v.getLoadType() == LoadType.JOIN).collect(Collectors.toList());
+        TableInfo tableInfo = TableInfoFactory.buildTableInfo(returnType, configuration, extContext);
+        List<PropertyInfo> propertyInfos = tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getFetchType() == null).collect(Collectors.toList());
         return ensureJoinRelationColumns(jpaTokenizer, propertyInfos);
     }
 
@@ -448,10 +446,11 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
         for (PropertyInfo propertyInfo : propertyInfos) {
             nameToPropertyInfo.put(propertyInfo.getFullName(), propertyInfo);
-            if (propertyInfo.getLoadType() != null && propertyInfo.getLoadType() != LoadType.JOIN) {
-                List<ImmutablePair<PropertyInfo, PropertyInfo>> immutablePairs = NestedSelectHelper.buildLeftmostJoinColumns(tableInfo, propertyInfo);
-                for (ImmutablePair<PropertyInfo, PropertyInfo> immutablePair : immutablePairs) {
-                    nameToPropertyInfo.put(immutablePair.getLeft().getFullName(), immutablePair.getLeft());
+            if (propertyInfo.getFetchType() != null) {
+                List<JoinColumnInfo> joinColumnInfos = NestedSelectHelper.buildLeftmostJoinColumns(tableInfo, propertyInfo);
+                for (JoinColumnInfo joinColumnInfo : joinColumnInfos) {
+                    PropertyInfo leftPropertyInfo = TableInfoFactory.getPropertyInfo(tableInfo, joinColumnInfo.getLeftFullName());
+                    nameToPropertyInfo.put(leftPropertyInfo.getFullName(), leftPropertyInfo);
                 }
             }
         }
@@ -501,13 +500,13 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         if (parameters.length == 0) {
             throw new MybatisExtException("No parameters provided in the query.");
         }
-        GenericType tableClass = jpaTokenizer.getTableInfo().getTableClass();
+        GenericType tableClass = jpaTokenizer.getTableInfo().getClassType();
         GenericType parameterType = parameters[0].getGenericType();
         Param param = parameters[0].getAnnotation(Param.class);
         if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
             return new Variable(param != null ? param.value() : (parameters.length == 1 ? "array" : "param1"), parameterType);
         }
-        if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeArgumentResolver.resolveGenericType(parameterType, Collection.class, 0))) {
+        if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeUtils.unwrapToGenericType(parameterType))) {
             if (List.class.isAssignableFrom(parameterType.getType())) {
                 return new Variable(param != null ? param.value() : (parameters.length == 1 ? "list" : "param1"), parameterType);
             }
@@ -523,7 +522,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
             if (parameterType.isArray() && configuration.getTypeHandlerRegistry().hasTypeHandler(parameterType.getComponentType().getType())) {
                 return new Variable(param.value(), parameterType);
             }
-            if (Collection.class.isAssignableFrom(parameterType.getType()) && configuration.getTypeHandlerRegistry().hasTypeHandler(TypeArgumentResolver.resolveType(parameterType, Collection.class, 0))) {
+            if (Collection.class.isAssignableFrom(parameterType.getType()) && configuration.getTypeHandlerRegistry().hasTypeHandler(TypeUtils.unwrapToClass(parameterType))) {
                 return new Variable(param.value(), parameterType);
             }
         }
@@ -541,13 +540,13 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
     private Condition buildSingleParamCondition(JpaTokenizer jpaTokenizer, Set<String> usedParamNames, GenericParameter parameter) {
         TableInfo tableInfo = jpaTokenizer.getTableInfo();
         List<Variable> variables = jpaTokenizer.getVariables();
-        GenericType tableClass = tableInfo.getTableClass();
+        GenericType tableClass = tableInfo.getClassType();
         GenericType parameterType = parameter.getGenericType();
         Param param = parameter.getAnnotation(Param.class);
         String paramName;
         if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
             paramName = param != null ? "__" + param.value() + "__item" : "__array__item";
-        } else if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeArgumentResolver.resolveGenericType(parameterType, Collection.class, 0))) {
+        } else if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeUtils.unwrapToGenericType(parameterType))) {
             paramName = param != null ? "__" + param.value() + "__item" : "__collection__item";
             if (List.class.isAssignableFrom(parameterType.getType())) {
                 paramName = param != null ? "__" + param.value() + "__item" : "__list__item";
@@ -558,8 +557,8 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
             Variable variable;
             if (parameterType.isArray() && configuration.getTypeHandlerRegistry().hasTypeHandler(parameterType.getComponentType().getType())) {
                 variable = new Variable("__" + param.value() + "__item", parameterType.getComponentType());
-            } else if (Collection.class.isAssignableFrom(parameterType.getType()) && configuration.getTypeHandlerRegistry().hasTypeHandler(TypeArgumentResolver.resolveType(parameterType, Collection.class, 0))) {
-                variable = new Variable("__" + param.value() + "__item", TypeArgumentResolver.resolveGenericType(parameterType, Collection.class, 0));
+            } else if (Collection.class.isAssignableFrom(parameterType.getType()) && configuration.getTypeHandlerRegistry().hasTypeHandler(TypeUtils.unwrapToClass(parameterType))) {
+                variable = new Variable("__" + param.value() + "__item", TypeUtils.unwrapToGenericType(parameterType));
             } else {
                 return buildMultiParamCondition(jpaTokenizer, usedParamNames, parameter);
             }
@@ -573,7 +572,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
             return buildMultiParamCondition(jpaTokenizer, usedParamNames, parameter);
         }
         OnlyById onlyById = parameter.getAnnotation(OnlyById.class);
-        Condition condition = ConditionHelper.fromTableInfo(tableInfo, onlyById != null, paramName);
+        Condition condition = ConditionHelper.buildForTableInfo(tableInfo, onlyById != null, paramName);
         Filterable filterable = parameter.getAnnotation(Filterable.class);
         if (onlyById == null && filterable != null) {
             FilterableInfo filterableInfo = buildFilterableInfo(filterable);
@@ -592,7 +591,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
             if (param != null && usedParamNames.contains(param.value())) {
                 continue;
             }
-            if (TableInfoFactory.isAssignableEitherWithTable(CommonUtils.unwrapType(parameter.getGenericType()), tableInfo.getTableClass())) {
+            if (TableInfoFactory.isAssignableEitherWithTable(TypeUtils.unwrapToGenericType(parameter.getGenericType()), tableInfo.getClassType())) {
                 continue;
             }
             if (param == null || !configuration.getTypeHandlerRegistry().hasTypeHandler(parameter.getType())) {
@@ -618,26 +617,18 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
     }
 
     private FilterableInfo buildFilterableInfo(@Nullable Filterable filterable) {
-        FilterableInfo filterableInfo = new FilterableInfo();
         if (filterable == null) {
-            filterableInfo.setTest(IfTest.None);
+            FilterableInfo filterableInfo = new FilterableInfo();
+            filterableInfo.setTestMode(TestMode.None);
             filterableInfo.setOperator(CompareOperator.Equals);
             filterableInfo.setLogicalOperator(LogicalOperator.AND);
             return filterableInfo;
         }
-        filterableInfo.setTest(filterable.test());
-        filterableInfo.setOperator(filterable.operator());
-        filterableInfo.setLogicalOperator(filterable.logicalOperator());
-        filterableInfo.setIgnorecase(filterable.ignorecase());
-        filterableInfo.setNot(filterable.not());
-        filterableInfo.setTestTemplate(filterable.testTemplate());
-        filterableInfo.setExprTemplate(filterable.exprTemplate());
-        filterableInfo.setSecondVariable(filterable.secondVariable());
-        return filterableInfo;
+        return new FilterableInfo(filterable);
     }
 
     private void applyFilterableInfo(Condition condition, FilterableInfo filterableInfo, List<Variable> variables, Set<String> usedParamNames) {
-        condition.setTest(filterableInfo.getTest());
+        condition.setTestMode(filterableInfo.getTestMode());
         condition.setCompareOperator(filterableInfo.getOperator());
         condition.setLogicalOperator(filterableInfo.getLogicalOperator());
         condition.setIgnorecase(filterableInfo.isIgnorecase());
@@ -664,12 +655,12 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
             if ((variable = map.get(key)) == null) {
                 return null;
             }
-            map = variable;
+            map = variable.getNameToVariable();
         }
         return variable;
     }
 
-    private Condition ensureConditionVariable(JpaTokenizer jpaTokenizer, Set<String> usedParamNames, @Nonnull ConditionList conditionList) {
+    private Condition ensureConditionVariable(JpaTokenizer jpaTokenizer, Set<String> usedParamNames, ConditionList conditionList) {
         GenericParameter[] parameters = jpaTokenizer.getParameters();
         AtomicInteger paramIndex = new AtomicInteger(0);
         for (ConditionList list = conditionList; list != null; list = list.getTailList()) {
@@ -681,7 +672,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
                 condition.setSecondVariable(buildNextUnusedVariable(usedParamNames, paramIndex, parameters, jpaTokenizer));
             }
         }
-        return ConditionHelper.simplifyCondition(ConditionHelper.fromConditionList(conditionList));
+        return ConditionHelper.simplifyCondition(ConditionHelper.buildForConditionList(conditionList));
     }
 
     private Variable buildNextUnusedVariable(Set<String> usedParamNames, AtomicInteger paramIndex, GenericParameter[] parameters, JpaTokenizer jpaTokenizer) {
@@ -739,17 +730,17 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
     }
 
     public Semantic parse(TableInfo tableInfo, String methodName, GenericParameter[] parameters, GenericType returnType) {
-        GenericType unwrappedReturnType = CommonUtils.unwrapType(returnType);
-        if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getTableClass(), unwrappedReturnType)) {
-            tableInfo = tableInfoFactory.getTableInfo(unwrappedReturnType);
+        GenericType unwrappedReturnType = TypeUtils.unwrapToGenericType(returnType);
+        if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getClassType(), unwrappedReturnType)) {
+            tableInfo = TableInfoFactory.buildTableInfo(unwrappedReturnType, configuration, extContext);
         }
         for (GenericParameter parameter : parameters) {
-            if (CommonUtils.isSpecialParameter(parameter.getType())) {
+            if (TypeUtils.isSpecialParameter(parameter.getType())) {
                 continue;
             }
-            GenericType parameterType = CommonUtils.unwrapType(parameter.getGenericType());
-            if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getTableClass(), parameterType)) {
-                tableInfo = tableInfoFactory.getTableInfo(parameterType);
+            GenericType parameterType = TypeUtils.unwrapToGenericType(parameter.getGenericType());
+            if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getClassType(), parameterType)) {
+                tableInfo = TableInfoFactory.buildTableInfo(parameterType, configuration, extContext);
             }
             break;
         }

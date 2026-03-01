@@ -3,7 +3,6 @@ package io.github.mybatisext.test;
 import java.util.Objects;
 
 import io.github.mybatisext.annotation.Column;
-import io.github.mybatisext.annotation.EmbedParent;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.Table;
 
@@ -13,7 +12,6 @@ import io.github.mybatisext.annotation.Table;
  * @author ruoyi
  */
 @Table
-@EmbedParent
 public class SysPost extends BaseEntity {
 
     /** 岗位序号 */

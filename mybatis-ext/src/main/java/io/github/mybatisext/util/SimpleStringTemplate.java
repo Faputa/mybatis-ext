@@ -83,6 +83,8 @@ public class SimpleStringTemplate {
             if (key.startsWith("##")) {
                 // 强制##开头的名字为对象属性
                 obj = getProperty(obj, key.substring(2));
+            } else if (obj instanceof Getter) {
+                obj = ((Getter<?>) obj).get(key);
             } else if (obj instanceof Map) {
                 obj = ((Map<?, ?>) obj).get(key);
             } else if (isInt(key)) {

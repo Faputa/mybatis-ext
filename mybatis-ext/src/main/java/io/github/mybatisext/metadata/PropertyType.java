@@ -1,6 +1,6 @@
 package io.github.mybatisext.metadata;
 
-public enum ResultType {
+public enum PropertyType {
 
     ID,
 

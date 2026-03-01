@@ -3,7 +3,13 @@ package io.github.mybatisext.test;
 import java.sql.Date;
 import java.util.List;
 
+import org.apache.ibatis.mapping.FetchType;
+
+import io.github.mybatisext.annotation.Cascade;
 import io.github.mybatisext.annotation.ColumnRef;
+import io.github.mybatisext.annotation.Fetch;
+import io.github.mybatisext.annotation.JoinColumn;
+import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.TableRef;
 
 @TableRef(SysUser.class)
@@ -51,6 +57,13 @@ public class SysUserVO {
     private List<Long> roleIds;
     @ColumnRef
     private List<Long> postIds;
+
+    /** 角色组 */
+    @Cascade
+    @Fetch(FetchType.EAGER)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "userId", rightColumn = "userId"), table = SysUserRole.class)
+    @JoinRelation(joinColumn = @JoinColumn(leftColumn = "roleId", rightColumn = "roleId"))
+    private List<SysRole> roles2;
 
     public Long getUserId() {
         return userId;
@@ -218,5 +231,13 @@ public class SysUserVO {
 
     public void setPostIds(List<Long> postIds) {
         this.postIds = postIds;
+    }
+
+    public List<SysRole> getRoles2() {
+        return roles2;
+    }
+
+    public void setRoles2(List<SysRole> roles2) {
+        this.roles2 = roles2;
     }
 }

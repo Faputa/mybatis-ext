@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.ibatis.mapping.FetchType;
+
 import io.github.mybatisext.annotation.Column;
-import io.github.mybatisext.annotation.EmbedParent;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.LoadStrategy;
-import io.github.mybatisext.annotation.LoadType;
 import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.jpa.CompareOperator;
 
@@ -21,7 +21,6 @@ import io.github.mybatisext.jpa.CompareOperator;
  * @author ruoyi
  */
 @Table
-@EmbedParent
 public class SysMenu extends BaseEntity {
 
     /** 菜单ID */
@@ -76,7 +75,7 @@ public class SysMenu extends BaseEntity {
     private String icon;
 
     /** 子菜单 */
-    @LoadStrategy(LoadType.FETCH_EAGER)
+    @Fetch(FetchType.EAGER)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "menuId", rightColumn = "parentId"))
     private List<SysMenu> children = new ArrayList<SysMenu>();
 

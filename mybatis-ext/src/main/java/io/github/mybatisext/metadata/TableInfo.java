@@ -1,61 +1,42 @@
 package io.github.mybatisext.metadata;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.util.StringUtils;
+import io.github.mybatisext.util.Getter;
 
-public class TableInfo {
+public class TableInfo implements Getter<PropertyInfo> {
 
-    /** 表名 */
-    private String name;
-    /** 表注释 */
-    private String comment;
-    /** 模式 */
-    private String schema;
-    /** 实体类 */
-    private GenericType tableClass;
-    /** 连接图 */
+    private TableName tableName;
+    private GenericType classType;
+    private JoinGraph joinGraph;
     private JoinTableInfo joinTableInfo;
-    /** 别名到关联表的映射 */
     private final Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
-    /** 名字到属性的映射 */
     private final Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
-    /** 名字到列的映射 */
-    private final Map<String, ColumnInfo> nameToColumnInfo = new LinkedHashMap<>();
 
-    public String getName() {
-        return name;
+    public TableName getTableName() {
+        return tableName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setTableName(TableName tableName) {
+        this.tableName = tableName;
     }
 
-    public String getComment() {
-        return comment;
+    public GenericType getClassType() {
+        return classType;
     }
 
-    public void setComment(String comment) {
-        this.comment = comment;
+    public void setClassType(GenericType classType) {
+        this.classType = classType;
     }
 
-    public String getSchema() {
-        return schema;
+    public JoinGraph getJoinGraph() {
+        return joinGraph;
     }
 
-    public void setSchema(String schema) {
-        this.schema = schema;
-    }
-
-    public GenericType getTableClass() {
-        return tableClass;
-    }
-
-    public void setTableClass(GenericType tableClass) {
-        this.tableClass = tableClass;
+    public void setJoinGraph(JoinGraph joinGraph) {
+        this.joinGraph = joinGraph;
     }
 
     public JoinTableInfo getJoinTableInfo() {
@@ -74,12 +55,17 @@ public class TableInfo {
         return nameToPropertyInfo;
     }
 
-    public Map<String, ColumnInfo> getNameToColumnInfo() {
-        return nameToColumnInfo;
+    public String getName() {
+        return tableName.toString();
+    }
+
+    @Override
+    public PropertyInfo get(String key) {
+        return nameToPropertyInfo.get(key);
     }
 
     @Override
     public String toString() {
-        return StringUtils.isNotBlank(schema) ? schema + "." + name : name;
+        return getName();
     }
 }

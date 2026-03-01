@@ -20,8 +20,7 @@ import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
 import io.github.mybatisext.statement.MappedStatementHelper;
-import io.github.mybatisext.util.CommonUtils;
-import io.github.mybatisext.util.TypeArgumentResolver;
+import io.github.mybatisext.util.TypeUtils;
 import javassist.util.proxy.MethodHandler;
 
 public class ExtEnhancer implements MethodHandler {
@@ -146,7 +145,7 @@ public class ExtEnhancer implements MethodHandler {
             if (method.isBridge() || method.isDefault() || !method.getName().equals(methodName)) {
                 continue;
             }
-            GenericType mReturnType = CommonUtils.unwrapType(method.getGenericReturnType());
+            GenericType mReturnType = TypeUtils.unwrapToGenericType(method.getGenericReturnType());
             if (returnType == null || returnType.isAssignableFrom(mReturnType)) {
                 returnType = mReturnType;
             } else if (!mReturnType.isAssignableFrom(returnType) && mReturnType.getType() != Void.class) {
@@ -169,7 +168,7 @@ public class ExtEnhancer implements MethodHandler {
         if (annotation != null) {
             return GenericTypeFactory.build(annotation.value());
         }
-        return TypeArgumentResolver.resolveGenericType(mapperClass, ExtMapper.class, 0);
+        return TypeUtils.resolveGenericTypeArgument(mapperClass, ExtMapper.class, 0);
     }
 
     private Class<?> getMapperClass(String namespace) {

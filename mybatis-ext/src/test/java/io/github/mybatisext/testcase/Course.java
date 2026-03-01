@@ -4,7 +4,7 @@ import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.LoadStrategy;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Table;
 
 import java.util.List;
@@ -28,17 +28,17 @@ public class Course {
 
     // ========回显字段========
     /** 学生 */
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "courseId"), table = StudentCourse.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "studentId", rightColumn = "id"))
     private List<Student> students;
     /** 学生考试 */
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "courseId"), table = CourseExam.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "examId"))
     private List<StudentExam> studentExams;
     /** 学生作业 */
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "courseId"), table = CourseHomework.class)
     @JoinRelation(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "homeworkId"))
     private List<StudentHomework> studentHomeworks;

@@ -10,7 +10,7 @@ import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.JoinRelations;
-import io.github.mybatisext.annotation.LoadStrategy;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Table;
 
 @Table(alias = "tp")
@@ -58,7 +58,7 @@ public class TablePermission extends DataTable {
     })
     private List<RowPermission> rowPermissions;
 
-    @LoadStrategy
+    @Fetch
     @JoinRelation(joinColumn = {
             @JoinColumn(leftColumn = "tableId", rightColumn = "tableId"),
             @JoinColumn(leftColumn = "roleId", rightColumn = "roleId")
