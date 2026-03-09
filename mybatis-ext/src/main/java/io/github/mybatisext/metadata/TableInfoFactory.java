@@ -47,7 +47,7 @@ public class TableInfoFactory {
 
     public static TableInfo buildTableInfo(TableDef tableDef, Configuration configuration, ExtContext extContext) {
         JoinGraph joinGraph = JoinGraphFactory.buildJoinGraph(tableDef);
-        JoinNode joinNode = JoinGraphFactory.buildJoinNode(joinGraph, tableDef, configuration);
+        JoinNode joinNode = JoinGraphFactory.buildJoinNode(joinGraph, tableDef);
         JoinTableInfo joinTableInfo = new JoinTableInfo();
         joinTableInfo.setTableDef(tableDef);
         joinTableInfo.setJoinNode(joinNode);
@@ -306,32 +306,15 @@ public class TableInfoFactory {
         return propertyInfo;
     }
 
-    public static boolean isAssignableEitherWithTable(GenericType left, GenericType right) {
-        return isAssignableFromWithTable(left, right) || isAssignableFromWithTable(right, left);
-    }
-
-    public static boolean isAssignableFromWithTable(GenericType left, GenericType right) {
-        if (left.isAssignableFrom(right)) {
-            return true;
-        }
-        if ((left = getTableAnnotationClass(left)) == null) {
+    public static boolean isSameTableType(GenericType left, GenericType right) {
+        GenericType leftTableType = TableDefFactory.resolveTableType(left);
+        if (leftTableType == null) {
             return false;
         }
-        if ((right = getTableAnnotationClass(right)) == null) {
+        GenericType rightTableType = TableDefFactory.resolveTableType(right);
+        if (rightTableType == null) {
             return false;
         }
-        return left.isAssignableFrom(right);
-    }
-
-    private static GenericType getTableAnnotationClass(GenericType classType) {
-        for (GenericType c = classType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
-            if (c.isAnnotationPresent(Table.class)) {
-                return c;
-            }
-            if (c.isAnnotationPresent(TableRef.class)) {
-                return GenericTypeFactory.build(c.getAnnotation(TableRef.class).value());
-            }
-        }
-        return null;
+        return leftTableType.equals(rightTableType);
     }
 }
