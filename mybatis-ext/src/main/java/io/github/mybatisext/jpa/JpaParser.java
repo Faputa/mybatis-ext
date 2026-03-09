@@ -433,7 +433,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
 
     private List<PropertyInfo> buildDefaultSelectItems(JpaTokenizer jpaTokenizer) {
         GenericType returnType = TypeUtils.unwrapToGenericType(jpaTokenizer.getReturnType());
-        if (!TableInfoFactory.isAssignableEitherWithTable(returnType, jpaTokenizer.getTableInfo().getClassType())) {
+        if (!TableInfoFactory.isSameTableType(returnType, jpaTokenizer.getTableInfo().getClassType())) {
             throw new MybatisExtException("Incompatible return type: " + returnType.getTypeName() + ", expected: " + jpaTokenizer.getTableInfo().getClassType().getName());
         }
         TableInfo tableInfo = TableInfoFactory.buildTableInfo(returnType, configuration, extContext);
@@ -503,16 +503,16 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         GenericType tableClass = jpaTokenizer.getTableInfo().getClassType();
         GenericType parameterType = parameters[0].getGenericType();
         Param param = parameters[0].getAnnotation(Param.class);
-        if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
+        if (parameterType.isArray() && TableInfoFactory.isSameTableType(tableClass, parameterType.getComponentType())) {
             return new Variable(param != null ? param.value() : (parameters.length == 1 ? "array" : "param1"), parameterType);
         }
-        if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeUtils.unwrapToGenericType(parameterType))) {
+        if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isSameTableType(tableClass, TypeUtils.unwrapToGenericType(parameterType))) {
             if (List.class.isAssignableFrom(parameterType.getType())) {
                 return new Variable(param != null ? param.value() : (parameters.length == 1 ? "list" : "param1"), parameterType);
             }
             return new Variable(param != null ? param.value() : (parameters.length == 1 ? "collection" : "param1"), parameterType);
         }
-        if (TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType)) {
+        if (TableInfoFactory.isSameTableType(tableClass, parameterType)) {
             return new Variable(param != null ? param.value() : (parameters.length == 1 ? "" : "param1"), parameterType);
         }
         if (requiredTableParameter) {
@@ -544,14 +544,14 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         GenericType parameterType = parameter.getGenericType();
         Param param = parameter.getAnnotation(Param.class);
         String paramName;
-        if (parameterType.isArray() && TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType.getComponentType())) {
+        if (parameterType.isArray() && TableInfoFactory.isSameTableType(tableClass, parameterType.getComponentType())) {
             paramName = param != null ? "__" + param.value() + "__item" : "__array__item";
-        } else if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isAssignableEitherWithTable(tableClass, TypeUtils.unwrapToGenericType(parameterType))) {
+        } else if (Collection.class.isAssignableFrom(parameterType.getType()) && TableInfoFactory.isSameTableType(tableClass, TypeUtils.unwrapToGenericType(parameterType))) {
             paramName = param != null ? "__" + param.value() + "__item" : "__collection__item";
             if (List.class.isAssignableFrom(parameterType.getType())) {
                 paramName = param != null ? "__" + param.value() + "__item" : "__list__item";
             }
-        } else if (TableInfoFactory.isAssignableEitherWithTable(tableClass, parameterType)) {
+        } else if (TableInfoFactory.isSameTableType(tableClass, parameterType)) {
             paramName = param != null ? param.value() : "";
         } else if (param != null) {
             Variable variable;
@@ -591,7 +591,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
             if (param != null && usedParamNames.contains(param.value())) {
                 continue;
             }
-            if (TableInfoFactory.isAssignableEitherWithTable(TypeUtils.unwrapToGenericType(parameter.getGenericType()), tableInfo.getClassType())) {
+            if (TableInfoFactory.isSameTableType(TypeUtils.unwrapToGenericType(parameter.getGenericType()), tableInfo.getClassType())) {
                 continue;
             }
             if (param == null || !configuration.getTypeHandlerRegistry().hasTypeHandler(parameter.getType())) {
@@ -731,7 +731,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
 
     public Semantic parse(TableInfo tableInfo, String methodName, GenericParameter[] parameters, GenericType returnType) {
         GenericType unwrappedReturnType = TypeUtils.unwrapToGenericType(returnType);
-        if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getClassType(), unwrappedReturnType)) {
+        if (TableInfoFactory.isSameTableType(tableInfo.getClassType(), unwrappedReturnType)) {
             tableInfo = TableInfoFactory.buildTableInfo(unwrappedReturnType, configuration, extContext);
         }
         for (GenericParameter parameter : parameters) {
@@ -739,7 +739,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
                 continue;
             }
             GenericType parameterType = TypeUtils.unwrapToGenericType(parameter.getGenericType());
-            if (TableInfoFactory.isAssignableFromWithTable(tableInfo.getClassType(), parameterType)) {
+            if (TableInfoFactory.isSameTableType(tableInfo.getClassType(), parameterType)) {
                 tableInfo = TableInfoFactory.buildTableInfo(parameterType, configuration, extContext);
             }
             break;
