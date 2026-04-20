@@ -420,12 +420,11 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
                 }))));
 
         propertyList.set(
-                join(property, optional(join(keyword("And"), propertyList)), action(state -> {
+                join(property, star(join(keyword("And"), property)), action(state -> {
                     List<PropertyInfo> propertyInfos = new ArrayList<>();
-                    propertyInfos.add(state.getMatch(property).val());
-                    MatchResult _propertyList = state.getMatch(propertyList);
-                    if (_propertyList != null) {
-                        propertyInfos.addAll(_propertyList.val());
+                    List<MatchResult> matches = state.getMatches(property);
+                    for (MatchResult match : matches) {
+                        propertyInfos.add(match.val());
                     }
                     state.setReturn(propertyInfos);
                 })));

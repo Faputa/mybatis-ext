@@ -160,7 +160,7 @@ BaseMapper 默认提供以下方法：
 
 - `variable` - 变量，来自方法参数，支持`Dot`语法获取参数内部属性
 
-- `propertyList` - 属性列表，命名规则`<property>And<propertyList>`
+- `propertyList` - 属性列表，命名规则`<property>(And<property>)*`
 
 - `returnTypeName` - 返回值实体类型名称
 
