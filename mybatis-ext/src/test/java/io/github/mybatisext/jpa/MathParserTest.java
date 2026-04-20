@@ -2,6 +2,8 @@ package io.github.mybatisext.jpa;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class MathParserTest extends BaseParser<MathTokenizer> {
 
     Symbol end = new Symbol("end").set((state, continuation) -> {
@@ -29,7 +31,7 @@ public class MathParserTest extends BaseParser<MathTokenizer> {
         expr.set(join(term, optional(choice(join(keyword("+"), expr, action(state -> {
             int a = state.getMatch(term).val();
             int b = state.getMatch(expr).val();
-            state.setReturn(a + b);
+            return state.setReturn(a + b);
         })), join(keyword("-"), expr, action(state -> {
             int a = state.getMatch(term).val();
             int b = state.getMatch(expr).val();
@@ -135,4 +137,19 @@ public class MathParserTest extends BaseParser<MathTokenizer> {
         });
         System.out.println(match);
     }
+
+    @Test
+    public void parseX() {
+        Symbol x = new Symbol("X").set(assign("a", assign("b", assign("c", assign("d", assign("e", keyword("x")))))));
+        boolean match = x.match(new MathTokenizer("x"), state -> {
+            assertEquals("x", state.getMatch("a").val());
+            assertEquals("x", state.getMatch("b").val());
+            assertEquals("x", state.getMatch("c").val());
+            assertEquals("x", state.getMatch("d").val());
+            assertEquals("x", state.getMatch("e").val());
+            return true;
+        });
+        System.out.println(match);
+    }
+
 }

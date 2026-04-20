@@ -17,7 +17,7 @@ public class State<T extends Tokenizer> {
 
     public State(T tokenizer) {
         this.prevState = null;
-        this.scope = null;
+        this.scope = new Scope<>(null, null);
         this.tokenizer = tokenizer;
     }
 
@@ -50,7 +50,6 @@ public class State<T extends Tokenizer> {
     }
 
     public Object getReturn() {
-        assert scope != null;
         for (State<T> state = this; state != scope.getOutside() && state != null; state = state.prevState) {
             if (state.getScope() == scope && state.returnValue != null) {
                 return state.returnValue;
@@ -64,32 +63,25 @@ public class State<T extends Tokenizer> {
         return true;
     }
 
-    public MatchResult getMatch(Symbol<T> symbol, Scope<T> scope, int index) {
-        List<MatchResult> foundMatchResults = new ArrayList<>();
+    public List<MatchResult> getMatches(Symbol<T> symbol) {
+        List<MatchResult> matches = new ArrayList<>();
         for (State<T> state = this; state != scope.getOutside() && state != null; state = state.prevState) {
             int i = 0;
             for (MatchResult matchResult : state.matchResults) {
                 if (matchResult.getScope() == scope && matchResult.getSymbol() == symbol) {
-                    foundMatchResults.add(i++, matchResult);
+                    matches.add(i++, matchResult);
                 }
             }
         }
-        if (index < 0) {
-            index += foundMatchResults.size();
-        }
-        if (foundMatchResults.size() > index) {
-            return foundMatchResults.get(index);
-        }
-        return null;
-    }
-
-    public MatchResult getMatch(Symbol<T> symbol, int index) {
-        assert scope != null;
-        return getMatch(symbol, scope, index);
+        return matches;
     }
 
     public MatchResult getMatch(Symbol<T> symbol) {
-        return getMatch(symbol, 0);
+        List<MatchResult> matches = getMatches(symbol);
+        if (matches.isEmpty()) {
+            return null;
+        }
+        return matches.get(0);
     }
 
     public boolean addMatch(Symbol<T> symbol, Scope<T> scope, String text, Object value) {
@@ -97,11 +89,7 @@ public class State<T extends Tokenizer> {
         return matchResults.add(matchResult);
     }
 
-    public boolean addMatch(Symbol<T> symbol, String text, Object value) {
-        return addMatch(symbol, scope, text, value);
-    }
-
-    public MatchResult getMatch(String name, Scope<T> scope) {
+    public MatchResult getMatch(String name) {
         for (State<T> state = this; state != scope.getOutside() && state != null; state = state.prevState) {
             Map<String, MatchResult> nameToMatchResult = state.scopeToNameToMatchResult.get(scope);
             if (nameToMatchResult != null) {
@@ -114,11 +102,6 @@ public class State<T extends Tokenizer> {
         return null;
     }
 
-    public MatchResult getMatch(String name) {
-        assert scope != null;
-        return getMatch(name, scope);
-    }
-
     public boolean addMatch(String name, Symbol<T> symbol, Scope<T> scope, String text, Object value) {
         Map<String, MatchResult> nameToMatchResult = scopeToNameToMatchResult.computeIfAbsent(scope, k -> new HashMap<>());
         MatchResult matchResult = new MatchResult(symbol, scope, text, value);
@@ -126,8 +109,4 @@ public class State<T extends Tokenizer> {
         return true;
     }
 
-    public boolean addMatch(String name, Symbol<T> symbol, String text, Object value) {
-        assert scope != null;
-        return addMatch(name, symbol, scope, text, value);
-    }
 }
