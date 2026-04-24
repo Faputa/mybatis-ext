@@ -23,6 +23,7 @@ import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.PropertyType;
+import io.github.mybatisext.metadata.TableDefFactory;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericType;
@@ -44,7 +45,7 @@ public class ResultMapHelper {
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
         }
-        if (configuration.getTypeHandlerRegistry().hasTypeHandler(returnType.getType())) {
+        if (void.class.equals(returnType.getType()) || configuration.getTypeHandlerRegistry().hasTypeHandler(returnType.getType()) || TableDefFactory.resolveTableType(returnType) == null) {
             return buildSimpleTypeResultMap(returnType.getType());
         }
         TableInfo tableInfo = TableInfoFactory.buildTableInfo(returnType, configuration, extContext);
