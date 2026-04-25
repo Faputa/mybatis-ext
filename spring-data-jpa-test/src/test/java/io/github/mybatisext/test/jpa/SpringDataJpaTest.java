@@ -7,11 +7,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 public class SpringDataJpaTest {
 
-	@Autowired
-	private SysUserRepository sysUserRepository;
+    @Autowired
+    private SysUserRepository sysUserRepository;
 
-	@Test
-	public void test() {
-		System.out.println("########" + sysUserRepository.countByDeptId(103L));
-	}
+    @Test
+    public void test() {
+        System.out.println("########" + sysUserRepository.countByDeptId(103L));
+    }
 }

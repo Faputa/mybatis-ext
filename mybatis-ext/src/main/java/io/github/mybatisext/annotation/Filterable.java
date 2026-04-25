@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import io.github.mybatisext.jpa.CompareOperator;
 import io.github.mybatisext.jpa.LogicalOperator;
 
-@Target({ ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER })
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Filterable {
 
