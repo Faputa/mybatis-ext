@@ -16,6 +16,7 @@ import org.apache.ibatis.session.Configuration;
 import io.github.mybatisext.annotation.MapTable;
 import io.github.mybatisext.mapper.BaseMapper;
 import io.github.mybatisext.mapper.ExtMapper;
+import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
@@ -30,12 +31,14 @@ public class ExtEnhancer implements MethodHandler {
     private static final MethodSignature VALIDATE_ALL_MAPPER_METHOD = new MethodSignature("validateAllMapperMethod", new Class[]{});
 
     private final Configuration configuration;
+    private final ExtContext extContext;
     private final MappedStatementHelper mappedStatementHelper;
 
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
 
     public ExtEnhancer(Configuration configuration, ExtContext extContext) {
         this.configuration = configuration;
+        this.extContext = extContext;
         this.mappedStatementHelper = new MappedStatementHelper(configuration, extContext);
     }
 
@@ -99,11 +102,13 @@ public class ExtEnhancer implements MethodHandler {
             if (isNotEnhancedMapper(mapperClass)) {
                 continue;
             }
+            boolean noCustomMethod = true;
             GenericType genericType = GenericTypeFactory.build(mapperClass);
             for (GenericMethod method : genericType.getMethods()) {
                 if (method.isBridge() || method.isDefault() || method.getDeclaringClass() == BaseMapper.class) {
                     continue;
                 }
+                noCustomMethod = false;
                 String id = mapperClass.getName() + "." + method.getName();
                 MappedStatement ms = resolveMappedStatement(mapperClass, method.getName());
                 if (ms == null) {
@@ -112,6 +117,10 @@ public class ExtEnhancer implements MethodHandler {
                 if (ms == null) {
                     throw new BindingException("Invalid bound statement (not found): " + id);
                 }
+            }
+            if (noCustomMethod) {
+                GenericType entityClass = getEntityClass(mapperClass);
+                TableInfoFactory.buildTableInfo(entityClass, configuration, extContext);
             }
         }
     }
