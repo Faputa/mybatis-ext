@@ -10,12 +10,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 public class MybatisSpringBootTest {
 
-	@Autowired
-	private SysUserMapper sysUserMapper;
+    @Autowired
+    private SysUserMapper sysUserMapper;
 
-	@Test
-	public void test() {
-		System.out.println("########" + sysUserMapper.countSysUser());
-		assertThrows(BindingException.class, () -> sysUserMapper.countSysUser2());
-	}
+    @Test
+    public void test() {
+        System.out.println("########" + sysUserMapper.countSysUser());
+        assertThrows(BindingException.class, () -> sysUserMapper.countSysUser2());
+    }
 }

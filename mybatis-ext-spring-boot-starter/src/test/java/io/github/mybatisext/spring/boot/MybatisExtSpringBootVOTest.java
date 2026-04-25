@@ -25,30 +25,30 @@ import io.github.mybatisext.test.SysUserVO;
 @SpringBootTest
 public class MybatisExtSpringBootVOTest {
 
-	@Autowired
-	private SysDeptMapper sysDeptMapper;
-	@Autowired
-	private SysMenuMapper sysMenuMapper;
-	@Autowired
-	private SysPostMapper sysPostMapper;
-	@Autowired
-	private SysRoleMapper sysRoleMapper;
-	@Autowired
-	private SysUserMapper sysUserMapper;
+    @Autowired
+    private SysDeptMapper sysDeptMapper;
+    @Autowired
+    private SysMenuMapper sysMenuMapper;
+    @Autowired
+    private SysPostMapper sysPostMapper;
+    @Autowired
+    private SysRoleMapper sysRoleMapper;
+    @Autowired
+    private SysUserMapper sysUserMapper;
 
-	@Test
-	public void test() {
-		List<SysDept> depts = sysDeptMapper.list(new SysDeptVO());
-		List<SysMenu> menus = sysMenuMapper.list(new SysMenuVO());
-		List<SysPost> posts = sysPostMapper.list(new SysPostVO());
-		List<SysRole> roles = sysRoleMapper.list(new SysRoleVO());
-		List<SysUser> users = sysUserMapper.list(new SysUserVO());
-		List<SysUserVO> sysUserVOS = sysUserMapper.listSysUserVO(new SysUser());
-		System.out.println("########" + depts);
-		System.out.println("########" + menus);
-		System.out.println("########" + posts);
-		System.out.println("########" + roles);
-		System.out.println("########" + users);
-		System.out.println("########" + sysUserVOS);
-	}
+    @Test
+    public void test() {
+        List<SysDept> depts = sysDeptMapper.list(new SysDeptVO());
+        List<SysMenu> menus = sysMenuMapper.list(new SysMenuVO());
+        List<SysPost> posts = sysPostMapper.list(new SysPostVO());
+        List<SysRole> roles = sysRoleMapper.list(new SysRoleVO());
+        List<SysUser> users = sysUserMapper.list(new SysUserVO());
+        List<SysUserVO> sysUserVOS = sysUserMapper.listSysUserVO(new SysUser());
+        System.out.println("########" + depts);
+        System.out.println("########" + menus);
+        System.out.println("########" + posts);
+        System.out.println("########" + roles);
+        System.out.println("########" + users);
+        System.out.println("########" + sysUserVOS);
+    }
 }

@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import io.github.mybatisext.idgenerator.IdGenerator;
 
-@Target({ ElementType.METHOD, ElementType.FIELD })
+@Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Id {
     interface DefaultIdGenerator extends IdGenerator<Object> {

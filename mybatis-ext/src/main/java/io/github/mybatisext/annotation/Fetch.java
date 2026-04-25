@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import org.apache.ibatis.mapping.FetchType;
 
-@Target({ ElementType.METHOD, ElementType.FIELD })
+@Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Fetch {
 
