@@ -149,10 +149,15 @@ public class TableDefFactory {
                     propertyDef.setReadonly(false);
                     propertyDef.setColumnName(refPropertyDef.getColumnName());
                     propertyDef.setJoinRelations(refPropertyDef.getJoinRelations());
-                    propertyDef.setFilterable(field.getAnnotation(Filterable.class));
-                    propertyDef.setFetch(refPropertyDef.getFetch());
-                    propertyDef.setNameToPropertyDef(refPropertyDef.getNameToPropertyDef());
+                    Fetch fetch = field.getAnnotation(Fetch.class);
+                    Filterable filterable = field.getAnnotation(Filterable.class);
+                    propertyDef.setFetch(fetch != null ? fetch : refPropertyDef.getFetch());
+                    propertyDef.setFilterable(filterable != null ? filterable : refPropertyDef.getFilterable());
                     propertyDef.setId(refPropertyDef.getId());
+                    GenericType genericType = TypeUtils.unwrapToGenericType(field.getGenericType());
+                    if (!configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, ownColumn, field.isAnnotationPresent(Cascade.class), recordPropertyKeys(propertyKeys, classType, field.getName())));
+                    }
                     nameToPropertyDef.put(field.getName(), propertyDef);
                 } else if (isCascade && field.getAnnotationsByType(JoinRelation.class).length > 0) {
                     PropertyDef propertyDef = new PropertyDef();
@@ -212,10 +217,15 @@ public class TableDefFactory {
                     propertyDef.setReadonly(propertyDescriptor.getWriteMethod() == null);
                     propertyDef.setColumnName(refPropertyDef.getColumnName());
                     propertyDef.setJoinRelations(refPropertyDef.getJoinRelations());
-                    propertyDef.setFilterable(readMethod.getAnnotation(Filterable.class));
-                    propertyDef.setFetch(refPropertyDef.getFetch());
-                    propertyDef.setNameToPropertyDef(refPropertyDef.getNameToPropertyDef());
+                    Fetch fetch = readMethod.getAnnotation(Fetch.class);
+                    Filterable filterable = readMethod.getAnnotation(Filterable.class);
+                    propertyDef.setFetch(fetch != null ? fetch : refPropertyDef.getFetch());
+                    propertyDef.setFilterable(filterable != null ? filterable : refPropertyDef.getFilterable());
                     propertyDef.setId(refPropertyDef.getId());
+                    GenericType genericType = TypeUtils.unwrapToGenericType(readMethod.getGenericReturnType());
+                    if (!configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, false, readMethod.isAnnotationPresent(Cascade.class), recordPropertyKeys(propertyKeys, classType, propertyDescriptor.getName())));
+                    }
                     nameToPropertyDef.put(propertyDescriptor.getName(), propertyDef);
                 } else if (isCascade && readMethod.getAnnotationsByType(JoinRelation.class).length > 0) {
                     PropertyDef propertyDef = new PropertyDef();
