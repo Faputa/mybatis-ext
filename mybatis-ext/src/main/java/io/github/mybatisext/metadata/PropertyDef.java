@@ -2,6 +2,7 @@ package io.github.mybatisext.metadata;
 
 import java.util.Map;
 
+import io.github.mybatisext.annotation.Cascade;
 import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.Id;
@@ -21,6 +22,7 @@ public class PropertyDef {
     private JoinRelation[] joinRelations;
     private Filterable filterable;
     private Fetch fetch;
+    private Cascade cascade;
     private Map<String, PropertyDef> nameToPropertyDef;
 
     public String getName() {
@@ -101,6 +103,14 @@ public class PropertyDef {
 
     public void setFetch(Fetch fetch) {
         this.fetch = fetch;
+    }
+
+    public Cascade getCascade() {
+        return cascade;
+    }
+
+    public void setCascade(Cascade cascade) {
+        this.cascade = cascade;
     }
 
     public Map<String, PropertyDef> getNameToPropertyDef() {

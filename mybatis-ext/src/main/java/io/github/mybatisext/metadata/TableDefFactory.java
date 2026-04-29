@@ -151,12 +151,14 @@ public class TableDefFactory {
                     propertyDef.setJoinRelations(refPropertyDef.getJoinRelations());
                     Fetch fetch = field.getAnnotation(Fetch.class);
                     Filterable filterable = field.getAnnotation(Filterable.class);
+                    Cascade cascade = field.getAnnotation(Cascade.class);
                     propertyDef.setFetch(fetch != null ? fetch : refPropertyDef.getFetch());
                     propertyDef.setFilterable(filterable != null ? filterable : refPropertyDef.getFilterable());
+                    propertyDef.setCascade(cascade != null ? cascade : refPropertyDef.getCascade());
                     propertyDef.setId(refPropertyDef.getId());
                     GenericType genericType = TypeUtils.unwrapToGenericType(field.getGenericType());
                     if (!configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
-                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, ownColumn, field.isAnnotationPresent(Cascade.class), recordPropertyKeys(propertyKeys, classType, field.getName())));
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, ownColumn, propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, field.getName())));
                     }
                     nameToPropertyDef.put(field.getName(), propertyDef);
                 } else if (isCascade && field.getAnnotationsByType(JoinRelation.class).length > 0) {
@@ -168,9 +170,10 @@ public class TableDefFactory {
                     propertyDef.setReadonly(false);
                     propertyDef.setJoinRelations(field.getAnnotationsByType(JoinRelation.class));
                     propertyDef.setFetch(field.getAnnotation(Fetch.class));
+                    propertyDef.setCascade(field.getAnnotation(Cascade.class));
                     GenericType genericType = TypeUtils.unwrapToGenericType(field.getGenericType());
                     if (!configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
-                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, ownColumn, field.isAnnotationPresent(Cascade.class), recordPropertyKeys(propertyKeys, classType, field.getName())));
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, ownColumn, propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, field.getName())));
                     }
                     nameToPropertyDef.put(field.getName(), propertyDef);
                 }
@@ -219,12 +222,14 @@ public class TableDefFactory {
                     propertyDef.setJoinRelations(refPropertyDef.getJoinRelations());
                     Fetch fetch = readMethod.getAnnotation(Fetch.class);
                     Filterable filterable = readMethod.getAnnotation(Filterable.class);
+                    Cascade cascade = readMethod.getAnnotation(Cascade.class);
                     propertyDef.setFetch(fetch != null ? fetch : refPropertyDef.getFetch());
                     propertyDef.setFilterable(filterable != null ? filterable : refPropertyDef.getFilterable());
+                    propertyDef.setCascade(cascade != null ? cascade : refPropertyDef.getCascade());
                     propertyDef.setId(refPropertyDef.getId());
                     GenericType genericType = TypeUtils.unwrapToGenericType(readMethod.getGenericReturnType());
                     if (!configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
-                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, false, readMethod.isAnnotationPresent(Cascade.class), recordPropertyKeys(propertyKeys, classType, propertyDescriptor.getName())));
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, false, propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, propertyDescriptor.getName())));
                     }
                     nameToPropertyDef.put(propertyDescriptor.getName(), propertyDef);
                 } else if (isCascade && readMethod.getAnnotationsByType(JoinRelation.class).length > 0) {
@@ -238,7 +243,7 @@ public class TableDefFactory {
                     propertyDef.setFetch(readMethod.getAnnotation(Fetch.class));
                     GenericType genericType = TypeUtils.unwrapToGenericType(readMethod.getGenericReturnType());
                     if (!configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
-                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, false, readMethod.isAnnotationPresent(Cascade.class), recordPropertyKeys(propertyKeys, classType, propertyDescriptor.getName())));
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, false, propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, propertyDescriptor.getName())));
                     }
                     nameToPropertyDef.put(propertyDescriptor.getName(), propertyDef);
                 }
