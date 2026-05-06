@@ -145,7 +145,7 @@ public class TableDefFactory {
                     propertyDef.setName(field.getName());
                     propertyDef.setClassType(field.getGenericType());
                     propertyDef.setDeclaringType(refPropertyDef.getDeclaringType());
-                    propertyDef.setOwnColumn(refPropertyDef.isOwnColumn());
+                    propertyDef.setOwnColumn(ownColumn && refPropertyDef.isOwnColumn());
                     propertyDef.setReadonly(false);
                     propertyDef.setColumnName(refPropertyDef.getColumnName());
                     propertyDef.setJoinRelations(refPropertyDef.getJoinRelations());
@@ -158,7 +158,7 @@ public class TableDefFactory {
                     propertyDef.setId(refPropertyDef.getId());
                     GenericType genericType = TypeUtils.unwrapToGenericType(field.getGenericType());
                     if (!configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
-                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, ownColumn, propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, field.getName())));
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, propertyDef.isOwnColumn(), propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, field.getName())));
                     }
                     nameToPropertyDef.put(field.getName(), propertyDef);
                 } else if (isCascade && field.getAnnotationsByType(JoinRelation.class).length > 0) {
@@ -173,7 +173,7 @@ public class TableDefFactory {
                     propertyDef.setCascade(field.getAnnotation(Cascade.class));
                     GenericType genericType = TypeUtils.unwrapToGenericType(field.getGenericType());
                     if (!configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
-                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, ownColumn, propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, field.getName())));
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, false, propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, field.getName())));
                     }
                     nameToPropertyDef.put(field.getName(), propertyDef);
                 }
@@ -202,7 +202,7 @@ public class TableDefFactory {
                     if (configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
                         propertyDef.setColumnName(StringUtils.isNotBlank(column.name()) ? column.name() : StringUtils.camelToSnake(propertyDescriptor.getName()));
                     } else {
-                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, false, true, recordPropertyKeys(propertyKeys, classType, propertyDescriptor.getName())));
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, ownColumn, true, recordPropertyKeys(propertyKeys, classType, propertyDescriptor.getName())));
                     }
                     nameToPropertyDef.put(propertyDescriptor.getName(), propertyDef);
                 } else if (tableRef != null && readMethod.isAnnotationPresent(ColumnRef.class)) {
@@ -216,7 +216,7 @@ public class TableDefFactory {
                     propertyDef.setName(propertyDescriptor.getName());
                     propertyDef.setClassType(readMethod.getGenericReturnType());
                     propertyDef.setDeclaringType(refPropertyDef.getDeclaringType());
-                    propertyDef.setOwnColumn(refPropertyDef.isOwnColumn());
+                    propertyDef.setOwnColumn(ownColumn && refPropertyDef.isOwnColumn());
                     propertyDef.setReadonly(propertyDescriptor.getWriteMethod() == null);
                     propertyDef.setColumnName(refPropertyDef.getColumnName());
                     propertyDef.setJoinRelations(refPropertyDef.getJoinRelations());
@@ -229,7 +229,7 @@ public class TableDefFactory {
                     propertyDef.setId(refPropertyDef.getId());
                     GenericType genericType = TypeUtils.unwrapToGenericType(readMethod.getGenericReturnType());
                     if (!configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
-                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, false, propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, propertyDescriptor.getName())));
+                        propertyDef.setNameToPropertyDef(buildNameToPropertyDef(genericType, tableRef, table, configuration, propertyDef.isOwnColumn(), propertyDef.getCascade() != null && propertyDef.getCascade().value(), recordPropertyKeys(propertyKeys, classType, propertyDescriptor.getName())));
                     }
                     nameToPropertyDef.put(propertyDescriptor.getName(), propertyDef);
                 } else if (isCascade && readMethod.getAnnotationsByType(JoinRelation.class).length > 0) {
