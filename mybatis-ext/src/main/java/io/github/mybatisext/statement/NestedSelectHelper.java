@@ -26,20 +26,21 @@ public class NestedSelectHelper {
 
     public static String buildResultMappingColumn(NestedSelect nestedSelect) {
         List<String> ss = new ArrayList<>();
-        List<JoinColumnInfo> joinColumnInfos = buildLeftmostJoinColumns(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo());
+        List<JoinColumnInfo> joinColumnInfos = buildLeftmostJoinColumns(nestedSelect.getPropertyInfo());
         for (JoinColumnInfo joinColumnInfo : joinColumnInfos) {
             ss.add(joinColumnInfo.getRightFullName() + "=" + joinColumnInfo.getLeftFullName());
         }
         return "{" + String.join(",", ss) + "}";
     }
 
-    public static List<JoinColumnInfo> buildLeftmostJoinColumns(TableInfo tableInfo, PropertyInfo propertyInfo) {
+    public static List<JoinColumnInfo> buildLeftmostJoinColumns(PropertyInfo propertyInfo) {
         List<JoinColumnInfo> joinColumnInfos = new ArrayList<>();
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(propertyInfo);
+        JoinTableInfo rootJoinTableInfo = joinTableInfos.get(0);
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
-                if (joinColumnInfo.getLeftJoinTableInfo() == tableInfo.getJoinTableInfo()) {
+                if (joinColumnInfo.getLeftJoinTableInfo() == rootJoinTableInfo) {
                     joinColumnInfos.add(joinColumnInfo);
                 }
             }
@@ -53,7 +54,7 @@ public class NestedSelectHelper {
         ss.add(buildSelectItems(nestedSelect.getPropertyInfo(), dialect));
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(nestedSelect.getPropertyInfo());
         ss.add(buildFrom(joinTableInfos));
-        ss.add(buildWhere(nestedSelect.getTableInfo(), joinTableInfos));
+        ss.add(buildWhere(joinTableInfos));
         return "<script>" + String.join(" ", ss) + "</script>";
     }
 
@@ -68,10 +69,13 @@ public class NestedSelectHelper {
 
     private static String buildExistWhere(List<JoinTableInfo> joinTableInfos, String nestedCondition) {
         List<String> conditions = new ArrayList<>();
+        JoinTableInfo rootJoinTableInfo = joinTableInfos.get(0);
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
-                conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumnName());
+                if (joinColumnInfo.getLeftJoinTableInfo() == rootJoinTableInfo) {
+                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumnName());
+                }
             }
         }
         conditions.add(nestedCondition);
@@ -80,22 +84,38 @@ public class NestedSelectHelper {
 
     private static String buildFrom(List<JoinTableInfo> joinTableInfos) {
         List<String> tables = new ArrayList<>();
+        List<String> join = new ArrayList<>();
+        join.add("");
+        JoinTableInfo rootJoinTableInfo = joinTableInfos.get(0);
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
-            tables.add(joinTableInfo.getTableName() + " " + joinTableInfo.getAlias());
+            List<String> conditions = new ArrayList<>();
+            for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
+                if (joinColumnInfo.getLeftJoinTableInfo() != rootJoinTableInfo) {
+                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumnName());
+                }
+            }
+            if (conditions.isEmpty()) {
+                tables.add(joinTableInfo.getTableName() + " " + joinTableInfo.getAlias());
+            } else {
+                join.add("LEFT JOIN");
+                join.add(joinTableInfo.getTableName().toString());
+                join.add(joinTableInfo.getAlias());
+                join.add("ON");
+                join.add(String.join(" AND ", conditions));
+            }
         }
-        return "FROM " + String.join(", ", tables);
+        return "FROM " + String.join(", ", tables) + String.join(" ", join);
     }
 
-    public static String buildWhere(TableInfo tableInfo, List<JoinTableInfo> joinTableInfos) {
+    public static String buildWhere(List<JoinTableInfo> joinTableInfos) {
         List<String> conditions = new ArrayList<>();
+        JoinTableInfo rootJoinTableInfo = joinTableInfos.get(0);
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
-                if (joinColumnInfo.getLeftJoinTableInfo() == tableInfo.getJoinTableInfo()) {
+                if (joinColumnInfo.getLeftJoinTableInfo() == rootJoinTableInfo) {
                     conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = #{" + joinColumnInfo.getRightFullName() + "}");
-                } else {
-                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumnName());
                 }
             }
         }

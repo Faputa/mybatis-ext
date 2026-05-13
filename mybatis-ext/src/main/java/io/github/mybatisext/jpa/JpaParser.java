@@ -446,7 +446,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         for (PropertyInfo propertyInfo : propertyInfos) {
             nameToPropertyInfo.put(propertyInfo.getFullName(), propertyInfo);
             if (propertyInfo.getFetchType() != null) {
-                List<JoinColumnInfo> joinColumnInfos = NestedSelectHelper.buildLeftmostJoinColumns(tableInfo, propertyInfo);
+                List<JoinColumnInfo> joinColumnInfos = NestedSelectHelper.buildLeftmostJoinColumns(propertyInfo);
                 for (JoinColumnInfo joinColumnInfo : joinColumnInfos) {
                     PropertyInfo leftPropertyInfo = TableInfoFactory.getPropertyInfo(tableInfo, joinColumnInfo.getLeftFullName());
                     nameToPropertyInfo.put(leftPropertyInfo.getFullName(), leftPropertyInfo);
