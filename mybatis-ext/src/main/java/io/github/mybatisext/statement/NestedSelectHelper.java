@@ -53,7 +53,7 @@ public class NestedSelectHelper {
         ss.add("SELECT");
         ss.add(buildSelectItems(nestedSelect.getPropertyInfo(), dialect));
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(nestedSelect.getPropertyInfo());
-        ss.add(buildFrom(joinTableInfos));
+        ss.add(buildFrom(nestedSelect.getPropertyInfo(), joinTableInfos));
         ss.add(buildWhere(joinTableInfos));
         return "<script>" + String.join(" ", ss) + "</script>";
     }
@@ -62,7 +62,7 @@ public class NestedSelectHelper {
         List<String> ss = new ArrayList<>();
         ss.add("SELECT 1");
         List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(propertyInfo);
-        ss.add(buildFrom(joinTableInfos));
+        ss.add(buildFrom(propertyInfo, joinTableInfos));
         ss.add(buildExistWhere(joinTableInfos, nestedCondition));
         return "EXISTS (" + String.join(" ", ss) + ")";
     }
@@ -82,11 +82,13 @@ public class NestedSelectHelper {
         return "WHERE " + String.join(" AND ", conditions);
     }
 
-    private static String buildFrom(List<JoinTableInfo> joinTableInfos) {
+    private static String buildFrom(PropertyInfo propertyInfo, List<JoinTableInfo> joinTableInfos) {
         List<String> tables = new ArrayList<>();
         List<String> join = new ArrayList<>();
         join.add("");
         JoinTableInfo rootJoinTableInfo = joinTableInfos.get(0);
+        LinkedHashMap<String, JoinTableInfo> orderJoinTableInfos = new LinkedHashMap<>();
+        propertyInfo.getJoinTableInfo().collectJoinTableInfo(orderJoinTableInfos);
         for (int i = 1; i < joinTableInfos.size(); i++) {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             List<String> conditions = new ArrayList<>();
@@ -98,7 +100,7 @@ public class NestedSelectHelper {
             if (conditions.isEmpty()) {
                 tables.add(joinTableInfo.getTableName() + " " + joinTableInfo.getAlias());
             } else {
-                join.add("LEFT JOIN");
+                join.add(orderJoinTableInfos.containsKey(joinTableInfo.getAlias()) ? "INNER JOIN" : "LEFT JOIN");
                 join.add(joinTableInfo.getTableName().toString());
                 join.add(joinTableInfo.getAlias());
                 join.add("ON");
