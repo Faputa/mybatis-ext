@@ -5,6 +5,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .flattened-pom.xml
+dependency-reduced-pom.xml
 
 ### STS ###
 .apt_generated
