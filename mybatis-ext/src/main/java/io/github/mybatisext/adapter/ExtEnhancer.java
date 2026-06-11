@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.ibatis.binding.BindingException;
+import org.apache.ibatis.logging.Log;
+import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.Configuration;
 
@@ -26,6 +28,7 @@ import javassist.util.proxy.MethodHandler;
 
 public class ExtEnhancer implements MethodHandler {
 
+    private static final Log log = LogFactory.getLog(ExtEnhancer.class);
     private static final MethodSignature GET_MAPPED_STATEMENT = new MethodSignature("getMappedStatement", new Class[]{String.class});
     private static final MethodSignature HAS_STATEMENT = new MethodSignature("hasStatement", new Class[]{String.class});
     private static final MethodSignature VALIDATE_ALL_MAPPER_METHOD = new MethodSignature("validateAllMapperMethod", new Class[]{});
@@ -77,9 +80,11 @@ public class ExtEnhancer implements MethodHandler {
         }
         ms = buildMappedStatement(id, mapperClass, methodName, true);
         if (ms != null) {
-            synchronized (configuration) {
-                if (!configuration.hasStatement(ms.getId())) {
+            if (!configuration.hasStatement(ms.getId())) {
+                try {
                     configuration.addMappedStatement(ms);
+                } catch (IllegalArgumentException e) {
+                    log.error("MappedStatement already registered: " + ms.getId(), e);
                 }
             }
         }
