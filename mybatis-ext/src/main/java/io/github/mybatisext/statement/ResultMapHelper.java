@@ -138,9 +138,11 @@ public class ResultMapHelper {
     private ResultMap addNestedResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
         ResultMap resultMap = buildPropertyResultMap(tableInfo, propertyInfo, dialect, writeConfiguration, inNestedSelect);
         if (writeConfiguration) {
-            synchronized (configuration) {
-                if (!configuration.hasResultMap(resultMap.getId())) {
+            if (!configuration.hasResultMap(resultMap.getId())) {
+                try {
                     configuration.addResultMap(resultMap);
+                } catch (IllegalArgumentException e) {
+                    log.error("ResultMap already registered: " + resultMap.getId(), e);
                 }
             }
         }
@@ -154,9 +156,11 @@ public class ResultMapHelper {
         }
         MappedStatement ms = buildForNestedSelect(id, nestedSelect, dialect, writeConfiguration);
         if (writeConfiguration) {
-            synchronized (configuration) {
-                if (!configuration.hasStatement(ms.getId())) {
+            if (!configuration.hasStatement(ms.getId())) {
+                try {
                     configuration.addMappedStatement(ms);
+                } catch (IllegalArgumentException e) {
+                    log.error("MappedStatement already registered: " + ms.getId(), e);
                 }
             }
         }
