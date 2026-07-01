@@ -9,7 +9,6 @@ import io.github.mybatisext.jpa.Variable;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
-import io.github.mybatisext.util.TypeUtils;
 
 public class MySqlDialect extends BaseTemplateDialect {
 
@@ -17,7 +16,7 @@ public class MySqlDialect extends BaseTemplateDialect {
     public String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeUtils.unwrapToGenericType(variable.getJavaType()));
+            Variable itemVariable = variable.getItemVariable();
             if (ignoreNull) {
                 ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
                 ss.add(buildSimpleInsert(tableInfo, itemVariable, true));
@@ -39,8 +38,8 @@ public class MySqlDialect extends BaseTemplateDialect {
     public String buildUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable variable, List<JoinTableInfo> joinTableInfos, Condition where, boolean batch, boolean join, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeUtils.unwrapToGenericType(variable.getJavaType()));
-            ss.add("<foreach collection=\"" + variable + "\" item=\"" + "__" + variable.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
+            Variable itemVariable = variable.getItemVariable();
+            ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
             ss.add(buildUpdate(tableInfo, selectItems, itemVariable, joinTableInfos, where, false, join, ignoreNull));
             ss.add("</foreach>");
             return String.join(" ", ss);
@@ -61,7 +60,7 @@ public class MySqlDialect extends BaseTemplateDialect {
     public String buildDelete(TableInfo tableInfo, Variable variable, List<JoinTableInfo> joinTableInfos, Condition where, boolean batch, boolean join) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeUtils.unwrapToGenericType(variable.getJavaType()));
+            Variable itemVariable = variable.getItemVariable();
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
             ss.add(buildDelete(tableInfo, itemVariable, joinTableInfos, where, false, join));
             ss.add("</foreach>");

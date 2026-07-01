@@ -2,6 +2,8 @@ package io.github.mybatisext.metadata;
 
 import java.util.Map;
 
+import org.apache.ibatis.type.JdbcType;
+
 import io.github.mybatisext.annotation.Cascade;
 import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Filterable;
@@ -14,6 +16,7 @@ public class PropertyDef {
     private String name;
     private GenericType classType;
     private GenericType declaringType;
+    private JdbcType jdbcType;
     private boolean ownColumn;
     private boolean readonly;
     // 只处理@Column注解的属性
@@ -47,6 +50,14 @@ public class PropertyDef {
 
     public void setDeclaringType(GenericType declaringType) {
         this.declaringType = declaringType;
+    }
+
+    public JdbcType getJdbcType() {
+        return jdbcType;
+    }
+
+    public void setJdbcType(JdbcType jdbcType) {
+        this.jdbcType = jdbcType;
     }
 
     public boolean isOwnColumn() {

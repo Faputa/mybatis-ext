@@ -77,6 +77,7 @@ public abstract class BaseDialect implements Dialect {
                 continue;
             }
             Variable subVariable = new Variable(variable.getFullName(), propertyInfo.getName(), propertyInfo.getJavaType());
+            subVariable.setJdbcType(propertyInfo.getJdbcType());
             if (propertyInfo.getColumnName() != null) {
                 if (propertyInfo.getPropertyType() != PropertyType.ID || propertyInfo.getIdType() != IdType.AUTO) {
                     map.put(propertyInfo, subVariable);
@@ -97,11 +98,11 @@ public abstract class BaseDialect implements Dialect {
             Variable variable = entry.getValue();
             String value;
             if (propertyInfo.getPropertyType() == PropertyType.ID && propertyInfo.getIdType() == IdType.UUID) {
-                value = "<bind name=\"__" + variable.getName() + "__bind\" value=\"" + Ognl.GetUuid + "('" + variable + "')\"/>#{__" + variable.getName() + "__bind}";
+                value = "<bind name=\"" + variable.getBindName() + "\" value=\"" + Ognl.GetUuid + "('" + variable + "')\"/>" + variable.getBindPlaceholder();
             } else if (propertyInfo.getPropertyType() == PropertyType.ID && propertyInfo.getIdType() == IdType.CUSTOM) {
-                value = "<bind name=\"__" + variable.getName() + "__bind\" value=\"" + Ognl.GetUuid + "('" + propertyInfo.getCustomIdGenerator().getName() + "','" + variable + "')\"/>#{__" + variable.getName() + "__bind}";
+                value = "<bind name=\"" + variable.getBindName() + "\" value=\"" + Ognl.GetCustomId + "('" + propertyInfo.getCustomIdGenerator().getName() + "','" + variable + "')\"/>" + variable.getBindPlaceholder();
             } else {
-                value = "#{" + variable + "}";
+                value = variable.getPlaceholder();
             }
             if (iterator.hasNext()) {
                 value += ",";
@@ -160,12 +161,13 @@ public abstract class BaseDialect implements Dialect {
                 continue;
             }
             Variable subVariable = new Variable(variable.getFullName(), propertyInfo.getName(), propertyInfo.getJavaType());
+            subVariable.setJdbcType(propertyInfo.getJdbcType());
             if (propertyInfo.getColumnName() != null) {
                 if (propertyInfo.getPropertyType() != PropertyType.ID) {
                     map.put(propertyInfo, subVariable);
                 }
             } else {
-                map.putAll(collectInsertColumns(propertyInfo.getNameToPropertyInfo().values(), subVariable));
+                map.putAll(collectUpdateColumns(propertyInfo.getNameToPropertyInfo().values(), subVariable));
             }
         }
         return map;
@@ -180,9 +182,9 @@ public abstract class BaseDialect implements Dialect {
             Variable variable = entry.getValue();
             String updateItem;
             if (StringUtils.isNotBlank(tableAlias)) {
-                updateItem = tableAlias + "." + propertyInfo.getColumnName() + " = #{" + variable + "}";
+                updateItem = tableAlias + "." + propertyInfo.getColumnName() + " = " + variable.getPlaceholder();
             } else {
-                updateItem = propertyInfo.getColumnName() + " = #{" + variable + "}";
+                updateItem = propertyInfo.getColumnName() + " = " + variable.getPlaceholder();
             }
             if (iterator.hasNext()) {
                 updateItem += ",";
@@ -207,7 +209,7 @@ public abstract class BaseDialect implements Dialect {
             ss.add("ON");
             List<String> conditions = new ArrayList<>();
             for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
-                conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumnName());
+                conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
             }
             ss.add(String.join(" AND ", conditions));
         }

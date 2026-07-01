@@ -74,7 +74,7 @@ public class NestedSelectHelper {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
                 if (joinColumnInfo.getLeftJoinTableInfo() == rootJoinTableInfo) {
-                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumnName());
+                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
                 }
             }
         }
@@ -94,7 +94,7 @@ public class NestedSelectHelper {
             List<String> conditions = new ArrayList<>();
             for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
                 if (joinColumnInfo.getLeftJoinTableInfo() != rootJoinTableInfo) {
-                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumnName());
+                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
                 }
             }
             if (conditions.isEmpty()) {
@@ -117,7 +117,8 @@ public class NestedSelectHelper {
             JoinTableInfo joinTableInfo = joinTableInfos.get(i);
             for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
                 if (joinColumnInfo.getLeftJoinTableInfo() == rootJoinTableInfo) {
-                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = #{" + joinColumnInfo.getRightFullName() + "}");
+                    String joinJdbcType = joinColumnInfo.getRightColumn().getJdbcType() != null ? ", jdbcType=" + joinColumnInfo.getRightColumn().getJdbcType() : "";
+                    conditions.add(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = #{" + joinColumnInfo.getRightFullName() + joinJdbcType + "}");
                 }
             }
         }

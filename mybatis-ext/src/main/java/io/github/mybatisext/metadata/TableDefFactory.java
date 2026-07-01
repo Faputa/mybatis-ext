@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.apache.ibatis.session.Configuration;
+import org.apache.ibatis.type.JdbcType;
 
 import io.github.mybatisext.annotation.Cascade;
 import io.github.mybatisext.annotation.Column;
@@ -183,6 +184,7 @@ public class TableDefFactory {
         propertyDef.setId(getAnnotation.get(Id.class));
         propertyDef.setFilterable(getAnnotation.get(Filterable.class));
         propertyDef.setJoinRelations(new JoinRelation[0]);
+        propertyDef.setJdbcType(column.jdbcType() == JdbcType.UNDEFINED ? null : column.jdbcType());
         GenericType genericType = TypeUtils.unwrapToGenericType(propertyType);
         if (configuration.getTypeHandlerRegistry().hasTypeHandler(genericType.getType())) {
             propertyDef.setColumnName(StringUtils.isNotBlank(column.name()) ? column.name() : StringUtils.camelToSnake(propertyName));
@@ -217,6 +219,7 @@ public class TableDefFactory {
         propertyDef.setName(propertyName);
         propertyDef.setClassType(propertyType);
         propertyDef.setDeclaringType(refPropertyDef.getDeclaringType());
+        propertyDef.setJdbcType(refPropertyDef.getJdbcType());
         propertyDef.setOwnColumn(ownColumn && refPropertyDef.isOwnColumn());
         propertyDef.setReadonly(readonly);
         propertyDef.setColumnName(refPropertyDef.getColumnName());
@@ -245,12 +248,12 @@ public class TableDefFactory {
         return newPropertyKeys;
     }
 
-    public static String getOwnColumnName(TableDef tableDef, String fullName) {
+    public static PropertyDef getOwnSingleColumn(TableDef tableDef, String fullName) {
         PropertyDef propertyDef = getPropertyDef(tableDef, fullName);
         if (!propertyDef.isOwnColumn() || StringUtils.isBlank(propertyDef.getColumnName())) {
             throw new MybatisExtException("Property '" + fullName + "' is not an own column or has no column name");
         }
-        return propertyDef.getColumnName();
+        return propertyDef;
     }
 
     private static PropertyDef getPropertyDef(TableDef tableDef, String fullName) {

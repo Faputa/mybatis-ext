@@ -3,10 +3,10 @@ package io.github.mybatisext.metadata;
 public class JoinColumnInfo {
 
     private JoinTableInfo leftJoinTableInfo;
+    private PropertyDef leftColumn;
+    private PropertyDef rightColumn;
     private String leftFullName;
-    private String leftColumnName;
     private String rightFullName;
-    private String rightColumnName;
 
     public JoinTableInfo getLeftJoinTableInfo() {
         return leftJoinTableInfo;
@@ -14,6 +14,22 @@ public class JoinColumnInfo {
 
     public void setLeftJoinTableInfo(JoinTableInfo leftJoinTableInfo) {
         this.leftJoinTableInfo = leftJoinTableInfo;
+    }
+
+    public PropertyDef getLeftColumn() {
+        return leftColumn;
+    }
+
+    public void setLeftColumn(PropertyDef leftColumn) {
+        this.leftColumn = leftColumn;
+    }
+
+    public PropertyDef getRightColumn() {
+        return rightColumn;
+    }
+
+    public void setRightColumn(PropertyDef rightColumn) {
+        this.rightColumn = rightColumn;
     }
 
     public String getLeftFullName() {
@@ -24,27 +40,11 @@ public class JoinColumnInfo {
         this.leftFullName = leftFullName;
     }
 
-    public String getLeftColumnName() {
-        return leftColumnName;
-    }
-
-    public void setLeftColumnName(String leftColumnName) {
-        this.leftColumnName = leftColumnName;
-    }
-
     public String getRightFullName() {
         return rightFullName;
     }
 
     public void setRightFullName(String rightFullName) {
         this.rightFullName = rightFullName;
-    }
-
-    public String getRightColumnName() {
-        return rightColumnName;
-    }
-
-    public void setRightColumnName(String rightColumnName) {
-        this.rightColumnName = rightColumnName;
     }
 }

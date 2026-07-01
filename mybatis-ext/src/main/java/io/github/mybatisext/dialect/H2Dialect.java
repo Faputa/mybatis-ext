@@ -13,7 +13,6 @@ import io.github.mybatisext.metadata.JoinColumnInfo;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
-import io.github.mybatisext.util.TypeUtils;
 
 public class H2Dialect extends BaseTemplateDialect {
 
@@ -21,8 +20,8 @@ public class H2Dialect extends BaseTemplateDialect {
     public String buildUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable parameter, List<JoinTableInfo> joinTableInfos, Condition where, boolean batch, boolean join, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeUtils.unwrapToGenericType(parameter.getJavaType()));
-            ss.add("<foreach collection=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
+            Variable itemVariable = parameter.getItemVariable();
+            ss.add("<foreach collection=\"" + parameter + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
             ss.add(buildUpdate(tableInfo, selectItems, itemVariable, joinTableInfos, where, false, join, ignoreNull));
             ss.add("</foreach>");
             return String.join(" ", ss);
@@ -42,8 +41,8 @@ public class H2Dialect extends BaseTemplateDialect {
     public String buildDelete(TableInfo tableInfo, Variable parameter, List<JoinTableInfo> joinTableInfos, Condition where, boolean batch, boolean join) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + parameter.getName() + "__item", TypeUtils.unwrapToGenericType(parameter.getJavaType()));
-            ss.add("<foreach collection=\"" + parameter + "\" item=\"" + "__" + parameter.getName() + "__item\" open=\"\" close=\"\" separator=\";\">");
+            Variable itemVariable = parameter.getItemVariable();
+            ss.add("<foreach collection=\"" + parameter + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
             ss.add(buildDelete(tableInfo, itemVariable, joinTableInfos, where, false, join));
             ss.add("</foreach>");
             return String.join(" ", ss);
@@ -62,7 +61,7 @@ public class H2Dialect extends BaseTemplateDialect {
     public String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeUtils.unwrapToGenericType(variable.getJavaType()));
+            Variable itemVariable = variable.getItemVariable();
             if (ignoreNull) {
                 ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"\" close=\"\" separator=\";\">");
                 ss.add(buildSimpleInsert(tableInfo, itemVariable, true));
@@ -107,7 +106,7 @@ public class H2Dialect extends BaseTemplateDialect {
             tables.add(joinTableInfo.getTableName() + " " + joinTableInfo.getAlias());
             for (JoinColumnInfo joinColumnInfo : joinTableInfo.getLeftJoinColumnInfos()) {
                 Condition condition = new Condition(ConditionType.BASIC);
-                condition.setExprTemplate(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumnName());
+                condition.setExprTemplate(joinTableInfo.getAlias() + "." + joinColumnInfo.getRightColumn().getColumnName() + " = " + joinColumnInfo.getLeftJoinTableInfo().getAlias() + "." + joinColumnInfo.getLeftColumn().getColumnName());
                 conditions.add(condition);
             }
         }

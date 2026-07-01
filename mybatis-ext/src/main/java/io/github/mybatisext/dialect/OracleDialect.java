@@ -9,7 +9,6 @@ import io.github.mybatisext.jpa.Variable;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
-import io.github.mybatisext.util.TypeUtils;
 
 public class OracleDialect extends BaseTemplateDialect {
 
@@ -17,7 +16,7 @@ public class OracleDialect extends BaseTemplateDialect {
     public String buildInsert(TableInfo tableInfo, Variable variable, boolean batch, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeUtils.unwrapToGenericType(variable.getJavaType()));
+            Variable itemVariable = variable.getItemVariable();
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
             ss.add(buildSimpleInsert(tableInfo, itemVariable, ignoreNull));
             ss.add("</foreach>");
@@ -30,7 +29,7 @@ public class OracleDialect extends BaseTemplateDialect {
     public String buildUpdate(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable variable, List<JoinTableInfo> joinTableInfos, Condition where, boolean batch, boolean join, boolean ignoreNull) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeUtils.unwrapToGenericType(variable.getJavaType()));
+            Variable itemVariable = variable.getItemVariable();
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
             ss.add(buildUpdate(tableInfo, selectItems, itemVariable, joinTableInfos, where, false, join, ignoreNull));
             ss.add("</foreach>");
@@ -55,7 +54,7 @@ public class OracleDialect extends BaseTemplateDialect {
     public String buildDelete(TableInfo tableInfo, Variable variable, List<JoinTableInfo> joinTableInfos, Condition where, boolean batch, boolean join) {
         List<String> ss = new ArrayList<>();
         if (batch) {
-            Variable itemVariable = new Variable("__" + variable.getName() + "__item", TypeUtils.unwrapToGenericType(variable.getJavaType()));
+            Variable itemVariable = variable.getItemVariable();
             ss.add("<foreach collection=\"" + variable + "\" item=\"" + itemVariable + "\" open=\"begin\" close=\"; end;\" separator=\";\">");
             ss.add(buildDelete(tableInfo, itemVariable, joinTableInfos, where, false, join));
             ss.add("</foreach>");

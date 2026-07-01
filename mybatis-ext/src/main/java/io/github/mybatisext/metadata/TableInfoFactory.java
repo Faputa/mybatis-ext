@@ -138,6 +138,7 @@ public class TableInfoFactory {
         propertyInfo.setOwnColumn(propertyDef.isOwnColumn());
         propertyInfo.setReadonly(propertyDef.isReadonly());
         propertyInfo.setFilterableInfo(buildFilterableInfo(propertyDef.getFilterable(), extContext));
+        propertyInfo.setJdbcType(propertyDef.getJdbcType());
 
         GenericType propertyType = propertyDef.getClassType();
         if (Collection.class.isAssignableFrom(propertyType.getType())) {
@@ -217,7 +218,9 @@ public class TableInfoFactory {
             JoinRelation joinRelation = joinRelations[joinRelations.length - 1];
             if (joinRelation.table() != void.class) {
                 String refName = StringUtils.isNotBlank(joinRelation.column()) ? joinRelation.column() : propertyInfo.getName();
-                propertyInfo.setColumnName(TableDefFactory.getOwnColumnName(joinTableInfo.getTableDef(), refName));
+                PropertyDef refPropertyDef = TableDefFactory.getOwnSingleColumn(joinTableInfo.getTableDef(), refName);
+                propertyInfo.setColumnName(refPropertyDef.getColumnName());
+                propertyInfo.setJdbcType(refPropertyDef.getJdbcType());
             }
             ownPropertyPrefix = "";
         } else {
@@ -274,8 +277,8 @@ public class TableInfoFactory {
         for (JoinColumnInfo joinColumnInfo : joinColumnInfos) {
             JoinPath joinPath = new JoinPath();
             joinPath.setLeftJoinNode(joinColumnInfo.getLeftJoinTableInfo().getJoinNode());
-            joinPath.setLeftColumn(joinColumnInfo.getLeftColumnName());
-            joinPath.setRightColumn(joinColumnInfo.getRightColumnName());
+            joinPath.setLeftColumn(joinColumnInfo.getLeftColumn().getColumnName());
+            joinPath.setRightColumn(joinColumnInfo.getRightColumn().getColumnName());
             joinPaths.add(joinPath);
         }
         return joinPaths;
@@ -286,8 +289,8 @@ public class TableInfoFactory {
         joinColumnInfo.setLeftJoinTableInfo(leftJoinTableInfo);
         joinColumnInfo.setLeftFullName(leftColumn);
         joinColumnInfo.setRightFullName(rightColumn);
-        joinColumnInfo.setLeftColumnName(TableDefFactory.getOwnColumnName(leftJoinTableInfo.getTableDef(), leftColumn));
-        joinColumnInfo.setRightColumnName(TableDefFactory.getOwnColumnName(rightTableDef, rightColumn));
+        joinColumnInfo.setLeftColumn(TableDefFactory.getOwnSingleColumn(leftJoinTableInfo.getTableDef(), leftColumn));
+        joinColumnInfo.setRightColumn(TableDefFactory.getOwnSingleColumn(rightTableDef, rightColumn));
         return joinColumnInfo;
     }
 
