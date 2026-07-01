@@ -60,6 +60,7 @@ public class Condition {
 
     public void setPropertyInfo(PropertyInfo propertyInfo) {
         this.propertyInfo = propertyInfo;
+        syncJdbcType();
     }
 
     public Map<String, PropertyInfo> getPropertyInfos() {
@@ -92,6 +93,7 @@ public class Condition {
 
     public void setVariable(Variable variable) {
         this.variable = variable;
+        syncJdbcType();
     }
 
     public Variable getCollectionVariable() {
@@ -108,6 +110,7 @@ public class Condition {
 
     public void setSecondVariable(Variable secondVariable) {
         this.secondVariable = secondVariable;
+        syncJdbcType();
     }
 
     public TestMode getTestMode() {
@@ -136,6 +139,18 @@ public class Condition {
 
     public void setExprTemplate(String exprTemplate) {
         this.exprTemplate = exprTemplate;
+    }
+
+    private void syncJdbcType() {
+        if (propertyInfo == null) {
+            return;
+        }
+        if (variable != null) {
+            variable.setJdbcType(propertyInfo.getJdbcType());
+        }
+        if (secondVariable != null) {
+            secondVariable.setJdbcType(propertyInfo.getJdbcType());
+        }
     }
 
     @Override

@@ -19,7 +19,6 @@ import io.github.mybatisext.ognl.Ognl;
 import io.github.mybatisext.statement.NestedSelectHelper;
 import io.github.mybatisext.util.SimpleStringTemplate;
 import io.github.mybatisext.util.StringUtils;
-import io.github.mybatisext.util.TypeUtils;
 
 public class ConditionHelper {
 
@@ -120,11 +119,12 @@ public class ConditionHelper {
         }
         condition.setPropertyInfos(tableInfo.getNameToPropertyInfo());
         condition.setPropertyInfo(propertyInfo);
+        Variable variable = new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType());
         if (propertyInfo.getPropertyType() == PropertyType.COLLECTION && condition.getCompareOperator() != CompareOperator.In) {
-            condition.setCollectionVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
-            condition.setVariable(new Variable("__" + propertyInfo.getName() + "__item", TypeUtils.unwrapToGenericType(propertyInfo.getJavaType())));
+            condition.setCollectionVariable(variable);
+            condition.setVariable(variable.getItemVariable());
         } else {
-            condition.setVariable(new Variable(prefix, propertyInfo.getName(), propertyInfo.getJavaType()));
+            condition.setVariable(variable);
         }
         for (PropertyInfo subPropertyInfo : propertyInfo.getNameToPropertyInfo().values()) {
             Condition subCondition = buildForPropertyInfo(tableInfo, subPropertyInfo, onlyById, strictMatch, condition.getVariable().getFullName(), param);
@@ -337,97 +337,97 @@ public class ConditionHelper {
         List<String> ss = new ArrayList<>();
         if (CompareOperator.Equals == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__" + condition.getVariable().getName() + "__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " = #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " = {variable.##bindPlaceholder}");
             } else {
-                ss.add("{propertyInfo} = #{{variable}}");
+                ss.add("{propertyInfo} = {variable.##placeholder}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.LessThan == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &lt; #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " &lt; {variable.##bindPlaceholder}");
             } else {
-                ss.add("{propertyInfo} &lt; #{{variable}}");
+                ss.add("{propertyInfo} &lt; {variable.##placeholder}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.LessThanEqual == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &lt;= #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " &lt;= {variable.##bindPlaceholder}");
             } else {
-                ss.add("{propertyInfo} &lt;= #{{variable}}");
+                ss.add("{propertyInfo} &lt;= {variable.##placeholder}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.GreaterThan == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &gt; #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " &gt; {variable.##bindPlaceholder}");
             } else {
-                ss.add("{propertyInfo} &gt; #{{variable}}");
+                ss.add("{propertyInfo} &gt; {variable.##placeholder}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.GreaterThanEqual == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &gt;= #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " &gt;= {variable.##bindPlaceholder}");
             } else {
-                ss.add("{propertyInfo} &gt;= #{{variable}}");
+                ss.add("{propertyInfo} &gt;= {variable.##placeholder}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.Like == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " LIKE #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"'%' + " + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " LIKE {variable.##bindPlaceholder}");
             } else {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + {variable} + '%'\"/>");
-                ss.add("{propertyInfo} LIKE #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"'%' + {variable} + '%'\"/>");
+                ss.add("{propertyInfo} LIKE {variable.##bindPlaceholder}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.StartWith == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " LIKE #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " LIKE {variable.##bindPlaceholder}");
             } else {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"{variable} + '%'\"/>");
-                ss.add("{propertyInfo} LIKE #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"{variable} + '%'\"/>");
+                ss.add("{propertyInfo} LIKE {variable.##bindPlaceholder}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.EndWith == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + " + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " LIKE #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"'%' + " + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " LIKE {variable.##bindPlaceholder}");
             } else {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"'%' + {variable}\"/>");
-                ss.add("{propertyInfo} LIKE #{__{variable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"'%' + {variable}\"/>");
+                ss.add("{propertyInfo} LIKE {variable.##bindPlaceholder}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.Between == compareOperator) {
             if (ignorecase) {
-                ss.add("<bind name=\"__{variable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add("<bind name=\"__{secondVariable.##name}__bind\" value=\"" + Ognl.ToUpperCase + "({secondVariable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " BETWEEN #{__{variable.##name}__bind} AND #{__{secondVariable.##name}__bind}");
+                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
+                ss.add("<bind name=\"{secondVariable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({secondVariable})\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " BETWEEN {variable.##bindPlaceholder} AND {secondVariable.##bindPlaceholder}");
             } else {
-                ss.add("{propertyInfo} BETWEEN #{{variable}} AND #{{secondVariable}}");
+                ss.add("{propertyInfo} BETWEEN {variable.##placeholder} AND {secondVariable.##placeholder}");
             }
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
         if (CompareOperator.In == compareOperator) {
             if (ignorecase) {
-                ss.add(dialect.upper("{propertyInfo}") + " IN <foreach collection=\"{variable}\" item=\"__{variable.##name}__item\" separator=\",\" open=\"(\" close=\")\">");
-                ss.add("<bind name=\"__{variable.##name}__item\" value=\"" + Ognl.ToUpperCase + "(__{variable.##name}__item)\"/>");
+                ss.add(dialect.upper("{propertyInfo}") + " IN <foreach collection=\"{variable}\" item=\"{variable.##itemName}\" separator=\",\" open=\"(\" close=\")\">");
+                ss.add("<bind name=\"{variable.##itemName}\" value=\"" + Ognl.ToUpperCase + "({variable.##itemName})\"/>");
             } else {
-                ss.add("{propertyInfo} IN <foreach collection=\"{variable}\" item=\"__{variable.##name}__item\" separator=\",\" open=\"(\" close=\")\">");
+                ss.add("{propertyInfo} IN <foreach collection=\"{variable}\" item=\"{variable.##itemName}\" separator=\",\" open=\"(\" close=\")\">");
             }
-            ss.add("#{__{variable.##name}__item}");
+            ss.add("{variable.##itemPlaceholder}");
             ss.add("</foreach>");
             return SimpleStringTemplate.build(String.join(" ", ss), condition);
         }
