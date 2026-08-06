@@ -223,11 +223,13 @@ MyBatis-Ext 提供了多种数据库方言支持，以适应不同的数据库�
 - MySQL
 - Oracle
 - PostgreSQL
+- SQL Server 2012及以上（SQL Server 2008可使用 `SqlServer2008Dialect`）
 - DM（达梦）
 - H2
 - 其他（可通过实现 `Dialect` 接口扩展）
 
 插件会根据数据源的 JDBC URL 自动选择合适的方言。也可以通过自定义 `DialectSelector` 实现来覆盖默认行为。
+`jdbc:sqlserver:` 默认选择 `SqlServerDialect`；连接 SQL Server 2008 时需要通过自定义 `DialectSelector` 返回 `SqlServer2008Dialect`。
 
 ## 实现原理
 
