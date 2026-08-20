@@ -13,7 +13,7 @@ import io.github.mybatisext.annotation.MapTable;
 @MapTable(SysUser.class)
 public interface SysUserMapper extends BaseMapper<SysUser> {
 
-    long countSysUser();
+    long countAllUsers();
 
     Optional<Long> countByDeptId(int deptId);
 

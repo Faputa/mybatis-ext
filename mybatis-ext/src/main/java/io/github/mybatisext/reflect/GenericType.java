@@ -24,6 +24,11 @@ public class GenericType implements Type {
     public GenericType(Class<?> type, Map<TypeVariable<?>, Type> typeMap) {
         this.type = type;
         this.typeMap = typeMap;
+        if (type.isArray()) {
+            this.typeParameters = new GenericType[0];
+            this.componentType = GenericTypeFactory.build(type.getComponentType(), new HashMap<>(typeMap));
+            return;
+        }
         TypeVariable<?>[] typeVariables = type.getTypeParameters();
         this.typeParameters = new GenericType[typeVariables.length];
         for (int i = 0; i < typeVariables.length; i++) {
@@ -151,15 +156,24 @@ public class GenericType implements Type {
     }
 
     public String getName() {
+        if (isArray()) {
+            return componentType.getName() + "[]";
+        }
         return type.getName();
     }
 
     public String getSimpleName() {
+        if (isArray()) {
+            return componentType.getSimpleName() + "[]";
+        }
         return type.getSimpleName();
     }
 
     @Override
     public String toString() {
+        if (isArray()) {
+            return componentType + "[]";
+        }
         return type.toString();
     }
 
@@ -172,11 +186,17 @@ public class GenericType implements Type {
             return false;
         }
         GenericType that = (GenericType) o;
-        return Objects.equals(type, that.type) && Arrays.equals(typeParameters, that.typeParameters);
+        if (isArray() || that.isArray()) {
+            return isArray() && that.isArray() && Objects.equals(componentType, that.componentType);
+        }
+        return Objects.equals(type, that.type) && Arrays.equals(typeParameters, that.typeParameters) && Objects.equals(componentType, that.componentType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, Arrays.hashCode(typeParameters));
+        if (isArray()) {
+            return Objects.hash(componentType);
+        }
+        return Objects.hash(type, Arrays.hashCode(typeParameters), componentType);
     }
 }

@@ -124,6 +124,6 @@ public class OracleDialect extends BaseTemplateDialect {
 
     @Override
     public String quote(String name) {
-        return "\"" + name + "\"";
+        return "\"" + name.replace("\"", "\"\"") + "\"";
     }
 }

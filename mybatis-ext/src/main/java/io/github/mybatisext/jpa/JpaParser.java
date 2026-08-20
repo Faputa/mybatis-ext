@@ -392,7 +392,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
                 })));
 
         limit.set(join(keyword("Limit"), choice(
-                choice(integer, variable), keyword("To"), choice(integerB, variableB), action(state -> {
+                join(choice(integer, variable), keyword("To"), choice(integerB, variableB), action(state -> {
                     Limit limit = new Limit();
                     MatchResult _integer = state.getMatch(integer);
                     if (_integer != null) {
@@ -407,8 +407,8 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
                         limit.setRowCountVariable(state.getMatch(variableB).val());
                     }
                     state.setReturn(limit);
-                }),
-                choice(integer, variable), action(state -> {
+                })),
+                join(choice(integer, variable), action(state -> {
                     Limit limit = new Limit();
                     state.setReturn(limit);
                     MatchResult _integer = state.getMatch(integer);
@@ -417,7 +417,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
                     } else {
                         limit.setRowCountVariable(state.getMatch(variable).val());
                     }
-                }))));
+                })))));
 
         propertyList.set(
                 join(property, star(join(keyword("And"), property)), action(state -> {

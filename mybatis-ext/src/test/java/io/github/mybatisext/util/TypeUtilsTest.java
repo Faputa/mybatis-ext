@@ -16,9 +16,7 @@ public class TypeUtilsTest {
     }
 
     @Test
-    void test() {
-        assertEquals(String.class, TypeUtils.resolveTypeArgument(MapClass.class, Map.class, 0));
-        assertEquals(Integer.class, TypeUtils.resolveTypeArgument(MapClass.class, Map.class, 1));
+    void resolvesTypeArgumentsFromClassesInterfacesAndTypes() {
         assertEquals(String.class, TypeUtils.resolveTypeArgument(MapClass.class, Map.class, 0));
         assertEquals(Integer.class, TypeUtils.resolveTypeArgument(MapClass.class, Map.class, 1));
         assertEquals(String.class, TypeUtils.resolveTypeArgument(MapInterface.class, Map.class, 0));

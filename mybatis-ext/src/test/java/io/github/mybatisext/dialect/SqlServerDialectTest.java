@@ -27,7 +27,7 @@ import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
-import io.github.mybatisext.testcase.Student;
+import io.github.mybatisext.fixture.school.Student;
 
 class SqlServerDialectTest {
 
@@ -132,7 +132,7 @@ class SqlServerDialectTest {
     }
 
     @Test
-    void sqlServerUsesSharedSyntax() {
+    void usesSharedSqlServerDmlAndExpressionSyntax() {
         SqlServerDialect dialect = new SqlServerDialect();
         Variable parameter = new Variable("student", GenericTypeFactory.build(Student.class));
 

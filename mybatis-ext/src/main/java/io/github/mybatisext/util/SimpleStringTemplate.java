@@ -4,6 +4,7 @@ import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -95,10 +96,10 @@ public class SimpleStringTemplate {
                     }
                     obj = ((List<?>) obj).get(idx);
                 } else if (obj.getClass().isArray()) {
-                    if (idx < 0 || idx >= ((Object[]) obj).length) {
+                    if (idx < 0 || idx >= Array.getLength(obj)) {
                         return null;
                     }
-                    obj = ((Object[]) obj)[idx];
+                    obj = Array.get(obj, idx);
                 } else {
                     return null;
                 }

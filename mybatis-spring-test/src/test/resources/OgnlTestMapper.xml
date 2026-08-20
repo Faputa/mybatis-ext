@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.github.mybatisext.test.spring.OgnlTestMapper">
+	<select id="expandObjectForForeach" resultType="java.lang.String">
+        <!-- <foreach collection="@io.github.mybatisext.test.spring.OgnlTestFunctions@objectToList(value)" item="item" separator=" union all "> --> <!-- 必须用@Param指定参数名 -->
+        <!-- <foreach collection="@io.github.mybatisext.test.spring.OgnlTestFunctions@objectToList(arg0)" item="item" separator=" union all "> -->
+        <foreach collection="@io.github.mybatisext.test.spring.OgnlTestFunctions@objectToList(param1)" item="item" separator=" union all ">
+            select CAST(#{item} as VARCHAR)
+        </foreach>
+	</select>
+
+    <select id="convertVarargsToList" resultType="java.lang.String">
+        <foreach collection="@io.github.mybatisext.test.spring.OgnlTestFunctions@varargsToList(param1,param2)" item="item" separator=" union all ">
+            select CAST(#{item} as VARCHAR)
+        </foreach>
+	</select>
+
+    <select id="invokeMappedStatementFromOgnl" resultType="java.lang.String">
+        <foreach collection="@io.github.mybatisext.test.spring.OgnlTestFunctions@callMapperStatement('convertVarargsToList','abc','def')" item="item" separator=" union all ">
+            select CAST(#{item} as VARCHAR)
+        </foreach>
+	</select>
+
+    <select id="evaluateRepeatedBindings" resultType="int">
+        <bind name="a" value="1" />
+        <bind name="a" value="a+1" />
+        <bind name="a" value="a+1" />
+        <bind name="a" value="a+1" />
+        select #{a}
+    </select>
+
+    <select id="captureRawScalarParameter" resultType="int">
+        <bind name="a" value="@io.github.mybatisext.test.spring.OgnlTestFunctions@captureParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="captureNamedScalarParameter" resultType="int">
+        <bind name="a" value="@io.github.mybatisext.test.spring.OgnlTestFunctions@captureParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="captureMultipleNamedParameters" resultType="int">
+        <bind name="a" value="@io.github.mybatisext.test.spring.OgnlTestFunctions@captureParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="captureBeanParameter" resultType="int">
+        <bind name="a" value="@io.github.mybatisext.test.spring.OgnlTestFunctions@captureParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="captureMapParameter" resultType="int">
+        <bind name="a" value="@io.github.mybatisext.test.spring.OgnlTestFunctions@captureParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="captureListParameter" resultType="int">
+        <bind name="a" value="@io.github.mybatisext.test.spring.OgnlTestFunctions@captureParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="captureSetParameter" resultType="int">
+        <bind name="a" value="@io.github.mybatisext.test.spring.OgnlTestFunctions@captureParameterObject(_parameter)" />
+        select #{a}
+    </select>
+    <select id="captureArrayParameter" resultType="int">
+        <bind name="a" value="@io.github.mybatisext.test.spring.OgnlTestFunctions@captureParameterObject(_parameter)" />
+        select #{a}
+    </select>
+</mapper>

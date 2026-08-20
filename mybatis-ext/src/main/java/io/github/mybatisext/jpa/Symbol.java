@@ -40,7 +40,7 @@ public class Symbol<T extends Tokenizer> {
     }
 
     public Symbol<T> set(Symbol<T> symbol) {
-        if (symbol.hasLeftRecursion(this)) {
+        if (symbol == this || symbol.hasLeftRecursion(this)) {
             throw new ParserException("Left recursion detected in " + name);
         }
         this.match = (state, continuation) -> {

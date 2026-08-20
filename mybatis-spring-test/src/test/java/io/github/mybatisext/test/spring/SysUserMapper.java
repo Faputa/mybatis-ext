@@ -7,13 +7,13 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface SysUserMapper {
 
-    long countSysUser();
+    long countAllUsers();
 
-    long countSysUser2();
+    long countUnmappedUsers();
 
-    List<SysUser> selectSysUser();
+    List<SysUser> selectUsersWithNestedDepartment();
 
-    List<SysUser> selectSysUserLazy();
+    List<SysUser> selectUsersWithLazyDepartment();
 
-    List<SysUser> selectSysUserJoin();
+    List<SysUser> selectUsersWithJoinedDepartment();
 }

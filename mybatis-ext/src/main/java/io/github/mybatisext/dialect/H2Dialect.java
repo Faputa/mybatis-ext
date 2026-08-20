@@ -88,8 +88,7 @@ public class H2Dialect extends BaseTemplateDialect {
             ss.add(limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}");
         } else {
             ss.add("LIMIT");
-            ss.add(limit.getOffset() != null ? limit.getOffset().toString() : "#{" + limit.getOffsetVariable() + "}");
-            ss.add(",");
+            ss.add(limit.getOffset() != null ? limit.getOffset() + "," : "#{" + limit.getOffsetVariable() + "},");
             ss.add(limit.getRowCount() != null ? limit.getRowCount().toString() : "#{" + limit.getRowCountVariable() + "}");
         }
         return String.join(" ", ss);
@@ -139,6 +138,6 @@ public class H2Dialect extends BaseTemplateDialect {
 
     @Override
     public String quote(String name) {
-        return "\"" + name + "\"";
+        return "\"" + name.replace("\"", "\"\"") + "\"";
     }
 }

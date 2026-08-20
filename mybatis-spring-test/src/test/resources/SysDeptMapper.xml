@@ -85,19 +85,19 @@
 		<result property="pwdUpdateDate" column="pwd_update_date" />
 	</resultMap>
 
-	<select id="selectSysDept" resultMap="SysDept">
+	<select id="selectDepartmentsWithNestedUsers" resultMap="SysDept">
 		select * from sys_dept
 	</select>
 
-    <select id="selectSysDeptDot" resultMap="SysDept_dot">
+    <select id="selectDepartmentsWithDottedColumnKey" resultMap="SysDept_dot">
         select *, dept_id "a.b.c" from sys_dept
     </select>
 
-	<select id="selectSysDeptLazy" resultMap="SysDept_lazy">
+	<select id="selectDepartmentsWithLazyUsers" resultMap="SysDept_lazy">
 		select * from sys_dept
 	</select>
 
-	<select id="selectSysDeptJoin" resultMap="SysDept_join">
+	<select id="selectDepartmentsWithJoinedUsers" resultMap="SysDept_join">
 		select
 		a.*,
         b.user_id b_user_id,

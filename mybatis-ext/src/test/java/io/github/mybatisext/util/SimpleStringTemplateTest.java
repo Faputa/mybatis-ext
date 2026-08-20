@@ -1,6 +1,8 @@
 package io.github.mybatisext.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,7 +14,7 @@ import org.junit.jupiter.api.Test;
 public class SimpleStringTemplateTest {
 
     @Test
-    public void testWithUserObject() {
+    public void rendersTemplateFromBean() {
         User user = new User();
         user.setName("John Doe");
         Address address = new Address();
@@ -27,7 +29,7 @@ public class SimpleStringTemplateTest {
     }
 
     @Test
-    public void testWithMap() {
+    public void rendersTemplateFromMap() {
         Map<String, Object> map = new HashMap<>();
         map.put("name", "Jane Doe");
         map.put("age", 25);
@@ -46,7 +48,7 @@ public class SimpleStringTemplateTest {
     }
 
     @Test
-    public void testWithList() {
+    public void rendersTemplateFromList() {
         List<String> list = Arrays.asList("Apple", "Banana", "Cherry");
 
         String template = "I have {0}, {1}, and {2}.";
@@ -56,13 +58,53 @@ public class SimpleStringTemplateTest {
     }
 
     @Test
-    public void testWithArray() {
+    public void rendersTemplateFromArray() {
         String[] array = {"Apple", "Banana", "Cherry"};
 
         String template = "I have {0}, {1}, and {2}.";
         String expected = "I have Apple, Banana, and Cherry.";
         String result = SimpleStringTemplate.build(template, array);
         assertEquals(expected, result);
+    }
+
+    @Test
+    void rendersPrimitiveArraysAndGetterValues() {
+        Getter<String> getter = key -> "name".equals(key) ? "Alice" : null;
+
+        assertEquals("2", SimpleStringTemplate.build("{1}", new int[]{1, 2}));
+        assertEquals("Hello Alice", SimpleStringTemplate.build("Hello {name}", getter));
+    }
+
+    @Test
+    void supportsForcedBeanPropertiesForGetterImplementations() {
+        GetterUser user = new GetterUser("bean name");
+
+        assertEquals("getter name / bean name", SimpleStringTemplate.build("{name} / {##name}", user));
+    }
+
+    @Test
+    void handlesMissingPathsAccordingToStrictMode() {
+        Map<String, Object> values = new HashMap<>();
+        values.put("items", Arrays.asList("first"));
+
+        IllegalArgumentException missing = assertThrows(IllegalArgumentException.class, () -> SimpleStringTemplate.build("{missing}", values));
+        assertTrue(missing.getMessage().contains("param path not found: missing"));
+        assertEquals("{missing}", SimpleStringTemplate.build("{missing}", values, false));
+        assertEquals("{items.2}", SimpleStringTemplate.build("{items.2}", values, false));
+        assertEquals("{items.-1}", SimpleStringTemplate.build("{items.-1}", values, false));
+    }
+
+    @Test
+    void preservesIncompletePlaceholdersAndTrailingEscapes() {
+        assertEquals("value {name", SimpleStringTemplate.build("value {name", new User()));
+        assertEquals("value ", SimpleStringTemplate.build("value \\", new User()));
+    }
+
+    @Test
+    void wrapsGetterInvocationFailures() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> SimpleStringTemplate.build("{broken}", new BrokenBean()));
+
+        assertTrue(exception.getCause() instanceof java.lang.reflect.InvocationTargetException);
     }
 
     static class User {
@@ -104,6 +146,29 @@ public class SimpleStringTemplateTest {
 
         public void setCountry(String country) {
             this.country = country;
+        }
+    }
+
+    static class GetterUser implements Getter<String> {
+        private final String name;
+
+        GetterUser(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String get(String key) {
+            return "getter " + key;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    static class BrokenBean {
+        public String getBroken() {
+            throw new IllegalStateException("broken");
         }
     }
 }
