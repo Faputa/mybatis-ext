@@ -3,6 +3,7 @@ package io.github.mybatisext.jpa;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MathParserTest extends BaseParser<MathTokenizer> {
 
@@ -21,7 +22,7 @@ public class MathParserTest extends BaseParser<MathTokenizer> {
     }
 
     @Test
-    public void parse() {
+    public void parsesExpressionWithOptionalRecursiveOperators() {
         Symbol expr = new Symbol("expr");
         Symbol term = new Symbol("term");
         Symbol factor = new Symbol("factor");
@@ -57,15 +58,17 @@ public class MathParserTest extends BaseParser<MathTokenizer> {
             state.setReturn(Integer.parseInt(temp));
         })));
 
+        int[] result = new int[1];
         boolean match = all.match(new MathTokenizer("1+2*34-(100+3) "), state -> {
-            System.out.println(state.getResult());
+            result[0] = (Integer) state.getResult();
             return true;
         });
-        System.out.println(match);
+        assertTrue(match);
+        assertEquals(-34, result[0]);
     }
 
     @Test
-    public void parse2() {
+    public void parsesExpressionWithChoiceBasedRecursion() {
         Symbol expr = new Symbol("expr");
         Symbol term = new Symbol("term");
         Symbol factor = new Symbol("factor");
@@ -101,45 +104,38 @@ public class MathParserTest extends BaseParser<MathTokenizer> {
             state.setReturn(Integer.parseInt(temp));
         })));
 
+        int[] result = new int[1];
         boolean match = all.match(new MathTokenizer("1+2*34-(100+3) "), state -> {
-            System.out.println(state.getResult());
+            result[0] = (Integer) state.getResult();
             return true;
         });
-        System.out.println(match);
+        assertTrue(match);
+        assertEquals(-34, result[0]);
     }
 
     @Test
-    public void parseStar() {
+    public void matchesZeroOrMoreSymbols() {
         Symbol integer = new Symbol("integer").set(join(star(keyword("1")), star(keyword("2"))));
-        boolean match = integer.match(new MathTokenizer("1111 "), state -> {
-            System.out.println(state.getResult());
-            return true;
-        });
-        System.out.println(match);
+        boolean match = integer.match(new MathTokenizer("1111 "), state -> true);
+        assertTrue(match);
     }
 
     @Test
-    public void parsePlus() {
+    public void matchesOneOrMoreSymbols() {
         Symbol integer = new Symbol("integer").set(plus(digit));
-        boolean match = integer.match(new MathTokenizer("1122 "), state -> {
-            System.out.println(state.getResult());
-            return true;
-        });
-        System.out.println(match);
+        boolean match = integer.match(new MathTokenizer("1122 "), state -> true);
+        assertTrue(match);
     }
 
     @Test
-    public void parseCount() {
+    public void matchesExactSymbolCounts() {
         Symbol integer = new Symbol("integer").set(join(count(keyword("1"), 2), count(keyword("2"), 2)));
-        boolean match = integer.match(new MathTokenizer("1122 "), state -> {
-            System.out.println(state.getResult());
-            return true;
-        });
-        System.out.println(match);
+        boolean match = integer.match(new MathTokenizer("1122 "), state -> true);
+        assertTrue(match);
     }
 
     @Test
-    public void parseX() {
+    public void propagatesNestedAssignments() {
         Symbol x = new Symbol("X").set(assign("a", assign("b", assign("c", assign("d", assign("e", keyword("x")))))));
         boolean match = x.match(new MathTokenizer("x"), state -> {
             assertEquals("x", state.getMatch("a").val());
@@ -149,7 +145,7 @@ public class MathParserTest extends BaseParser<MathTokenizer> {
             assertEquals("x", state.getMatch("e").val());
             return true;
         });
-        System.out.println(match);
+        assertTrue(match);
     }
 
 }

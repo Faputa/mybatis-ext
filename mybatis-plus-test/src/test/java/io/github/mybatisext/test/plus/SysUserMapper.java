@@ -8,9 +8,9 @@ import org.apache.ibatis.annotations.Mapper;
 import com.baomidou.dynamic.datasource.annotation.DS;
 
 @Mapper
-public interface SysUserMapper extends SysUserMapper0 {
+public interface SysUserMapper extends BaseSysUserMapper {
 
-    long countSysUser();
+    long countAllUsers();
 
     @DS("ds2")
     Optional<Long> countByDeptId(int deptId);

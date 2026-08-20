@@ -38,7 +38,11 @@ public class GenericTypeFactory {
                 return new GenericType((Class<?>) rawType, typeMap);
             }
         } else if (type instanceof TypeVariable) {
-            return build(typeMap.get(type), typeMap);
+            Type resolvedType = typeMap.get(type);
+            if (resolvedType == null) {
+                throw new MybatisExtException("Unresolved type variable '" + ((TypeVariable<?>) type).getName() + "'.");
+            }
+            return build(resolvedType, typeMap);
         } else if (type instanceof GenericArrayType) {
             GenericArrayType genericArrayType = (GenericArrayType) type;
             return new GenericType(build(genericArrayType.getGenericComponentType(), typeMap));

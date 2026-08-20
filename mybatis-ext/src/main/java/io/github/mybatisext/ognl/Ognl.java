@@ -4,6 +4,7 @@ import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class Ognl {
         if (o instanceof Map && ((Map<?, ?>) o).isEmpty()) {
             return true;
         }
-        if (o.getClass().isArray() && ((Object[]) o).length == 0) {
+        if (o.getClass().isArray() && Array.getLength(o) == 0) {
             return true;
         }
         if (o instanceof Collection && ((Collection<?>) o).isEmpty()) {
@@ -165,7 +166,7 @@ public class Ognl {
      * @throws InstantiationException 实例化异常
      * @throws IllegalAccessException 非法访问异常
      */
-    public static <T> T getCustomId(Class<IdGenerator<T>> idGeneratorClass, T defaultValue) throws InstantiationException, IllegalAccessException {
+    public static <T> T getCustomId(Class<? extends IdGenerator<T>> idGeneratorClass, T defaultValue) throws InstantiationException, IllegalAccessException {
         if (isNotEmpty(defaultValue)) {
             return defaultValue;
         }

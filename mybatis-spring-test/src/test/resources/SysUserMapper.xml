@@ -40,7 +40,7 @@
 		<result property="loginIp" column="login_ip" />
 		<result property="loginDate" column="login_date" />
 		<result property="pwdUpdateDate" column="pwd_update_date" />
-		<association property="dept" column="deptId" select="selectSysDept" fetchType="lazy" />
+		<association property="dept" column="{deptId=dept_id}" select="selectSysDept" fetchType="lazy" />
 		<association property="deptName" column="{deptId=dept_id}" select="selectSysDeptName" fetchType="lazy" />
 	</resultMap>
 
@@ -83,15 +83,15 @@
 		<result property="delFlag" column="del_flag" />
 	</resultMap>
 
-	<select id="selectSysUser" resultMap="SysUser">
+	<select id="selectUsersWithNestedDepartment" resultMap="SysUser">
 		select * from sys_user
 	</select>
 
-	<select id="selectSysUserLazy" resultMap="SysUser_lazy">
+	<select id="selectUsersWithLazyDepartment" resultMap="SysUser_lazy">
 		select * from sys_user
 	</select>
 
-	<select id="selectSysUserJoin" resultMap="SysUser_join">
+	<select id="selectUsersWithJoinedDepartment" resultMap="SysUser_join">
 		select
 		a.*,
 		b.*
@@ -107,7 +107,7 @@
 		select dept_name from sys_dept where dept_id=#{deptId}
 	</select>
 
-	<select id="countSysUser" resultType="long">
+	<select id="countAllUsers" resultType="long">
 		select count(*) from sys_user
 	</select>
 </mapper>

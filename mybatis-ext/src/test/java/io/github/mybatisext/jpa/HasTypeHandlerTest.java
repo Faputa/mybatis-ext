@@ -1,5 +1,7 @@
 package io.github.mybatisext.jpa;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +19,7 @@ import io.github.mybatisext.adapter.ExtContext;
 public class HasTypeHandlerTest {
 
     @Test
-    void test() {
+    void collectionInterfacesDoNotHaveDirectTypeHandlers() {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("org.h2.Driver");
         dataSource.setUrl("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MYSQL");
@@ -27,8 +29,8 @@ public class HasTypeHandlerTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         Configuration configuration = ConfigurationFactory.create(environment, new ExtContext());
-        System.out.println(configuration.getTypeHandlerRegistry().hasTypeHandler(Map.class));
-        System.out.println(configuration.getTypeHandlerRegistry().hasTypeHandler(Set.class));
-        System.out.println(configuration.getTypeHandlerRegistry().hasTypeHandler(List.class));
+        assertFalse(configuration.getTypeHandlerRegistry().hasTypeHandler(Map.class));
+        assertFalse(configuration.getTypeHandlerRegistry().hasTypeHandler(Set.class));
+        assertFalse(configuration.getTypeHandlerRegistry().hasTypeHandler(List.class));
     }
 }

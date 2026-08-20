@@ -7,11 +7,11 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface SysDeptMapper {
 
-    List<SysDept> selectSysDept();
+    List<SysDept> selectDepartmentsWithNestedUsers();
 
-    List<SysDept> selectSysDeptDot();
+    List<SysDept> selectDepartmentsWithDottedColumnKey();
 
-    List<SysDept> selectSysDeptLazy();
+    List<SysDept> selectDepartmentsWithLazyUsers();
 
-    List<SysDept> selectSysDeptJoin();
+    List<SysDept> selectDepartmentsWithJoinedUsers();
 }

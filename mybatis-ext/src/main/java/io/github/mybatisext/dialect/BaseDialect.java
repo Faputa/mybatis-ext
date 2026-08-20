@@ -98,9 +98,9 @@ public abstract class BaseDialect implements Dialect {
             Variable variable = entry.getValue();
             String value;
             if (propertyInfo.getPropertyType() == PropertyType.ID && propertyInfo.getIdType() == IdType.UUID) {
-                value = "<bind name=\"" + variable.getBindName() + "\" value=\"" + Ognl.GetUuid + "('" + variable + "')\"/>" + variable.getBindPlaceholder();
+                value = "<bind name=\"" + variable.getBindName() + "\" value=\"" + Ognl.GetUuid + "(" + variable + ")\"/>" + variable.getBindPlaceholder();
             } else if (propertyInfo.getPropertyType() == PropertyType.ID && propertyInfo.getIdType() == IdType.CUSTOM) {
-                value = "<bind name=\"" + variable.getBindName() + "\" value=\"" + Ognl.GetCustomId + "('" + propertyInfo.getCustomIdGenerator().getName() + "','" + variable + "')\"/>" + variable.getBindPlaceholder();
+                value = "<bind name=\"" + variable.getBindName() + "\" value=\"" + Ognl.GetCustomId + "(@" + propertyInfo.getCustomIdGenerator().getName() + "@class," + variable + ")\"/>" + variable.getBindPlaceholder();
             } else {
                 value = variable.getPlaceholder();
             }

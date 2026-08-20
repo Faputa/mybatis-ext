@@ -83,6 +83,9 @@ public abstract class BaseParser<T extends Tokenizer> {
         Tokenizer tokenizer = state.getTokenizer();
         int cursor = tokenizer.getCursor();
         if (symbol.match(new State<>(state, state.getScope()), s2 -> {
+            if (tokenizer.getCursor() == cursor) {
+                return false;
+            }
             return matchStar(symbol, s2, continuation);
         })) {
             return true;
