@@ -10,7 +10,6 @@ import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.annotation.MapTable;
-import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.mapper.ExtMapper;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
@@ -24,7 +23,6 @@ public class ExtContextLoader {
 
     private final Configuration configuration;
     private final MappedStatementHelper mappedStatementHelper;
-    private volatile Dialect dialect;
 
     public ExtContextLoader(Configuration configuration, ExtContext extContext) {
         this.configuration = configuration;
@@ -114,19 +112,7 @@ public class ExtContextLoader {
         if (methods.isEmpty()) {
             return null;
         }
-        return mappedStatementHelper.build(id, tableType, methods, returnType, dialect());
-    }
-
-    // 方言按loader缓存，避免每条语句都开一次数据库连接探测
-    private Dialect dialect() {
-        if (dialect == null) {
-            synchronized (this) {
-                if (dialect == null) {
-                    dialect = mappedStatementHelper.selectDialect();
-                }
-            }
-        }
-        return dialect;
+        return mappedStatementHelper.build(id, tableType, methods, returnType);
     }
 
     private boolean isNotEnhancedMapper(Class<?> mapperClass) {

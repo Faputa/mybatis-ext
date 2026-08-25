@@ -1,13 +1,10 @@
 package io.github.mybatisext.statement;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import javax.sql.DataSource;
 
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.MappedStatement.Builder;
@@ -18,7 +15,6 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.adapter.ExtContext;
-import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.jpa.JpaParser;
 import io.github.mybatisext.jpa.Semantic;
@@ -42,13 +38,13 @@ public class MappedStatementHelper {
         this.jpaParser = new JpaParser(configuration, extContext);
     }
 
-    public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType, Dialect dialect) {
+    public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType) {
         TableInfo tableInfo = TableInfoFactory.buildTableInfo(tableType, configuration, extContext);
         Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(tableInfo, methods, returnType);
         SqlCommandType sqlCommandType = resolveSqlCommandType(signatureToSemantic.values().iterator().next());
         List<ResultMap> resultMaps = new ArrayList<>();
-        resultMaps.add(resultMapHelper.buildResultMap(returnType, dialect));
-        SqlSource sqlSource = new LazySqlSource(configuration, id, () -> SemanticScriptHelper.buildScript(signatureToSemantic, dialect));
+        resultMaps.add(resultMapHelper.buildResultMap(returnType));
+        SqlSource sqlSource = new LazySqlSource(configuration, extContext, id, dialect -> SemanticScriptHelper.buildScript(signatureToSemantic, dialect));
         Builder builder = new MappedStatement.Builder(configuration, id, sqlSource, sqlCommandType);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }
@@ -81,16 +77,5 @@ public class MappedStatementHelper {
             return SqlCommandType.UPDATE;
         }
         throw new MybatisExtException("Unsupported semantic type: " + semantic.getType());
-    }
-
-    public Dialect selectDialect() {
-        DataSource dataSource = configuration.getEnvironment().getDataSource();
-        String jdbcUrl;
-        try (Connection connection = dataSource.getConnection()) {
-            jdbcUrl = connection.getMetaData().getURL();
-        } catch (Exception e) {
-            throw new MybatisExtException(e);
-        }
-        return extContext.getDialectSelector().select(jdbcUrl);
     }
 }

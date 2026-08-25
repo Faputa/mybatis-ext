@@ -18,7 +18,6 @@ import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
 
 import io.github.mybatisext.adapter.ExtContext;
-import io.github.mybatisext.dialect.H2Dialect;
 import io.github.mybatisext.fixture.permission.TablePermission;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
@@ -39,7 +38,7 @@ public class ResultMapHelperTest {
         Configuration configuration = new Configuration(environment);
         ResultMapHelper resultMapHelper = new ResultMapHelper(configuration, extContext);
         GenericType returnType = GenericTypeFactory.build(TablePermission.class);
-        ResultMap resultMap = resultMapHelper.buildResultMap(returnType, new H2Dialect());
+        ResultMap resultMap = resultMapHelper.buildResultMap(returnType);
         Map<String, ResultMapping> mappings = resultMap.getResultMappings().stream().collect(Collectors.toMap(ResultMapping::getProperty, Function.identity()));
 
         assertEquals(TablePermission.class, resultMap.getType());
