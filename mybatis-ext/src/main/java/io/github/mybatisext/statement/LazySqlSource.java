@@ -21,8 +21,6 @@ public class LazySqlSource implements SqlSource {
         this.configuration = configuration;
         this.statementId = statementId;
         this.scriptSupplier = scriptSupplier;
-        log.debug(statementId);
-        log.debug(scriptSupplier.get());
     }
 
     @Override

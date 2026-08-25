@@ -42,10 +42,9 @@ public class MappedStatementHelper {
         this.jpaParser = new JpaParser(configuration, extContext);
     }
 
-    public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType) {
+    public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType, Dialect dialect) {
         TableInfo tableInfo = TableInfoFactory.buildTableInfo(tableType, configuration, extContext);
         Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(tableInfo, methods, returnType);
-        Dialect dialect = selectDialect();
         SqlCommandType sqlCommandType = resolveSqlCommandType(signatureToSemantic.values().iterator().next());
         List<ResultMap> resultMaps = new ArrayList<>();
         resultMaps.add(resultMapHelper.buildResultMap(returnType, dialect));
@@ -84,7 +83,7 @@ public class MappedStatementHelper {
         throw new MybatisExtException("Unsupported semantic type: " + semantic.getType());
     }
 
-    private Dialect selectDialect() {
+    public Dialect selectDialect() {
         DataSource dataSource = configuration.getEnvironment().getDataSource();
         String jdbcUrl;
         try (Connection connection = dataSource.getConnection()) {
