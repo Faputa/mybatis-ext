@@ -15,7 +15,6 @@ import org.apache.ibatis.mapping.ResultMapping;
 import org.apache.ibatis.mapping.ResultSetType;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
-import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.adapter.ExtContext;
@@ -40,7 +39,7 @@ public class ResultMapHelper {
         this.extContext = extContext;
     }
 
-    public ResultMap buildResultMap(GenericType returnType, Dialect dialect, boolean writeConfiguration) {
+    public ResultMap buildResultMap(GenericType returnType, Dialect dialect) {
         String id = PREFIX + returnType.getName();
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
@@ -51,7 +50,7 @@ public class ResultMapHelper {
         TableInfo tableInfo = TableInfoFactory.buildTableInfo(returnType, configuration, extContext);
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
-            resultMappings.add(buildResultMapping(tableInfo, propertyInfo, dialect, writeConfiguration, false));
+            resultMappings.add(buildResultMapping(tableInfo, propertyInfo, dialect, false));
         }
         return new ResultMap.Builder(configuration, id, returnType.getType(), resultMappings).build();
     }
@@ -60,7 +59,7 @@ public class ResultMapHelper {
         return new ResultMap.Builder(configuration, type.getName() + "-Inline", type, new ArrayList<>(0)).build();
     }
 
-    public ResultMap buildPropertyResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
+    public ResultMap buildPropertyResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean inNestedSelect) {
         GenericType tableClass = tableInfo.getClassType();
         String id = PREFIX + tableClass.getName() + "|" + propertyInfo.getName();
         if (configuration.hasResultMap(id)) {
@@ -72,12 +71,12 @@ public class ResultMapHelper {
         }
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo subPropertyInfo : propertyInfo.getNameToPropertyInfo().values()) {
-            resultMappings.add(buildResultMapping(tableInfo, subPropertyInfo, dialect, writeConfiguration, inNestedSelect));
+            resultMappings.add(buildResultMapping(tableInfo, subPropertyInfo, dialect, inNestedSelect));
         }
         return new ResultMap.Builder(configuration, id, propertyType.getType(), resultMappings).build();
     }
 
-    private ResultMapping buildResultMapping(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
+    private ResultMapping buildResultMapping(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean inNestedSelect) {
         if (propertyInfo.getPropertyType() == PropertyType.ID) {
             return new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(propertyInfo.getFullName())
@@ -96,7 +95,7 @@ public class ResultMapHelper {
         if (propertyInfo.getPropertyType() == PropertyType.ASSOCIATION || propertyInfo.getPropertyType() == PropertyType.COLLECTION) {
             // 若已在嵌套查询中，则强制使用嵌套结果映射以避免多层嵌套查询影响性能
             if (inNestedSelect || propertyInfo.getFetchType() == null) {
-                ResultMap resultMap = addNestedResultMap(tableInfo, propertyInfo, dialect, writeConfiguration, inNestedSelect);
+                ResultMap resultMap = addNestedResultMap(tableInfo, propertyInfo, dialect, inNestedSelect);
                 return new ResultMapping.Builder(configuration, propertyInfo.getName())
                         .javaType(propertyInfo.getJavaType().getType())
                         .nestedResultMapId(resultMap.getId())
@@ -104,7 +103,7 @@ public class ResultMapHelper {
             }
             NestedSelect nestedSelect = NestedSelectHelper.buildNestedSelect(tableInfo, propertyInfo);
             String column = NestedSelectHelper.buildResultMappingColumn(nestedSelect);
-            MappedStatement mappedStatement = addNestedSelectStatement(nestedSelect, dialect, writeConfiguration);
+            MappedStatement mappedStatement = addNestedSelectStatement(nestedSelect, dialect);
             ResultMapping.Builder builder = new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(column)
                     .composites(parseCompositeColumnName(column))
@@ -135,45 +134,38 @@ public class ResultMapHelper {
         return composites;
     }
 
-    private ResultMap addNestedResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
-        ResultMap resultMap = buildPropertyResultMap(tableInfo, propertyInfo, dialect, writeConfiguration, inNestedSelect);
-        if (writeConfiguration) {
-            if (!configuration.hasResultMap(resultMap.getId())) {
-                try {
-                    configuration.addResultMap(resultMap);
-                } catch (IllegalArgumentException e) {
-                    log.error("ResultMap already registered: " + resultMap.getId(), e);
-                }
+    private ResultMap addNestedResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean inNestedSelect) {
+        ResultMap resultMap = buildPropertyResultMap(tableInfo, propertyInfo, dialect, inNestedSelect);
+        if (!configuration.hasResultMap(resultMap.getId())) {
+            try {
+                configuration.addResultMap(resultMap);
+            } catch (IllegalArgumentException e) {
+                log.error("ResultMap already registered: " + resultMap.getId(), e);
             }
         }
         return resultMap;
     }
 
-    private MappedStatement addNestedSelectStatement(NestedSelect nestedSelect, Dialect dialect, boolean writeConfiguration) {
+    private MappedStatement addNestedSelectStatement(NestedSelect nestedSelect, Dialect dialect) {
         String id = NestedSelectHelper.toString(nestedSelect);
         if (configuration.hasStatement(id)) {
             return configuration.getMappedStatement(id);
         }
-        MappedStatement ms = buildForNestedSelect(id, nestedSelect, dialect, writeConfiguration);
-        if (writeConfiguration) {
-            if (!configuration.hasStatement(ms.getId())) {
-                try {
-                    configuration.addMappedStatement(ms);
-                } catch (IllegalArgumentException e) {
-                    log.error("MappedStatement already registered: " + ms.getId(), e);
-                }
+        MappedStatement ms = buildForNestedSelect(id, nestedSelect, dialect);
+        if (!configuration.hasStatement(ms.getId())) {
+            try {
+                configuration.addMappedStatement(ms);
+            } catch (IllegalArgumentException e) {
+                log.error("MappedStatement already registered: " + ms.getId(), e);
             }
         }
         return ms;
     }
 
-    private MappedStatement buildForNestedSelect(String id, NestedSelect nestedSelect, Dialect dialect, boolean writeConfiguration) {
-        log.debug(id);
+    private MappedStatement buildForNestedSelect(String id, NestedSelect nestedSelect, Dialect dialect) {
         List<ResultMap> resultMaps = new ArrayList<>();
-        resultMaps.add(buildPropertyResultMap(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo(), dialect, writeConfiguration, true));
-        String script = NestedSelectHelper.buildNestedSelectScript(nestedSelect, dialect);
-        log.debug(script);
-        SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(configuration, script, Object.class);
+        resultMaps.add(buildPropertyResultMap(nestedSelect.getTableInfo(), nestedSelect.getPropertyInfo(), dialect, true));
+        SqlSource sqlSource = new LazySqlSource(configuration, id, () -> NestedSelectHelper.buildNestedSelectScript(nestedSelect, dialect));
         MappedStatement.Builder builder = new MappedStatement.Builder(configuration, id, sqlSource, SqlCommandType.SELECT);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }

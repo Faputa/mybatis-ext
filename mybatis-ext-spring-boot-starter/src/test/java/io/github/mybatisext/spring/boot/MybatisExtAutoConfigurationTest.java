@@ -19,7 +19,5 @@ public class MybatisExtAutoConfigurationTest {
         assertNotNull(applicationContext.getBean("mybatisExtDialectSelector"));
         assertNotNull(applicationContext.getBean("mybatisExtContext"));
         assertNotNull(applicationContext.getBean("mybatisExtBeanPostProcessor"));
-        assertNotNull(applicationContext.getBean("mybatisExtMapperMethodValidator"));
-        assertNotNull(applicationContext.getBean("mybatisExtMapperMethodValidatorSecond"));
     }
 }

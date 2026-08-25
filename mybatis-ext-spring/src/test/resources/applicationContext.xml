@@ -34,12 +34,7 @@
         <property name="mapperLocations" value="${mybatis.mapper-locations}" />
     </bean>
 
-    <bean id="mapperMethodValidator" class="io.github.mybatisext.spring.MapperMethodValidator">
-        <constructor-arg>
-            <list>
-                <ref bean="sqlSessionFactory" />
-            </list>
-        </constructor-arg>
+    <bean id="mybatisExtBeanPostProcessor" class="io.github.mybatisext.spring.MybatisExtBeanPostProcessor">
     </bean>
 
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">

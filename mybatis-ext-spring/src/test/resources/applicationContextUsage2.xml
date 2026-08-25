@@ -37,14 +37,6 @@
     <bean id="mybatisExtBeanPostProcessor" class="io.github.mybatisext.spring.MybatisExtBeanPostProcessor">
     </bean>
 
-    <bean id="mapperMethodValidator" class="io.github.mybatisext.spring.MapperMethodValidator">
-        <constructor-arg>
-            <list>
-                <ref bean="sqlSessionFactory" />
-            </list>
-        </constructor-arg>
-    </bean>
-
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
         <property name="basePackage" value="io.github.mybatisext.test" />
     </bean>

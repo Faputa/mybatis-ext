@@ -1,9 +1,5 @@
 package io.github.mybatisext.spring.boot;
 
-import java.util.List;
-import java.util.Map;
-
-import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.DefaultDialectSelector;
 import io.github.mybatisext.dialect.DialectSelector;
-import io.github.mybatisext.spring.MapperMethodValidator;
 import io.github.mybatisext.spring.MybatisExtBeanPostProcessor;
 
 @ConditionalOnProperty(prefix = MybatisExtProperties.PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -49,15 +44,4 @@ public class MybatisExtAutoConfiguration {
         return mybatisExtBeanPostProcessor;
     }
 
-    @Bean
-    @ConditionalOnMissingBean
-    MapperMethodValidator mybatisExtMapperMethodValidator(List<SqlSessionFactory> sqlSessionFactories) {
-        return new MapperMethodValidator(sqlSessionFactories);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(name = "mybatisExtMapperMethodValidatorSecond")
-    MapperMethodValidator mybatisExtMapperMethodValidatorSecond(Map<Object, SqlSessionFactory> sqlSessionFactoryMap) {
-        return new MapperMethodValidator(sqlSessionFactoryMap.values());
-    }
 }

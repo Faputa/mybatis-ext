@@ -19,7 +19,6 @@ import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
 
-import io.github.mybatisext.adapter.ConfigurationFactory;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Filterable;
@@ -44,7 +43,7 @@ public class ConditionHelperTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtContext extContext = new ExtContext();
-        Configuration configuration = ConfigurationFactory.create(environment, extContext);
+        Configuration configuration = new Configuration(environment);
         GenericType genericType = GenericTypeFactory.build(TablePermission.class);
         TableInfo tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
         Condition condition = ConditionHelper.buildForTableInfo(tableInfo, false, "pt");
@@ -113,7 +112,7 @@ public class ConditionHelperTest {
         dataSource.setDriverClassName("org.h2.Driver");
         dataSource.setUrl("jdbc:h2:mem:condition_metadata;DB_CLOSE_DELAY=-1;MODE=MYSQL");
         Environment environment = new Environment("development", new JdbcTransactionFactory(), dataSource);
-        Configuration configuration = ConfigurationFactory.create(environment, extContext);
+        Configuration configuration = new Configuration(environment);
         return TableInfoFactory.buildTableInfo(GenericTypeFactory.build(type), configuration, extContext);
     }
 

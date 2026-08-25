@@ -16,7 +16,6 @@ import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.github.mybatisext.adapter.ConfigurationFactory;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.jpa.Limit;
 import io.github.mybatisext.jpa.OrderByElement;
@@ -45,7 +44,7 @@ class SqlServerDialectTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtContext extContext = new ExtContext();
-        Configuration configuration = ConfigurationFactory.create(environment, extContext);
+        Configuration configuration = new Configuration(environment);
         GenericType genericType = GenericTypeFactory.build(Student.class);
         tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
         selectItems = new ArrayList<>(tableInfo.getNameToPropertyInfo().values());

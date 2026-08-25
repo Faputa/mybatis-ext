@@ -12,7 +12,6 @@ import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.github.mybatisext.adapter.ConfigurationFactory;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.ColumnRef;
@@ -55,7 +54,7 @@ class TableInfoFactoryTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         TableInfoFactoryTest.extContext = new ExtContext();
-        TableInfoFactoryTest.configuration = ConfigurationFactory.create(environment, extContext);
+        TableInfoFactoryTest.configuration = new Configuration(environment);
     }
 
     @Test

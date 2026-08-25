@@ -22,9 +22,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
-import io.github.mybatisext.adapter.ConfigurationFactory;
-import io.github.mybatisext.adapter.ConfigurationInterface;
 import io.github.mybatisext.adapter.ExtContext;
+import io.github.mybatisext.adapter.ExtContextLoader;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.IdType;
@@ -180,9 +179,9 @@ class IdGenerationIntegrationTest {
     private SqlSessionFactory createSqlSessionFactory(DataSource dataSource, Class<?> mapperType) {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
-        Configuration configuration = ConfigurationFactory.create(environment, new ExtContext());
+        Configuration configuration = new Configuration(environment);
         configuration.addMapper(mapperType);
-        ((ConfigurationInterface) configuration).validateAllMapperMethod();
+        new ExtContextLoader(configuration, new ExtContext()).load();
         return new SqlSessionFactoryBuilder().build(configuration);
     }
 

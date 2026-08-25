@@ -9,15 +9,12 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import org.apache.ibatis.logging.Log;
-import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.MappedStatement.Builder;
 import org.apache.ibatis.mapping.ResultMap;
 import org.apache.ibatis.mapping.ResultSetType;
 import org.apache.ibatis.mapping.SqlCommandType;
 import org.apache.ibatis.mapping.SqlSource;
-import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.adapter.ExtContext;
@@ -33,7 +30,6 @@ import io.github.mybatisext.reflect.GenericType;
 
 public class MappedStatementHelper {
 
-    private static final Log log = LogFactory.getLog(MappedStatementHelper.class);
     private final JpaParser jpaParser;
     private final Configuration configuration;
     private final ExtContext extContext;
@@ -46,17 +42,14 @@ public class MappedStatementHelper {
         this.jpaParser = new JpaParser(configuration, extContext);
     }
 
-    public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType, boolean writeConfiguration) {
-        log.debug(id);
+    public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType) {
         TableInfo tableInfo = TableInfoFactory.buildTableInfo(tableType, configuration, extContext);
         Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(tableInfo, methods, returnType);
         Dialect dialect = selectDialect();
-        String script = SemanticScriptHelper.buildScript(signatureToSemantic, dialect);
-        log.debug(script);
         SqlCommandType sqlCommandType = resolveSqlCommandType(signatureToSemantic.values().iterator().next());
         List<ResultMap> resultMaps = new ArrayList<>();
-        resultMaps.add(resultMapHelper.buildResultMap(returnType, dialect, writeConfiguration));
-        SqlSource sqlSource = new XMLLanguageDriver().createSqlSource(configuration, script, Object.class);
+        resultMaps.add(resultMapHelper.buildResultMap(returnType, dialect));
+        SqlSource sqlSource = new LazySqlSource(configuration, id, () -> SemanticScriptHelper.buildScript(signatureToSemantic, dialect));
         Builder builder = new MappedStatement.Builder(configuration, id, sqlSource, sqlCommandType);
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }

@@ -1,13 +1,10 @@
 package io.github.mybatisext.spring;
 
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.mybatis.spring.SqlSessionFactoryBean;
 
-import io.github.mybatisext.adapter.ConfigurationFactory;
-import io.github.mybatisext.adapter.ConfigurationInterface;
 import io.github.mybatisext.adapter.ExtContext;
+import io.github.mybatisext.adapter.ExtContextLoader;
 
 public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
 
@@ -19,16 +16,9 @@ public class ExtSqlSessionFactoryBean extends SqlSessionFactoryBean {
 
     @Override
     protected SqlSessionFactory buildSqlSessionFactory() throws Exception {
-        return buildSqlSessionFactory(super.buildSqlSessionFactory());
+        SqlSessionFactory sqlSessionFactory = super.buildSqlSessionFactory();
+        new ExtContextLoader(sqlSessionFactory.getConfiguration(), extContext).load();
+        return sqlSessionFactory;
     }
 
-    public SqlSessionFactory buildSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
-        Configuration configuration = sqlSessionFactory.getConfiguration();
-        if (configuration instanceof ConfigurationInterface) {
-            return sqlSessionFactory;
-        }
-        Configuration extConfiguration = ConfigurationFactory.create(configuration, extContext);
-        SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
-        return sqlSessionFactoryBuilder.build(extConfiguration);
-    }
 }

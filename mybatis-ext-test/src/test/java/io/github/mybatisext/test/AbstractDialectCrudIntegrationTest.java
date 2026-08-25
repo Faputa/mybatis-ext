@@ -23,9 +23,8 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
-import io.github.mybatisext.adapter.ConfigurationFactory;
-import io.github.mybatisext.adapter.ConfigurationInterface;
 import io.github.mybatisext.adapter.ExtContext;
+import io.github.mybatisext.adapter.ExtContextLoader;
 import io.github.mybatisext.dialect.Dialect;
 
 abstract class AbstractDialectCrudIntegrationTest {
@@ -270,9 +269,9 @@ abstract class AbstractDialectCrudIntegrationTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtContext extContext = new ExtContext();
         extContext.setDialectSelector(jdbcUrl -> dataSource.getDialect());
-        Configuration configuration = ConfigurationFactory.create(environment, extContext);
+        Configuration configuration = new Configuration(environment);
         configuration.addMapper(SysUserMapper.class);
-        ((ConfigurationInterface) configuration).validateAllMapperMethod();
+        new ExtContextLoader(configuration, extContext).load();
         return new SqlSessionFactoryBuilder().build(configuration);
     }
 

@@ -16,7 +16,6 @@ import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
 
-import io.github.mybatisext.adapter.ConfigurationFactory;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.dialect.H2Dialect;
@@ -46,7 +45,7 @@ public class JpaParserTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtContext extContext = new ExtContext();
-        configuration = ConfigurationFactory.create(environment, extContext);
+        configuration = new Configuration(environment);
         GenericType genericType = GenericTypeFactory.build(TablePermission.class);
         tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
         jpaParser = new JpaParser(configuration, extContext);
