@@ -1,7 +1,9 @@
 package io.github.mybatisext.adapter;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.binding.BindingException;
 import org.apache.ibatis.logging.Log;
@@ -43,7 +45,7 @@ public class ExtContextLoader {
 
     // 增量加载单个mapper
     public void load(Class<?> mapperClass) {
-        if (!isNotEnhancedMapper(mapperClass) && configuration.getMapperRegistry().getMappers().contains(mapperClass)) {
+        if (!isNotEnhancedMapper(mapperClass) && configuration.hasMapper(mapperClass)) {
             loadMapper(mapperClass);
         }
     }
@@ -53,19 +55,24 @@ public class ExtContextLoader {
     // 框架生成的语句无resource，则各命名空间各自生成，保证语句集合与加载顺序无关
     private void loadMapper(Class<?> mapperClass) {
         GenericType genericType = GenericTypeFactory.build(mapperClass);
+        Map<String, List<GenericMethod>> nameToMethods = new LinkedHashMap<>();
         for (GenericMethod method : genericType.getMethods()) {
             if (method.isBridge() || method.isDefault()) {
                 continue;
             }
-            String id = mapperClass.getName() + "." + method.getName();
+            nameToMethods.computeIfAbsent(method.getName(), k -> new ArrayList<>()).add(method);
+        }
+        for (Map.Entry<String, List<GenericMethod>> entry : nameToMethods.entrySet()) {
+            String methodName = entry.getKey();
+            String id = mapperClass.getName() + "." + methodName;
             if (configuration.hasStatement(id)) {
                 continue;
             }
-            MappedStatement inherited = resolveInheritedMappedStatement(mapperClass, method.getName());
+            MappedStatement inherited = resolveInheritedMappedStatement(mapperClass, methodName);
             if (inherited != null && inherited.getResource() != null) {
                 continue;
             }
-            MappedStatement ms = buildMappedStatement(id, mapperClass, method.getName());
+            MappedStatement ms = buildMappedStatement(id, mapperClass, entry.getValue());
             if (ms == null) {
                 throw new BindingException("Invalid bound statement (not found): " + id);
             }
@@ -92,27 +99,17 @@ public class ExtContextLoader {
         return null;
     }
 
-    private MappedStatement buildMappedStatement(String id, Class<?> mapperClass, String methodName) {
-        GenericType tableType = getEntityClass(mapperClass);
-        GenericType mapperType = GenericTypeFactory.build(mapperClass);
+    private MappedStatement buildMappedStatement(String id, Class<?> mapperClass, List<GenericMethod> methods) {
         GenericType returnType = null;
-        List<GenericMethod> methods = new ArrayList<>();
-        for (GenericMethod method : mapperType.getMethods()) {
-            if (method.isBridge() || method.isDefault() || !method.getName().equals(methodName)) {
-                continue;
-            }
+        for (GenericMethod method : methods) {
             GenericType mReturnType = TypeUtils.unwrapToGenericType(method.getGenericReturnType());
             if (returnType == null || returnType.isAssignableFrom(mReturnType)) {
                 returnType = mReturnType;
             } else if (!mReturnType.isAssignableFrom(returnType) && mReturnType.getType() != Void.class) {
-                throw new IllegalArgumentException("returnType inconsistency: " + mapperClass.getName() + "." + methodName);
+                throw new IllegalArgumentException("returnType inconsistency: " + mapperClass.getName() + "." + methods.get(0).getName());
             }
-            methods.add(method);
         }
-        if (methods.isEmpty()) {
-            return null;
-        }
-        return mappedStatementHelper.build(id, tableType, methods, returnType);
+        return mappedStatementHelper.build(id, getEntityClass(mapperClass), methods, returnType);
     }
 
     private boolean isNotEnhancedMapper(Class<?> mapperClass) {
