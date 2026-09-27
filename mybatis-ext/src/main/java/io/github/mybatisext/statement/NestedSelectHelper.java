@@ -154,6 +154,6 @@ public class NestedSelectHelper {
     }
 
     public static String toString(NestedSelect nestedSelect) {
-        return NestedSelect.PREFIX + nestedSelect.getTableInfo().getClassType().getName() + "|" + nestedSelect.getPropertyInfo().getName();
+        return NestedSelect.PREFIX + nestedSelect.getTableInfo().getClassType().getName() + "#" + nestedSelect.getPropertyInfo().getFullName();
     }
 }

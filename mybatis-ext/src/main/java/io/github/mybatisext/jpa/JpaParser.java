@@ -16,7 +16,6 @@ import javax.annotation.Nullable;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.Configuration;
 
-import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.OnlyById;
 import io.github.mybatisext.annotation.TestMode;
@@ -35,7 +34,7 @@ import io.github.mybatisext.util.TypeUtils;
 public class JpaParser extends BaseParser<JpaTokenizer> {
 
     private final Configuration configuration;
-    private final ExtContext extContext;
+    private final TableInfoFactory tableInfoFactory;
 
     private final Symbol grammar = new Symbol("grammar");
     private final Symbol conditionList = new Symbol("conditionList");
@@ -198,9 +197,9 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
     private final Symbol having = new Symbol("having").set(join(keyword("Having"), conditionList));
     private final Symbol orderBy = new Symbol("orderBy").set(join(keyword("OrderBy"), orderByList));
 
-    public JpaParser(Configuration configuration, ExtContext extContext) {
+    public JpaParser(Configuration configuration, TableInfoFactory tableInfoFactory) {
         this.configuration = configuration;
-        this.extContext = extContext;
+        this.tableInfoFactory = tableInfoFactory;
 
         grammar.set(choice(
                 join(choice(keyword("find"), keyword("select"), keyword("list"), keyword("get")), optional(keyword("Distinct")), optional(choice(keyword("All"), keyword("One"), join(keyword("Top"), choice(integer, variable)))), optional(choice(propertyList, returnTypeName)), optional(join(choice(keyword("By"), keyword("Where")), conditionList)), optional(join(groupBy, optional(having))), optional(orderBy), optional(limit), end, action(state -> {
@@ -435,7 +434,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
         if (!TableInfoFactory.isSameTableType(returnType, jpaTokenizer.getTableInfo().getClassType())) {
             throw new MybatisExtException("Incompatible return type: " + returnType.getTypeName() + ", expected: " + jpaTokenizer.getTableInfo().getClassType().getName());
         }
-        TableInfo tableInfo = TableInfoFactory.buildTableInfo(returnType, configuration, extContext);
+        TableInfo tableInfo = tableInfoFactory.buildTableInfo(returnType);
         List<PropertyInfo> propertyInfos = tableInfo.getNameToPropertyInfo().values().stream().filter(v -> v.getFetchType() == null).collect(Collectors.toList());
         return ensureJoinRelationColumns(jpaTokenizer, propertyInfos);
     }
@@ -731,7 +730,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
     public Semantic parse(TableInfo tableInfo, String methodName, GenericParameter[] parameters, GenericType returnType) {
         GenericType unwrappedReturnType = TypeUtils.unwrapToGenericType(returnType);
         if (TableInfoFactory.isSameTableType(tableInfo.getClassType(), unwrappedReturnType)) {
-            tableInfo = TableInfoFactory.buildTableInfo(unwrappedReturnType, configuration, extContext);
+            tableInfo = tableInfoFactory.buildTableInfo(unwrappedReturnType);
         }
         for (GenericParameter parameter : parameters) {
             if (TypeUtils.isSpecialParameter(parameter.getType())) {
@@ -739,7 +738,7 @@ public class JpaParser extends BaseParser<JpaTokenizer> {
             }
             GenericType parameterType = TypeUtils.unwrapToGenericType(parameter.getGenericType());
             if (TableInfoFactory.isSameTableType(tableInfo.getClassType(), parameterType)) {
-                tableInfo = TableInfoFactory.buildTableInfo(parameterType, configuration, extContext);
+                tableInfo = tableInfoFactory.buildTableInfo(parameterType);
             }
             break;
         }

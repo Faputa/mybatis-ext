@@ -1,7 +1,7 @@
 package io.github.mybatisext.spring;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.BeansException;
@@ -32,7 +32,9 @@ public class MybatisExtBeanPostProcessor implements BeanPostProcessor {
         if (bean instanceof Map) {
             Map<?, ?> map = (Map<?, ?>) bean;
             if (map.values().stream().anyMatch(v -> v instanceof SqlSessionFactory)) {
-                return map.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> buildSqlSessionFactory((SqlSessionFactory) e.getValue())));
+                Map<Object, Object> enhanced = new HashMap<>();
+                map.forEach((key, value) -> enhanced.put(key, value instanceof SqlSessionFactory ? buildSqlSessionFactory((SqlSessionFactory) value) : value));
+                return enhanced;
             }
         }
         return bean;

@@ -10,9 +10,9 @@ import io.github.mybatisext.util.StringUtils;
 
 public class JoinGraphFactory {
 
-    private static final Map<GenericType, JoinGraph> tableTypeToJoinGraph = new ConcurrentHashMap<>();
+    private final Map<GenericType, JoinGraph> tableTypeToJoinGraph = new ConcurrentHashMap<>();
 
-    public static JoinGraph buildJoinGraph(TableDef tableDef) {
+    public JoinGraph buildJoinGraph(TableDef tableDef) {
         GenericType tableType = tableDef.getTableType();
         return tableTypeToJoinGraph.computeIfAbsent(tableType, k -> new JoinGraph());
     }

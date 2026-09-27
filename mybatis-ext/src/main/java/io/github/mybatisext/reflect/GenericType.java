@@ -87,7 +87,7 @@ public class GenericType implements Type {
         for (int i = 0; i < queue.size(); i++) {
             GenericType genericType = queue.get(i);
             for (GenericField genericField : genericType.getDeclaredFields()) {
-                if (fields.contains(genericField.getField())) {
+                if (fields.remove(genericField.getField())) {
                     genericFields[count++] = genericField;
                 }
             }
@@ -109,7 +109,7 @@ public class GenericType implements Type {
         for (int i = 0; i < queue.size(); i++) {
             GenericType genericType = queue.get(i);
             for (GenericMethod genericMethod : genericType.getDeclaredMethods()) {
-                if (methods.contains(genericMethod.getMethod())) {
+                if (methods.remove(genericMethod.getMethod())) {
                     genericMethods[count++] = genericMethod;
                 }
             }

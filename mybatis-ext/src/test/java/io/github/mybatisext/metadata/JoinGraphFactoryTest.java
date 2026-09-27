@@ -16,6 +16,8 @@ import io.github.mybatisext.reflect.GenericTypeFactory;
 
 class JoinGraphFactoryTest {
 
+    private final JoinGraphFactory joinGraphFactory = new JoinGraphFactory();
+
     private final Configuration configuration = new Configuration();
 
     @Test
@@ -23,7 +25,7 @@ class JoinGraphFactoryTest {
         TableDef table = build(RootTable.class);
         TableDef tableRef = build(RootTableView.class);
 
-        assertSame(JoinGraphFactory.buildJoinGraph(table), JoinGraphFactory.buildJoinGraph(tableRef));
+        assertSame(joinGraphFactory.buildJoinGraph(table), joinGraphFactory.buildJoinGraph(tableRef));
     }
 
     @Test
@@ -55,7 +57,7 @@ class JoinGraphFactoryTest {
     }
 
     private TableDef build(Class<?> type) {
-        return TableDefFactory.buildTableDef(GenericTypeFactory.build(type), configuration);
+        return new TableDefFactory(configuration).buildTableDef(GenericTypeFactory.build(type));
     }
 
     private JoinPath path(JoinNode left, String leftColumn, String rightColumn) {

@@ -33,20 +33,31 @@ import io.github.mybatisext.util.TypeUtils;
 
 public class TableInfoFactory {
 
-    private static final Map<GenericType, TableInfo> classTypeToTableInfo = new ConcurrentHashMap<>();
+    private final Map<GenericType, TableInfo> classTypeToTableInfo = new ConcurrentHashMap<>();
 
-    public static TableInfo buildTableInfo(GenericType classType, Configuration configuration, ExtContext extContext) {
+    private final Configuration configuration;
+    private final ExtContext extContext;
+    private final TableDefFactory tableDefFactory;
+    private final JoinGraphFactory joinGraphFactory = new JoinGraphFactory();
+
+    public TableInfoFactory(Configuration configuration, ExtContext extContext) {
+        this.configuration = configuration;
+        this.extContext = extContext;
+        this.tableDefFactory = new TableDefFactory(configuration);
+    }
+
+    public TableInfo buildTableInfo(GenericType classType) {
         TableInfo _tableInfo = classTypeToTableInfo.get(classType);
         if (_tableInfo != null) {
             return _tableInfo;
         }
-        TableDef tableDef = TableDefFactory.buildTableDef(classType, configuration);
-        TableInfo tableInfo = buildTableInfo(tableDef, configuration, extContext);
+        TableDef tableDef = tableDefFactory.buildTableDef(classType);
+        TableInfo tableInfo = buildTableInfo(tableDef);
         return classTypeToTableInfo.computeIfAbsent(classType, k -> tableInfo);
     }
 
-    public static TableInfo buildTableInfo(TableDef tableDef, Configuration configuration, ExtContext extContext) {
-        JoinGraph joinGraph = JoinGraphFactory.buildJoinGraph(tableDef);
+    public TableInfo buildTableInfo(TableDef tableDef) {
+        JoinGraph joinGraph = joinGraphFactory.buildJoinGraph(tableDef);
         JoinNode joinNode = JoinGraphFactory.buildJoinNode(joinGraph, tableDef);
         JoinTableInfo joinTableInfo = new JoinTableInfo();
         joinTableInfo.setTableDef(tableDef);
@@ -59,20 +70,20 @@ public class TableInfoFactory {
         tableInfo.setJoinTableInfo(joinTableInfo);
         tableInfo.getAliasToJoinTableInfo().put(joinNode.getAlias(), joinTableInfo);
 
-        processNameToPropertyDef(tableDef.getClassType(), tableDef.getNameToPropertyDef(), tableInfo.getNameToPropertyInfo(), "", "", joinTableInfo, tableInfo, configuration, extContext);
+        processNameToPropertyDef(tableDef.getClassType(), tableDef.getNameToPropertyDef(), tableInfo.getNameToPropertyInfo(), "", "", joinTableInfo, tableInfo);
         return tableInfo;
     }
 
-    private static void processNameToPropertyDef(GenericType classType, Map<String, PropertyDef> nameToPropertyDef, Map<String, PropertyInfo> nameToPropertyInfo, String propertyPrefix, String ownPropertyPrefix, JoinTableInfo joinTableInfo, TableInfo tableInfo, Configuration configuration, ExtContext extContext) {
+    private void processNameToPropertyDef(GenericType classType, Map<String, PropertyDef> nameToPropertyDef, Map<String, PropertyInfo> nameToPropertyInfo, String propertyPrefix, String ownPropertyPrefix, JoinTableInfo joinTableInfo, TableInfo tableInfo) {
         TableName tableName = null;
         String alias = null;
         if (classType.isAnnotationPresent(TableRef.class)) {
-            tableName = TableDefFactory.buildTableDef(classType, configuration).getTableName();
+            tableName = tableDefFactory.buildTableDef(classType).getTableName();
             TableRef tableRef = classType.getAnnotation(TableRef.class);
             alias = tableRef.alias();
-            processNameToPropertyDef(GenericTypeFactory.build(tableRef.value()), nameToPropertyDef, nameToPropertyInfo, propertyPrefix, ownPropertyPrefix, joinTableInfo, tableInfo, configuration, extContext);
+            processNameToPropertyDef(GenericTypeFactory.build(tableRef.value()), nameToPropertyDef, nameToPropertyInfo, propertyPrefix, ownPropertyPrefix, joinTableInfo, tableInfo);
         } else if (classType.isAnnotationPresent(Table.class)) {
-            tableName = TableDefFactory.buildTableDef(classType, configuration).getTableName();
+            tableName = tableDefFactory.buildTableDef(classType).getTableName();
             alias = classType.getAnnotation(Table.class).alias();
         }
         if (tableName != null) {
@@ -92,7 +103,7 @@ public class TableInfoFactory {
             if (superclass == null || superclass.getType() == Object.class) {
                 throw new MybatisExtException("@JoinParent on '" + classType.getName() + "' requires a superclass.");
             }
-            TableDef parentTableDef = TableDefFactory.buildTableDef(superclass, configuration);
+            TableDef parentTableDef = tableDefFactory.buildTableDef(superclass);
             Set<JoinColumnInfo> joinColumnInfos = new HashSet<>();
             for (JoinColumn joinColumn : joinParent.joinColumn()) {
                 joinColumnInfos.add(buildJoinColumnInfo(joinTableInfo, parentTableDef, ownPropertyPrefix + joinColumn.leftColumn(), joinColumn.rightColumn()));
@@ -115,7 +126,7 @@ public class TableInfoFactory {
             if (nameToPropertyInfo.containsKey(propertyDef.getName())) {
                 continue;
             }
-            PropertyInfo propertyInfo = buildPropertyInfo(propertyDef, tableInfo, propertyPrefix, ownPropertyPrefix, configuration, extContext, joinTableInfo, new HashMap<>(localAliasToJoinTableInfo));
+            PropertyInfo propertyInfo = buildPropertyInfo(propertyDef, tableInfo, propertyPrefix, ownPropertyPrefix, joinTableInfo, new HashMap<>(localAliasToJoinTableInfo));
             nameToPropertyInfo.put(propertyInfo.getName(), propertyInfo);
         }
         if (superclass == null || superclass.getType() == Object.class) {
@@ -125,17 +136,17 @@ public class TableInfoFactory {
             joinTableInfo = parentJoinTableInfo;
             ownPropertyPrefix = "";
         }
-        processNameToPropertyDef(superclass, nameToPropertyDef, nameToPropertyInfo, propertyPrefix, ownPropertyPrefix, joinTableInfo, tableInfo, configuration, extContext);
+        processNameToPropertyDef(superclass, nameToPropertyDef, nameToPropertyInfo, propertyPrefix, ownPropertyPrefix, joinTableInfo, tableInfo);
     }
 
-    private static PropertyInfo buildPropertyInfo(PropertyDef propertyDef, TableInfo tableInfo, String propertyPrefix, String ownPropertyPrefix, Configuration configuration, ExtContext extContext, JoinTableInfo joinTableInfo, Map<String, JoinTableInfo> localAliasToJoinTableInfo) {
+    private PropertyInfo buildPropertyInfo(PropertyDef propertyDef, TableInfo tableInfo, String propertyPrefix, String ownPropertyPrefix, JoinTableInfo joinTableInfo, Map<String, JoinTableInfo> localAliasToJoinTableInfo) {
         PropertyInfo propertyInfo = new PropertyInfo();
         propertyInfo.setName(propertyDef.getName());
         propertyInfo.setFullName(propertyPrefix + propertyDef.getName());
         propertyInfo.setColumnName(propertyDef.getColumnName());
         propertyInfo.setOwnColumn(propertyDef.isOwnColumn());
         propertyInfo.setReadonly(propertyDef.isReadonly());
-        propertyInfo.setFilterableInfo(buildFilterableInfo(propertyDef.getFilterable(), extContext));
+        propertyInfo.setFilterableInfo(buildFilterableInfo(propertyDef.getFilterable()));
         propertyInfo.setJdbcType(propertyDef.getJdbcType());
 
         GenericType propertyType = propertyDef.getClassType();
@@ -185,7 +196,7 @@ public class TableInfoFactory {
         JoinRelation[] joinRelations = propertyDef.getJoinRelations();
         for (JoinRelation joinRelation : joinRelations) {
             GenericType rightTableType = resolveJoinRelationTableType(propertyInfo, joinRelation);
-            TableDef rightTableDef = TableDefFactory.buildTableDef(rightTableType, configuration);
+            TableDef rightTableDef = tableDefFactory.buildTableDef(rightTableType);
             Set<JoinColumnInfo> joinColumnInfos = new HashSet<>();
             for (JoinColumn joinColumn : joinRelation.joinColumn()) {
                 JoinTableInfo leftJoinTableInfo;
@@ -227,7 +238,7 @@ public class TableInfoFactory {
 
         if (propertyDef.getNameToPropertyDef() != null) {
             GenericType genericType = TypeUtils.unwrapToGenericType(propertyDef.getClassType());
-            processNameToPropertyDef(genericType, propertyDef.getNameToPropertyDef(), propertyInfo.getNameToPropertyInfo(), propertyInfo.getFullName() + ".", ownPropertyPrefix, joinTableInfo, tableInfo, configuration, extContext);
+            processNameToPropertyDef(genericType, propertyDef.getNameToPropertyDef(), propertyInfo.getNameToPropertyInfo(), propertyInfo.getFullName() + ".", ownPropertyPrefix, joinTableInfo, tableInfo);
         }
 
         return propertyInfo;
@@ -246,7 +257,7 @@ public class TableInfoFactory {
         return parentJoinTableInfo;
     }
 
-    private static FilterableInfo buildFilterableInfo(@Nullable Filterable filterable, ExtContext extContext) {
+    private FilterableInfo buildFilterableInfo(@Nullable Filterable filterable) {
         if (filterable == null) {
             if (!extContext.isDefaultFilterable()) {
                 return null;

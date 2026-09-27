@@ -34,6 +34,7 @@ import io.github.mybatisext.reflect.GenericTypeFactory;
 class TableDefFactoryTest {
 
     private final Configuration configuration = new Configuration();
+    private final TableDefFactory tableDefFactory = new TableDefFactory(configuration);
 
     @Test
     void buildsTableColumnsEmbeddedPropertiesAndRelations() {
@@ -160,7 +161,7 @@ class TableDefFactoryTest {
     }
 
     private TableDef build(Class<?> type) {
-        return TableDefFactory.buildTableDef(GenericTypeFactory.build(type), configuration);
+        return tableDefFactory.buildTableDef(GenericTypeFactory.build(type));
     }
 
     private PropertyDef property(TableDef tableDef, String name) {

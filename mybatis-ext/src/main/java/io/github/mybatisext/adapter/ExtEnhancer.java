@@ -4,9 +4,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.ibatis.binding.BindingException;
@@ -34,15 +36,15 @@ public class ExtEnhancer implements MethodHandler {
     private static final MethodSignature VALIDATE_ALL_MAPPER_METHOD = new MethodSignature("validateAllMapperMethod", new Class[]{});
 
     private final Configuration configuration;
-    private final ExtContext extContext;
+    private final TableInfoFactory tableInfoFactory;
     private final MappedStatementHelper mappedStatementHelper;
 
     private Map<String, Class<?>> mapperCache = Collections.emptyMap();
 
     public ExtEnhancer(Configuration configuration, ExtContext extContext) {
         this.configuration = configuration;
-        this.extContext = extContext;
-        this.mappedStatementHelper = new MappedStatementHelper(configuration, extContext);
+        this.tableInfoFactory = new TableInfoFactory(configuration, extContext);
+        this.mappedStatementHelper = new MappedStatementHelper(configuration, extContext, tableInfoFactory);
     }
 
     @Override
@@ -103,6 +105,7 @@ public class ExtEnhancer implements MethodHandler {
     }
 
     public void validateAllMapperMethod() {
+        Set<String> validatedStatementIds = new HashSet<>();
         for (Class<?> mapperClass : configuration.getMapperRegistry().getMappers()) {
             if (isNotEnhancedMapper(mapperClass)) {
                 continue;
@@ -115,6 +118,9 @@ public class ExtEnhancer implements MethodHandler {
                 }
                 noCustomMethod = false;
                 String id = mapperClass.getName() + "." + method.getName();
+                if (!validatedStatementIds.add(id)) {
+                    continue;
+                }
                 MappedStatement ms = resolveMappedStatement(mapperClass, method.getName());
                 if (ms == null) {
                     ms = buildMappedStatement(id, mapperClass, method.getName(), false);
@@ -125,7 +131,7 @@ public class ExtEnhancer implements MethodHandler {
             }
             if (noCustomMethod) {
                 GenericType entityClass = getEntityClass(mapperClass);
-                TableInfoFactory.buildTableInfo(entityClass, configuration, extContext);
+                tableInfoFactory.buildTableInfo(entityClass);
             }
         }
     }

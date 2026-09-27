@@ -18,7 +18,6 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
-import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.metadata.PropertyInfo;
@@ -33,11 +32,11 @@ public class ResultMapHelper {
     private static final String PREFIX = "__MYBATIS_EXT__";
     private static final Log log = LogFactory.getLog(ResultMapHelper.class);
     private final Configuration configuration;
-    private final ExtContext extContext;
+    private final TableInfoFactory tableInfoFactory;
 
-    public ResultMapHelper(Configuration configuration, ExtContext extContext) {
+    public ResultMapHelper(Configuration configuration, TableInfoFactory tableInfoFactory) {
         this.configuration = configuration;
-        this.extContext = extContext;
+        this.tableInfoFactory = tableInfoFactory;
     }
 
     public ResultMap buildResultMap(GenericType returnType, Dialect dialect, boolean writeConfiguration) {
@@ -48,7 +47,7 @@ public class ResultMapHelper {
         if (void.class.equals(returnType.getType()) || configuration.getTypeHandlerRegistry().hasTypeHandler(returnType.getType()) || TableDefFactory.resolveTableType(returnType) == null) {
             return buildSimpleTypeResultMap(returnType.getType());
         }
-        TableInfo tableInfo = TableInfoFactory.buildTableInfo(returnType, configuration, extContext);
+        TableInfo tableInfo = tableInfoFactory.buildTableInfo(returnType);
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
             resultMappings.add(buildResultMapping(tableInfo, propertyInfo, dialect, writeConfiguration, false));
@@ -62,7 +61,7 @@ public class ResultMapHelper {
 
     public ResultMap buildPropertyResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
         GenericType tableClass = tableInfo.getClassType();
-        String id = PREFIX + tableClass.getName() + "|" + propertyInfo.getName();
+        String id = PREFIX + tableClass.getName() + "#" + propertyInfo.getFullName();
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
         }
