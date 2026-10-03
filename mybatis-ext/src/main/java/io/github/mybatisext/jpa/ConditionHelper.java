@@ -2,6 +2,7 @@ package io.github.mybatisext.jpa;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -55,23 +56,33 @@ public class ConditionHelper {
             return null;
         }
         if (condition.getType() == ConditionType.COMPLEX) {
-            if (condition.getSubConditions().size() == 1 && condition.getTestMode() == TestMode.None && StringUtils.isBlank(condition.getTestTemplate()) && !condition.isNot()) {
-                return simplifyCondition(condition.getSubConditions().iterator().next());
-            }
-            for (Condition c : new ArrayList<>(condition.getSubConditions())) {
-                condition.getSubConditions().remove(c);
-                Condition simplifyCondition = simplifyCondition(c);
-                if (simplifyCondition == null) {
-                    continue;
+            List<Condition> children = new ArrayList<>(condition.getSubConditions());
+            condition.getSubConditions().clear();
+            for (Condition child : children) {
+                Condition simplified = simplifyCondition(child);
+                if (simplified != null) {
+                    condition.getSubConditions().add(simplified);
                 }
-                condition.getSubConditions().add(simplifyCondition);
             }
-            if (condition.getSubConditions().isEmpty()) {
+            if (condition.getSubConditions().isEmpty() && StringUtils.isBlank(condition.getExprTemplate())) {
                 return null;
             }
-            return condition;
+            if (isTransparentGroup(condition) && condition.getSubConditions().size() == 1) {
+                return condition.getSubConditions().iterator().next();
+            }
         }
         return condition;
+    }
+
+    /** 仅没有附加语义的括号分组可以折叠或展开。 */
+    private static boolean isTransparentGroup(Condition condition) {
+        return condition.getType() == ConditionType.COMPLEX
+                && condition.getTestMode() == TestMode.None
+                && StringUtils.isBlank(condition.getTestTemplate())
+                && StringUtils.isBlank(condition.getExprTemplate())
+                && condition.getCollectionVariable() == null
+                && (condition.getPropertyInfo() == null || condition.getPropertyInfo().getFetchType() == null)
+                && !condition.isNot();
     }
 
     public static Condition buildForTableInfo(TableInfo tableInfo, boolean onlyById, String param) {
@@ -137,6 +148,14 @@ public class ConditionHelper {
     }
 
     private static void applyFilterableInfo(Condition condition, FilterableInfo filterableInfo, TableInfo tableInfo, String param) {
+        applyFilterableSettings(condition, filterableInfo);
+        if (condition.getCompareOperator().isRequiredSecondVariable()) {
+            PropertyInfo secondPropertyInfo = TableInfoFactory.getPropertyInfo(tableInfo, filterableInfo.getSecondVariable());
+            condition.setSecondVariable(new Variable(param, filterableInfo.getSecondVariable(), secondPropertyInfo.getJavaType()));
+        }
+    }
+
+    static void applyFilterableSettings(Condition condition, FilterableInfo filterableInfo) {
         condition.setTestMode(filterableInfo.getTestMode());
         condition.setCompareOperator(filterableInfo.getOperator());
         condition.setLogicalOperator(filterableInfo.getLogicalOperator());
@@ -144,10 +163,6 @@ public class ConditionHelper {
         condition.setNot(filterableInfo.isNot());
         condition.setTestTemplate(filterableInfo.getTestTemplate());
         condition.setExprTemplate(filterableInfo.getExprTemplate());
-        if (condition.getCompareOperator().isRequiredSecondVariable()) {
-            PropertyInfo secondPropertyInfo = TableInfoFactory.getPropertyInfo(tableInfo, filterableInfo.getSecondVariable());
-            condition.setSecondVariable(new Variable(param, filterableInfo.getSecondVariable(), secondPropertyInfo.getJavaType()));
-        }
     }
 
     public static void collectUsedJoinTableInfo(Condition condition, Collection<JoinTableInfo> joinTableInfos) {
@@ -168,76 +183,72 @@ public class ConditionHelper {
     }
 
     public static String toWhere(Condition condition, Dialect dialect) {
-        if (condition.hasTest() || condition.isNot()) {
-            return "<where>" + toScript(condition, condition.getLogicalOperator(), dialect) + "</where>";
-        }
-        if (condition.getType() == ConditionType.COMPLEX) {
+        if (isTransparentGroup(condition)) {
             return toWhere(condition.getSubConditions(), condition.getLogicalOperator(), dialect);
         }
-        return "WHERE " + toExpr(condition, dialect);
+        return toWhere(Collections.singletonList(condition), LogicalOperator.AND, dialect);
     }
 
     public static String toWhere(Collection<Condition> conditions, LogicalOperator logicalOperator, Dialect dialect) {
-        if (conditions.size() == 1) {
-            return toWhere(conditions.stream().findFirst().get(), dialect);
-        }
-        List<String> ss = new ArrayList<>();
-        if (conditions.stream().anyMatch(Condition::hasTest)) {
-            for (Condition condition : conditions) {
-                ss.add(toScript(condition, logicalOperator, dialect));
-            }
-            return "<where>" + String.join(" ", ss) + "</where>";
-        }
-        {
-            for (Condition condition : conditions) {
-                ss.add(toExpr(condition, dialect));
-            }
-            return "WHERE " + String.join(" " + logicalOperator + " ", ss);
-        }
+        RenderContext context = new RenderContext("where", areFixedConditions(conditions));
+        String script = toScripts(conditions, logicalOperator, dialect, context);
+        return context.fixedConditions ? "WHERE " + script : "<where>" + script + "</where>";
     }
 
     public static String toHaving(Condition condition, Dialect dialect) {
-        if (condition.hasTest() || condition.isNot()) {
-            return "<trim prefix=\"HAVING\" prefixOverrides=\"" + condition.getLogicalOperator() + "\">" + toScript(condition, condition.getLogicalOperator(), dialect) + "</trim>";
-        }
-        if (condition.getType() == ConditionType.COMPLEX) {
+        if (isTransparentGroup(condition)) {
             return toHaving(condition.getSubConditions(), condition.getLogicalOperator(), dialect);
         }
-        return "HAVING " + toExpr(condition, dialect);
+        return toHaving(Collections.singletonList(condition), LogicalOperator.AND, dialect);
     }
 
     public static String toHaving(Collection<Condition> conditions, LogicalOperator logicalOperator, Dialect dialect) {
-        if (conditions.size() == 1) {
-            return toHaving(conditions.stream().findFirst().get(), dialect);
-        }
-        List<String> ss = new ArrayList<>();
-        if (conditions.stream().anyMatch(Condition::hasTest)) {
-            ss.add("<trim prefix=\"HAVING\" prefixOverrides=\"" + logicalOperator + "\">");
-            for (Condition condition : conditions) {
-                ss.add(toScript(condition, logicalOperator, dialect));
-            }
-            ss.add("</trim>");
-            return String.join(" ", ss);
-        }
-        {
-            for (Condition condition : conditions) {
-                ss.add(toExpr(condition, dialect));
-            }
-            return "HAVING " + String.join(" " + logicalOperator + " ", ss);
-        }
+        RenderContext context = new RenderContext("having", areFixedConditions(conditions));
+        String script = toScripts(conditions, logicalOperator, dialect, context);
+        return context.fixedConditions ? "HAVING " + script : "<trim prefix=\"HAVING\" prefixOverrides=\"AND |OR \">" + script + "</trim>";
     }
 
-    private static String toScript(Condition condition, @Nullable LogicalOperator logicalOperator, Dialect dialect) {
-        if (condition.hasTest()) {
-            if (condition.getSubConditions().size() == 1 && StringUtils.isBlank(condition.getExprTemplate()) && !condition.isNot()) {
-                Condition subCondition = condition.getSubConditions().iterator().next();
-                if (!subCondition.hasTest()) {
-                    return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(subCondition, logicalOperator, dialect) + "</if>";
-                }
-            }
-            return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(condition, logicalOperator, dialect) + "</if>";
+    private static boolean areFixedConditions(Collection<Condition> conditions) {
+        if (conditions.isEmpty()) {
+            return false;
         }
-        return toExprWithPrefix(condition, logicalOperator, dialect);
+        for (Condition condition : conditions) {
+            // 自定义表达式不推断其结构，统一保留动态子句包装。
+            if (condition.hasTest()
+                    || condition.getTestMode() == TestMode.False
+                    || condition.getCollectionVariable() != null
+                    || StringUtils.isNotBlank(condition.getExprTemplate())) {
+                return false;
+            }
+
+            if (condition.getType() == ConditionType.COMPLEX
+                    && !areFixedConditions(condition.getSubConditions())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String toScripts(Collection<Condition> conditions, LogicalOperator logicalOperator, Dialect dialect, RenderContext context) {
+        List<String> scripts = new ArrayList<>();
+        for (Condition condition : conditions) {
+            if (isTransparentGroup(condition) && condition.getLogicalOperator() == logicalOperator) {
+                scripts.add(toScripts(condition.getSubConditions(), logicalOperator, dialect, context));
+            } else if (context.fixedConditions) {
+                scripts.add(toExprWithPrefix(condition, null, dialect, context));
+            } else {
+                scripts.add(toScript(condition, logicalOperator, dialect, context));
+            }
+        }
+        return String.join(context.fixedConditions ? " " + logicalOperator + " " : " ", scripts);
+    }
+
+    private static String toScript(Condition condition, LogicalOperator logicalOperator, Dialect dialect, RenderContext context) {
+        String script = toExprWithPrefix(condition, logicalOperator, dialect, context);
+        if (condition.hasTest() || condition.getTestMode() == TestMode.False) {
+            return "<if test=\"" + toTestOgnl(condition) + "\">" + script + "</if>";
+        }
+        return script;
     }
 
     private static String toTestOgnl(Condition condition) {
@@ -257,196 +268,118 @@ public class ConditionHelper {
         return null;
     }
 
-    private static String toExprWithPrefix(Condition condition, @Nullable LogicalOperator logicalOperator, Dialect dialect) {
-        String prefix = LogicalOperator.AND == logicalOperator ? "AND " : LogicalOperator.OR == logicalOperator ? "OR " : "";
+    private static String toExprWithPrefix(Condition condition, @Nullable LogicalOperator logicalOperator, Dialect dialect, RenderContext context) {
+        String prefix = logicalOperator == null ? "" : logicalOperator + " ";
         if (condition.isNot()) {
             prefix += "NOT ";
         }
+        boolean collection = condition.getCollectionVariable() != null;
+        String expression;
         if (StringUtils.isNotBlank(condition.getExprTemplate())) {
-            String expr = SimpleStringTemplate.build(condition.getExprTemplate(), condition);
-            if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getFetchType() != null) {
-                expr = NestedSelectHelper.buildExistSubSelect(condition.getPropertyInfo(), "(" + expr + ")");
-            }
-            return prefix + expr;
-        }
-        if (condition.getType() == ConditionType.BASIC) {
-            if (condition.getCollectionVariable() != null) {
-                List<String> ss = new ArrayList<>();
-                if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getFetchType() != null) {
-                    ss.add("<foreach collection=\"" + condition.getCollectionVariable() + "\" item=\"" + condition.getVariable() + "\" open=\"" + prefix + NestedSelectHelper.buildExistSubSelect(condition.getPropertyInfo(), "(\" close=\")") + "\" separator=\"OR\">");
-                } else {
-                    ss.add("<foreach collection=\"" + condition.getCollectionVariable() + "\" item=\"" + condition.getVariable() + "\" open=\"" + prefix + "(\" close=\")\" separator=\"OR\">");
-                }
-                ss.add(toBasicExpr(condition, condition.getCompareOperator(), condition.isIgnorecase(), dialect));
-                ss.add("</foreach>");
-                return String.join(" ", ss);
-            }
-            String expr = toBasicExpr(condition, condition.getCompareOperator(), condition.isIgnorecase(), dialect);
-            if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getFetchType() != null) {
-                expr = NestedSelectHelper.buildExistSubSelect(condition.getPropertyInfo(), expr);
-            }
-            return prefix + expr;
-        }
-        if (condition.getType() == ConditionType.COMPLEX) {
-            List<String> ss = new ArrayList<>();
-            if (condition.getCollectionVariable() != null) {
-                if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getFetchType() != null) {
-                    ss.add("<foreach collection=\"" + condition.getCollectionVariable() + "\" item=\"" + condition.getVariable() + "\" open=\"" + prefix + NestedSelectHelper.buildExistSubSelect(condition.getPropertyInfo(), "(\" close=\")") + "\" separator=\"OR\">");
-                } else {
-                    ss.add("<foreach collection=\"" + condition.getCollectionVariable() + "\" item=\"" + condition.getVariable() + "\" open=\"" + prefix + "(\" close=\")\" separator=\"OR\">");
-                }
-                ss.add("<trim prefix=\"(\" suffix=\")\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
-                for (Condition subCondition : condition.getSubConditions()) {
-                    ss.addAll(buildSubConditionExpr(subCondition, condition.getLogicalOperator(), dialect));
-                }
-                ss.add("</trim>");
-                ss.add("</foreach>");
-                return String.join(" ", ss);
-            }
-            if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getFetchType() != null) {
-                ss.add("<trim prefix=\"" + prefix + NestedSelectHelper.buildExistSubSelect(condition.getPropertyInfo(), "(\" suffix=\")") + "\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
-            } else {
-                ss.add("<trim prefix=\"" + prefix + "(\" suffix=\")\" prefixOverrides=\"" + condition.getLogicalOperator() + "\" >");
-            }
-            for (Condition subCondition : condition.getSubConditions()) {
-                ss.addAll(buildSubConditionExpr(subCondition, condition.getLogicalOperator(), dialect));
-            }
-            ss.add("</trim>");
-            return String.join(" ", ss);
-        }
-        throw new MybatisExtException("Unsupported condition type:" + condition.getType());
-    }
-
-    private static String toExpr(Condition condition, Dialect dialect) {
-        return toExprWithPrefix(condition, null, dialect);
-    }
-
-    private static List<String> buildSubConditionExpr(Condition condition, LogicalOperator logicalOperator, Dialect dialect) {
-        List<String> ss = new ArrayList<>();
-        if (condition.getType() == ConditionType.COMPLEX && !condition.hasTest() && condition.getLogicalOperator() == logicalOperator && condition.getCollectionVariable() == null && !condition.isNot()) {
-            for (Condition subCondition : condition.getSubConditions()) {
-                ss.addAll(buildSubConditionExpr(subCondition, logicalOperator, dialect));
-            }
+            expression = SimpleStringTemplate.build(condition.getExprTemplate(), condition);
+        } else if (condition.getType() == ConditionType.BASIC) {
+            expression = toBasicExpr(condition, dialect, context);
+        } else if (condition.getType() == ConditionType.COMPLEX) {
+            String children = toScripts(condition.getSubConditions(), condition.getLogicalOperator(), dialect, context);
+            expression = context.fixedConditions
+                    ? "(" + children + ")"
+                    : "<trim prefix=\"(\" suffix=\")\" prefixOverrides=\"AND |OR \">" + children + "</trim>";
         } else {
-            ss.add(toScript(condition, logicalOperator, dialect));
+            throw new MybatisExtException("Unsupported condition type:" + condition.getType());
         }
-        return ss;
+
+        if (collection) {
+            expression = "<trim prefix=\"(\" suffix=\")\"><foreach collection=\"" + condition.getCollectionVariable() + "\" item=\"" + condition.getVariable()
+                    + "\" separator=\"OR\">" + expression + "</foreach></trim>";
+        }
+        if (condition.getPropertyInfo() != null && condition.getPropertyInfo().getFetchType() != null) {
+            if (context.fixedConditions) {
+                return prefix + NestedSelectHelper.buildExistSubSelect(condition.getPropertyInfo(), "(" + expression + ")");
+            }
+            return "<trim prefix=\"" + prefix + NestedSelectHelper.buildExistSubSelect(condition.getPropertyInfo(), "(\" suffix=\")")
+                    + "\">" + expression + "</trim>";
+        }
+        if (!context.fixedConditions && (condition.getType() == ConditionType.COMPLEX || collection)) {
+            return "<trim prefix=\"" + prefix + "\">" + expression + "</trim>";
+        }
+        return prefix + expression;
     }
 
-    private static String toBasicExpr(Condition condition, CompareOperator compareOperator, boolean ignorecase, Dialect dialect) {
-        List<String> ss = new ArrayList<>();
-        if (CompareOperator.Equals == compareOperator) {
-            if (ignorecase) {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " = {variable.##bindPlaceholder}");
-            } else {
-                ss.add("{propertyInfo} = {variable.##placeholder}");
+    private static String toBasicExpr(Condition condition, Dialect dialect, RenderContext context) {
+        CompareOperator operator = condition.getCompareOperator();
+        boolean ignorecase = condition.isIgnorecase();
+        String property = SimpleStringTemplate.build("{propertyInfo}", condition);
+        String column = ignorecase ? dialect.upper(property) : property;
+        String sqlOperator = null;
+        if (operator == CompareOperator.Equals) {
+            sqlOperator = "=";
+        } else if (operator == CompareOperator.LessThan) {
+            sqlOperator = "&lt;";
+        } else if (operator == CompareOperator.LessThanEqual) {
+            sqlOperator = "&lt;=";
+        } else if (operator == CompareOperator.GreaterThan) {
+            sqlOperator = "&gt;";
+        } else if (operator == CompareOperator.GreaterThanEqual) {
+            sqlOperator = "&gt;=";
+        }
+
+        List<String> before = new ArrayList<>();
+        Variable variable = condition.getVariable();
+        String expression;
+        if (sqlOperator != null) {
+            String value = ignorecase ? context.bind(variable, Ognl.ToUpperCase + "(" + variable + ")", before) : variable.getPlaceholder();
+            expression = column + " " + sqlOperator + " " + value;
+        } else if (operator == CompareOperator.Like || operator == CompareOperator.StartWith || operator == CompareOperator.EndWith) {
+            String value = ignorecase ? Ognl.ToUpperCase + "(" + variable + ")" : variable.toString();
+            if (operator == CompareOperator.Like || operator == CompareOperator.EndWith) {
+                value = "'%' + " + value;
             }
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.LessThan == compareOperator) {
-            if (ignorecase) {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &lt; {variable.##bindPlaceholder}");
-            } else {
-                ss.add("{propertyInfo} &lt; {variable.##placeholder}");
+            if (operator == CompareOperator.Like || operator == CompareOperator.StartWith) {
+                value += " + '%'";
             }
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
+            expression = column + " LIKE " + context.bind(variable, value, before);
+        } else if (operator == CompareOperator.Between) {
+            Variable second = condition.getSecondVariable();
+            String firstValue = ignorecase ? context.bind(variable, Ognl.ToUpperCase + "(" + variable + ")", before) : variable.getPlaceholder();
+            String secondValue = ignorecase ? context.bind(second, Ognl.ToUpperCase + "(" + second + ")", before) : second.getPlaceholder();
+            expression = column + " BETWEEN " + firstValue + " AND " + secondValue;
+        } else if (operator == CompareOperator.In) {
+            String item = variable.getItemName();
+            String binding = ignorecase ? "<bind name=\"" + item + "\" value=\"" + Ognl.ToUpperCase + "(" + item + ")\"/>" : "";
+            expression = column + " IN <foreach collection=\"" + variable + "\" item=\"" + item
+                    + "\" separator=\",\" open=\"(\" close=\")\">" + binding + variable.getItemPlaceholder() + "</foreach>";
+        } else if (operator == CompareOperator.IsNull) {
+            expression = property + " IS NULL";
+        } else if (operator == CompareOperator.IsNotNull) {
+            expression = property + " IS NOT NULL";
+        } else if (operator == CompareOperator.IsTrue) {
+            expression = property + " " + dialect.isTrue();
+        } else if (operator == CompareOperator.IsFalse) {
+            expression = property + " " + dialect.isFalse();
+        } else {
+            throw new MybatisExtException("Unsupported compareOperator type:" + operator);
         }
-        if (CompareOperator.LessThanEqual == compareOperator) {
-            if (ignorecase) {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &lt;= {variable.##bindPlaceholder}");
-            } else {
-                ss.add("{propertyInfo} &lt;= {variable.##placeholder}");
-            }
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
+        return before.isEmpty() ? expression : String.join(" ", before) + " " + expression;
+    }
+
+    /** 绑定名在一个子句内唯一，WHERE 与 HAVING 使用不同命名空间。 */
+    private static final class RenderContext {
+
+        private final String clause;
+        private final boolean fixedConditions;
+        private int bindingIndex;
+
+        private RenderContext(String clause, boolean fixedConditions) {
+            this.clause = clause;
+            this.fixedConditions = fixedConditions;
         }
-        if (CompareOperator.GreaterThan == compareOperator) {
-            if (ignorecase) {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &gt; {variable.##bindPlaceholder}");
-            } else {
-                ss.add("{propertyInfo} &gt; {variable.##placeholder}");
-            }
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
+
+        private String bind(Variable source, String expression, List<String> before) {
+            String name = "__" + clause + "_bind_" + bindingIndex++;
+            before.add("<bind name=\"" + name + "\" value=\"" + expression + "\"/>");
+            Variable binding = new Variable(name, source.getJavaType());
+            binding.setJdbcType(source.getJdbcType());
+            return binding.getPlaceholder();
         }
-        if (CompareOperator.GreaterThanEqual == compareOperator) {
-            if (ignorecase) {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " &gt;= {variable.##bindPlaceholder}");
-            } else {
-                ss.add("{propertyInfo} &gt;= {variable.##placeholder}");
-            }
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.Like == compareOperator) {
-            if (ignorecase) {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"'%' + " + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " LIKE {variable.##bindPlaceholder}");
-            } else {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"'%' + {variable} + '%'\"/>");
-                ss.add("{propertyInfo} LIKE {variable.##bindPlaceholder}");
-            }
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.StartWith == compareOperator) {
-            if (ignorecase) {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable}) + '%'\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " LIKE {variable.##bindPlaceholder}");
-            } else {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"{variable} + '%'\"/>");
-                ss.add("{propertyInfo} LIKE {variable.##bindPlaceholder}");
-            }
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.EndWith == compareOperator) {
-            if (ignorecase) {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"'%' + " + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " LIKE {variable.##bindPlaceholder}");
-            } else {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"'%' + {variable}\"/>");
-                ss.add("{propertyInfo} LIKE {variable.##bindPlaceholder}");
-            }
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.Between == compareOperator) {
-            if (ignorecase) {
-                ss.add("<bind name=\"{variable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({variable})\"/>");
-                ss.add("<bind name=\"{secondVariable.##bindName}\" value=\"" + Ognl.ToUpperCase + "({secondVariable})\"/>");
-                ss.add(dialect.upper("{propertyInfo}") + " BETWEEN {variable.##bindPlaceholder} AND {secondVariable.##bindPlaceholder}");
-            } else {
-                ss.add("{propertyInfo} BETWEEN {variable.##placeholder} AND {secondVariable.##placeholder}");
-            }
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.In == compareOperator) {
-            if (ignorecase) {
-                ss.add(dialect.upper("{propertyInfo}") + " IN <foreach collection=\"{variable}\" item=\"{variable.##itemName}\" separator=\",\" open=\"(\" close=\")\">");
-                ss.add("<bind name=\"{variable.##itemName}\" value=\"" + Ognl.ToUpperCase + "({variable.##itemName})\"/>");
-            } else {
-                ss.add("{propertyInfo} IN <foreach collection=\"{variable}\" item=\"{variable.##itemName}\" separator=\",\" open=\"(\" close=\")\">");
-            }
-            ss.add("{variable.##itemPlaceholder}");
-            ss.add("</foreach>");
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.IsNull == compareOperator) {
-            ss.add("{propertyInfo} IS NULL");
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.IsNotNull == compareOperator) {
-            ss.add("{propertyInfo} IS NOT NULL");
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.IsTrue == compareOperator) {
-            ss.add("{propertyInfo} " + dialect.isTrue());
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        if (CompareOperator.IsFalse == compareOperator) {
-            ss.add("{propertyInfo} " + dialect.isFalse());
-            return SimpleStringTemplate.build(String.join(" ", ss), condition);
-        }
-        throw new MybatisExtException("Unsupported compareOperator type:" + compareOperator);
     }
 }

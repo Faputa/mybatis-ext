@@ -30,6 +30,14 @@ public class Variable implements Getter<Variable> {
         this.javaType = javaType;
     }
 
+    Variable(Variable source) {
+        this.name = source.name;
+        this.fullName = source.fullName;
+        this.javaType = source.javaType;
+        this.jdbcType = source.jdbcType;
+        this.nameToVariable.putAll(source.nameToVariable);
+    }
+
     public String getName() {
         return name;
     }
