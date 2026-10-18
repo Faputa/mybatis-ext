@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -45,7 +46,7 @@ public class ResultMapHelperTest {
         Map<String, ResultMapping> mappings = resultMap.getResultMappings().stream().collect(Collectors.toMap(ResultMapping::getProperty, Function.identity()));
 
         assertEquals(TablePermission.class, resultMap.getType());
-        assertTrue(resultMap.getIdResultMappings().stream().map(ResultMapping::getProperty).collect(Collectors.toSet()).containsAll(java.util.Arrays.asList("tableId", "roleId")));
+        assertTrue(resultMap.getIdResultMappings().stream().map(ResultMapping::getProperty).collect(Collectors.toSet()).containsAll(Arrays.asList("tableId", "roleId")));
         assertNotNull(mappings.get("rowPermissions").getNestedResultMapId());
         assertNotNull(mappings.get("rowPermissions2").getNestedQueryId());
         assertNotNull(mappings.get("columnPermissions").getNestedResultMapId());

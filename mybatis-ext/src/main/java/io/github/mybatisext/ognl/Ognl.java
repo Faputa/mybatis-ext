@@ -136,11 +136,16 @@ public class Ognl {
      * 校验参数签名是否匹配
      *
      * @param _parameter 参数对象
-     * @param signature  签名
-     * @return 是否匹配
+     * @param signatures 候选签名
+     * @return 是否匹配任一签名
      */
-    public static boolean isParameterSignatureMatch(Object _parameter, String signature) {
-        return ParameterSignatureHelper.isParameterSignatureMatch(_parameter, signature);
+    public static boolean isParameterSignatureMatch(Object _parameter, String... signatures) {
+        for (String signature : signatures) {
+            if (ParameterSignatureHelper.isParameterSignatureMatch(_parameter, signature)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

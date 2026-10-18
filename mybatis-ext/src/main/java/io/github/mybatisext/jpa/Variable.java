@@ -6,7 +6,9 @@ import java.util.Objects;
 
 import org.apache.ibatis.type.JdbcType;
 
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaAnnotatedElement;
+import io.github.mybatisext.model.JavaType;
+import io.github.mybatisext.model.JavaTypes;
 import io.github.mybatisext.util.Getter;
 import io.github.mybatisext.util.StringUtils;
 import io.github.mybatisext.util.TypeUtils;
@@ -15,25 +17,32 @@ public class Variable implements Getter<Variable> {
 
     private final String name;
     private final String fullName;
-    private final GenericType javaType;
+    private final JavaType javaType;
+    private final JavaAnnotatedElement source;
     private final Map<String, Variable> nameToVariable = new HashMap<>();
     // 延迟绑定
     private JdbcType jdbcType;
 
-    public Variable(String name, GenericType javaType) {
+    public Variable(String name, JavaType javaType) {
         this("", name, javaType);
     }
 
-    public Variable(String prefix, String name, GenericType javaType) {
+    public Variable(String prefix, String name, JavaType javaType) {
+        this(prefix, name, javaType, null);
+    }
+
+    public Variable(String prefix, String name, JavaType javaType, JavaAnnotatedElement source) {
         this.name = name;
         this.fullName = StringUtils.isNotBlank(prefix) ? prefix + "." + name : name;
         this.javaType = javaType;
+        this.source = source;
     }
 
     Variable(Variable source) {
         this.name = source.name;
         this.fullName = source.fullName;
         this.javaType = source.javaType;
+        this.source = source.source;
         this.jdbcType = source.jdbcType;
         this.nameToVariable.putAll(source.nameToVariable);
     }
@@ -46,8 +55,13 @@ public class Variable implements Getter<Variable> {
         return fullName;
     }
 
-    public GenericType getJavaType() {
+    public JavaType getJavaType() {
         return javaType;
+    }
+
+    /** 变量实际绑定的参数、字段或 getter，不参与变量相等性和 SQL 渲染。 */
+    public JavaAnnotatedElement getSource() {
+        return source;
     }
 
     public Map<String, Variable> getNameToVariable() {
@@ -92,7 +106,7 @@ public class Variable implements Getter<Variable> {
     }
 
     public Variable getItemVariable() {
-        Variable variable = new Variable(getItemName(), TypeUtils.unwrapToGenericType(javaType));
+        Variable variable = new Variable("", getItemName(), JavaTypes.unwrap(javaType), source);
         variable.setJdbcType(jdbcType);
         return variable;
     }
@@ -111,12 +125,12 @@ public class Variable implements Getter<Variable> {
             return false;
         }
         Variable variable = (Variable) o;
-        return Objects.equals(name, variable.name) && Objects.equals(fullName, variable.fullName) && Objects.equals(javaType, variable.javaType);
+        return Objects.equals(name, variable.name) && Objects.equals(fullName, variable.fullName) && TypeUtils.equalsIgnoreBoxing(javaType, variable.javaType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, fullName, javaType);
+        return Objects.hash(name, fullName, TypeUtils.hashCodeIgnoreBoxing(javaType));
     }
 
     @Override

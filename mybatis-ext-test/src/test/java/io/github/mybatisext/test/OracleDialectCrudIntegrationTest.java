@@ -1,8 +1,9 @@
 package io.github.mybatisext.test;
 
-import io.github.mybatisext.dialect.OracleDialect;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import io.github.mybatisext.dialect.OracleDialect;
 
 class OracleDialectCrudIntegrationTest extends AbstractDialectCrudIntegrationTest {
 

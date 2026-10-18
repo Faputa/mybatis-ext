@@ -93,6 +93,7 @@ class ArrayBatchCrudIntegrationTest {
 
     @Table(name = "array_row")
     public static class Row {
+
         @Id(idType = IdType.NONE)
         @Column
         public Long id;
@@ -108,14 +109,23 @@ class ArrayBatchCrudIntegrationTest {
     }
 
     public interface ArrayMapper extends ExtMapper<Row> {
+
         int saveBatch(Row[] rows);
+
         int insertBatch(@Param("rows") Row[] rows);
+
         int saveBatchIgnoreNull(Row[] rows);
+
         int updateBatch(@OnlyById Row[] rows);
+
         int modifyBatch(@Param("rows") @OnlyById Row[] rows);
+
         int updateBatchIgnoreNull(@Param("rows") @OnlyById Row[] rows);
+
         int deleteBatch(@OnlyById Row[] rows);
+
         int removeBatch(@Param("rows") @OnlyById Row[] rows);
+
         long count();
 
         @Select("SELECT name FROM array_row WHERE id = #{id}")

@@ -1,8 +1,8 @@
 package io.github.mybatisext.adapter;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,8 +22,8 @@ import org.junit.jupiter.api.Test;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.Table;
-import io.github.mybatisext.mapper.ExtMapper;
 import io.github.mybatisext.dialect.H2Dialect;
+import io.github.mybatisext.mapper.ExtMapper;
 
 class ExtEnhancerTest {
 
@@ -102,7 +102,9 @@ class ExtEnhancerTest {
     }
 
     interface OverloadedMapper extends ExtMapper<AdapterEntity> {
+
         long count(@Param("id") long id);
+
         long count(@Param("id") Long id);
     }
 
@@ -111,6 +113,7 @@ class ExtEnhancerTest {
     }
 
     interface ParentMapper extends ExtMapper<AdapterEntity> {
+
         AdapterEntity findById(@Param("id") Long id);
     }
 
@@ -118,11 +121,13 @@ class ExtEnhancerTest {
     }
 
     interface EntityMapper extends ExtMapper<AdapterEntity> {
+
         AdapterEntity getById(@Param("id") Long id);
     }
 
     @Table(name = "adapter_entity")
     static class AdapterEntity {
+
         @Id
         @Column
         private Long id;

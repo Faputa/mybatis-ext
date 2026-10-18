@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
@@ -44,6 +45,7 @@ abstract class AbstractDialectCrudIntegrationTest {
             assertEquals(1L, admin.getPostIds().get(0));
 
             assertEquals(2, mapper.countByStatus("0"));
+            assertEquals(2, mapper.count("0"));
             assertTrue(mapper.existsByEmail("ry@qq.com"));
             assertFalse(mapper.existsByEmail("missing@example.com"));
 
@@ -51,6 +53,7 @@ abstract class AbstractDialectCrudIntegrationTest {
             query.setUserId(2L);
             assertEquals("ry", mapper.getByUserId(query).getLoginName());
             assertEquals("ry", mapper.getByUserId(2L).getLoginName());
+            assertEquals("ry", mapper.get(2L).getLoginName());
         }
     }
 
@@ -291,7 +294,7 @@ abstract class AbstractDialectCrudIntegrationTest {
     }
 
     private List<Long> userIds(List<SysUser> users) {
-        return users.stream().map(SysUser::getUserId).collect(java.util.stream.Collectors.toList());
+        return users.stream().map(SysUser::getUserId).collect(Collectors.toList());
     }
 
     private SysUser idQuery(Long userId) {
@@ -301,6 +304,7 @@ abstract class AbstractDialectCrudIntegrationTest {
     }
 
     protected static class DialectDataSource extends SimpleDriverDataSource {
+
         private final Dialect dialect;
 
         DialectDataSource(Driver driver, String url, Dialect dialect) {

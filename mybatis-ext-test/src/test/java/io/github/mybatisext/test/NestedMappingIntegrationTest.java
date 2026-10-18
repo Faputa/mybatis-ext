@@ -62,6 +62,7 @@ class NestedMappingIntegrationTest {
 
     @Table(name = "parent_entity")
     public static class QueryEntity {
+
         @Column
         public Long id;
         @Column
@@ -71,6 +72,7 @@ class NestedMappingIntegrationTest {
     }
 
     public static class First {
+
         @Column(name = "ref_a")
         public Long refId;
         @Fetch(FetchType.EAGER)
@@ -79,6 +81,7 @@ class NestedMappingIntegrationTest {
     }
 
     public static class Second {
+
         @Column(name = "ref_b")
         public Long refId;
         @Fetch(FetchType.EAGER)
@@ -88,6 +91,7 @@ class NestedMappingIntegrationTest {
 
     @Table(name = "child_entity")
     public static class Child {
+
         @Column
         public Long id;
         @Column
@@ -96,6 +100,7 @@ class NestedMappingIntegrationTest {
 
     @Table(name = "other_child")
     public static class OtherChild {
+
         @Column
         public Long id;
         @Column
@@ -104,6 +109,7 @@ class NestedMappingIntegrationTest {
 
     @Table(name = "parent_entity")
     public static class ResultEntity {
+
         @Column
         public Long id;
         @Column
@@ -113,30 +119,36 @@ class NestedMappingIntegrationTest {
     }
 
     public static class FirstContainer {
+
         @Column
         public FirstDetail detail;
     }
 
     public static class SecondContainer {
+
         @Column
         public SecondDetail detail;
     }
 
     public static class FirstDetail {
+
         @Column(name = "ref_a")
         public Long refId;
     }
 
     public static class SecondDetail {
+
         @Column(name = "ref_b")
         public Long refId;
     }
 
     public interface QueryMapper extends ExtMapper<QueryEntity> {
+
         List<QueryEntity> list();
     }
 
     public interface ResultMapper extends ExtMapper<ResultEntity> {
+
         List<ResultEntity> list();
     }
 }

@@ -5,23 +5,23 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.github.mybatisext.annotation.Table;
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaType;
 import io.github.mybatisext.util.StringUtils;
 
 public class JoinGraphFactory {
 
-    private final Map<GenericType, JoinGraph> tableTypeToJoinGraph = new ConcurrentHashMap<>();
+    private final Map<JavaType, JoinGraph> tableTypeToJoinGraph = new ConcurrentHashMap<>();
 
     public JoinGraph buildJoinGraph(TableDef tableDef) {
-        GenericType tableType = tableDef.getTableType();
+        JavaType tableType = tableDef.getTableType();
         return tableTypeToJoinGraph.computeIfAbsent(tableType, k -> new JoinGraph());
     }
 
     public static JoinNode buildJoinNode(JoinGraph joinGraph, TableDef tableDef) {
-        GenericType tableType = tableDef.getTableType();
+        JavaType tableType = tableDef.getTableType();
         JoinNode joinNode = new JoinNode();
         joinNode.setTableType(tableType);
-        resolveJoinNodeAlias(joinGraph, joinNode, tableType.getAnnotation(Table.class).alias());
+        resolveJoinNodeAlias(joinGraph, joinNode, tableType.annotation(Table.class).value("alias"));
         return joinNode;
     }
 
@@ -34,14 +34,8 @@ public class JoinGraphFactory {
     }
 
     private static void resolveJoinNodeAlias(JoinGraph joinGraph, JoinNode joinNode, String defaultName) {
-        String alias = joinGraph.getJoinNodeToAlias().get(joinNode);
-        if (alias != null) {
-            joinNode.setAlias(alias);
-            return;
-        }
-        alias = buildAlias(joinGraph, defaultName);
+        String alias = joinGraph.getJoinNodeToAlias().computeIfAbsent(joinNode, k -> buildAlias(joinGraph, defaultName));
         joinNode.setAlias(alias);
-        joinGraph.getJoinNodeToAlias().put(joinNode, alias);
     }
 
     private static String buildAlias(JoinGraph joinGraph, String defaultName) {

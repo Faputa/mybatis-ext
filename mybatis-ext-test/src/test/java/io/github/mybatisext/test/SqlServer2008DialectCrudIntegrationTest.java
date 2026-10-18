@@ -1,8 +1,9 @@
 package io.github.mybatisext.test;
 
-import io.github.mybatisext.dialect.SqlServer2008Dialect;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import io.github.mybatisext.dialect.SqlServer2008Dialect;
 
 class SqlServer2008DialectCrudIntegrationTest extends AbstractDialectCrudIntegrationTest {
 

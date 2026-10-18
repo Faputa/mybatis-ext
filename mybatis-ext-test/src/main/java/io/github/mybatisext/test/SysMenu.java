@@ -17,7 +17,7 @@ import io.github.mybatisext.jpa.CompareOperator;
 
 /**
  * 菜单权限表 sys_menu
- * 
+ *
  * @author ruoyi
  */
 @Table

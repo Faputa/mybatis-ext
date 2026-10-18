@@ -70,6 +70,7 @@ class JoinGraphFactoryTest {
 
     @Table(alias = "root")
     static class RootTable {
+
         @Column
         private Long id;
     }
@@ -80,24 +81,28 @@ class JoinGraphFactoryTest {
 
     @Table(alias = "root")
     static class ConflictingAliasTable {
+
         @Column
         private Long id;
     }
 
     @Table
     static class UnaliasedTable {
+
         @Column
         private Long id;
     }
 
     @Table(alias = "path_root")
     static class PathRootTable {
+
         @Column
         private Long id;
     }
 
     @Table
     static class PathTargetTable {
+
         @Column
         private Long id;
     }

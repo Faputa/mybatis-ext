@@ -8,7 +8,7 @@ import io.github.mybatisext.annotation.Table;
 
 /**
  * 岗位表 sys_post
- * 
+ *
  * @author ruoyi
  */
 @Table

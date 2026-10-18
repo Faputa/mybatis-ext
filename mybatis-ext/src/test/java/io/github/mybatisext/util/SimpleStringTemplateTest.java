@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ public class SimpleStringTemplateTest {
         map.put("name", "Jane Doe");
         map.put("age", 25);
         map.put("address", new HashMap<String, Object>() {
+
             {
                 // 测试转义字符
                 put("{ci.ty}", "Los Angeles");
@@ -104,10 +106,11 @@ public class SimpleStringTemplateTest {
     void wrapsGetterInvocationFailures() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> SimpleStringTemplate.build("{broken}", new BrokenBean()));
 
-        assertTrue(exception.getCause() instanceof java.lang.reflect.InvocationTargetException);
+        assertTrue(exception.getCause() instanceof InvocationTargetException);
     }
 
     static class User {
+
         private String name;
         private Address address;
 
@@ -129,6 +132,7 @@ public class SimpleStringTemplateTest {
     }
 
     static class Address {
+
         private String city;
         private String country;
 
@@ -150,6 +154,7 @@ public class SimpleStringTemplateTest {
     }
 
     static class GetterUser implements Getter<String> {
+
         private final String name;
 
         GetterUser(String name) {
@@ -167,6 +172,7 @@ public class SimpleStringTemplateTest {
     }
 
     static class BrokenBean {
+
         public String getBroken() {
             throw new IllegalStateException("broken");
         }

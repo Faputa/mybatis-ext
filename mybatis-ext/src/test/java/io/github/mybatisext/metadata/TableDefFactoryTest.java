@@ -40,8 +40,8 @@ class TableDefFactoryTest {
     void buildsTableColumnsEmbeddedPropertiesAndRelations() {
         TableDef tableDef = build(Record.class);
 
-        assertEquals(Record.class, tableDef.getClassType().getType());
-        assertEquals(Record.class, tableDef.getTableType().getType());
+        assertEquals(GenericTypeFactory.build(Record.class), tableDef.getClassType());
+        assertEquals(GenericTypeFactory.build(Record.class), tableDef.getTableType());
         assertEquals("record", tableDef.getTableName().getName());
         assertEquals("metadata", tableDef.getTableName().getSchema());
         assertEquals(5, tableDef.getNameToPropertyDef().size());
@@ -49,14 +49,14 @@ class TableDefFactoryTest {
         PropertyDef id = property(tableDef, "id");
         assertEquals("record_id", id.getColumnName());
         assertEquals(JdbcType.BIGINT, id.getJdbcType());
-        assertEquals(IdType.UUID, id.getId().idType());
+        assertEquals(IdType.UUID, id.getId().value("idType"));
         assertTrue(id.isOwnColumn());
         assertFalse(id.isReadonly());
 
         PropertyDef name = property(tableDef, "name");
         assertEquals("name", name.getColumnName());
-        assertEquals(TestMode.NotEmpty, name.getFilterable().test());
-        assertEquals(CompareOperator.Like, name.getFilterable().operator());
+        assertEquals(TestMode.NotEmpty, name.getFilterable().value("test"));
+        assertEquals(CompareOperator.Like, name.getFilterable().value("operator"));
 
         PropertyDef embedded = property(tableDef, "embedded");
         assertNull(embedded.getColumnName());
@@ -66,8 +66,8 @@ class TableDefFactoryTest {
         PropertyDef targetName = property(tableDef, "targetName");
         assertFalse(targetName.isOwnColumn());
         assertEquals(1, targetName.getJoinRelations().length);
-        assertEquals(FetchType.LAZY, targetName.getFetch().value());
-        assertTrue(targetName.getCascade().value());
+        assertEquals(FetchType.LAZY, targetName.getFetch().value("value"));
+        assertTrue(targetName.getCascade().<Boolean>value("value"));
 
         PropertyDef computed = property(tableDef, "computed");
         assertEquals("computed", computed.getColumnName());
@@ -78,19 +78,19 @@ class TableDefFactoryTest {
     void columnRefCopiesMetadataAndAppliesLocalOverrides() {
         TableDef tableDef = build(RecordView.class);
 
-        assertEquals(RecordView.class, tableDef.getClassType().getType());
-        assertEquals(Record.class, tableDef.getTableType().getType());
+        assertEquals(GenericTypeFactory.build(RecordView.class), tableDef.getClassType());
+        assertEquals(GenericTypeFactory.build(Record.class), tableDef.getTableType());
         assertEquals("metadata.record", tableDef.getTableName().toString());
 
         PropertyDef id = property(tableDef, "id");
         assertEquals("record_id", id.getColumnName());
         assertEquals(JdbcType.BIGINT, id.getJdbcType());
-        assertEquals(IdType.UUID, id.getId().idType());
-        assertEquals(Record.class, id.getDeclaringType().getType());
+        assertEquals(IdType.UUID, id.getId().value("idType"));
+        assertEquals(GenericTypeFactory.build(Record.class), id.getDeclaringType());
 
         PropertyDef displayName = property(tableDef, "displayName");
         assertEquals("name", displayName.getColumnName());
-        assertEquals(CompareOperator.Equals, displayName.getFilterable().operator());
+        assertEquals(CompareOperator.Equals, displayName.getFilterable().value("operator"));
 
         PropertyDef code = property(tableDef, "code");
         assertEquals("code_value", code.getColumnName());
@@ -98,8 +98,8 @@ class TableDefFactoryTest {
 
         PropertyDef eagerTargetName = property(tableDef, "eagerTargetName");
         assertEquals(1, eagerTargetName.getJoinRelations().length);
-        assertEquals(FetchType.EAGER, eagerTargetName.getFetch().value());
-        assertFalse(eagerTargetName.getCascade().value());
+        assertEquals(FetchType.EAGER, eagerTargetName.getFetch().value("value"));
+        assertFalse(eagerTargetName.getCascade().<Boolean>value("value"));
 
         assertTrue(property(tableDef, "readonlyName").isReadonly());
     }
@@ -177,6 +177,7 @@ class TableDefFactoryTest {
 
     @Table(name = "record", schema = "metadata")
     static class Record {
+
         @Id(idType = IdType.UUID)
         @Column(name = "record_id", jdbcType = JdbcType.BIGINT)
         private Long id;
@@ -198,12 +199,14 @@ class TableDefFactoryTest {
     }
 
     static class EmbeddedValue {
+
         @Column(name = "code_value")
         private String code;
     }
 
     @Table
     static class TargetRecord {
+
         @Id
         @Column
         private Long id;
@@ -213,6 +216,7 @@ class TableDefFactoryTest {
 
     @TableRef(Record.class)
     static class RecordView {
+
         @ColumnRef
         private Long id;
         @Filterable(operator = CompareOperator.Equals)
@@ -234,6 +238,7 @@ class TableDefFactoryTest {
 
     @Table
     static class ParentRecord {
+
         @Column
         private Long parentId;
     }
@@ -241,12 +246,14 @@ class TableDefFactoryTest {
     @Table
     @JoinParent(joinColumn = @JoinColumn(leftColumn = "parentId", rightColumn = "parentId"))
     static class ChildRecord extends ParentRecord {
+
         @Column
         private Long childId;
     }
 
     @Table
     static class RelationOwner {
+
         @Column
         private Long targetId;
         @JoinRelation(joinColumn = @JoinColumn(leftColumn = "targetId", rightColumn = "id"))
@@ -258,6 +265,7 @@ class TableDefFactoryTest {
 
     @Table
     static class RelationTarget {
+
         @Id
         @Column
         private Long id;
@@ -273,6 +281,7 @@ class TableDefFactoryTest {
 
     @TableRef(Record.class)
     static class UnknownColumnRef {
+
         @ColumnRef("missing")
         private String value;
     }
@@ -287,11 +296,13 @@ class TableDefFactoryTest {
 
     @Table
     static class CircularEmbeddedRecord {
+
         @Column
         private CircularEmbeddedValue value;
     }
 
     static class CircularEmbeddedValue {
+
         @Column
         private CircularEmbeddedValue child;
     }

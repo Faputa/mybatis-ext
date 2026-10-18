@@ -2,19 +2,19 @@ package io.github.mybatisext.metadata;
 
 import java.util.Objects;
 
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaType;
 
 public class PropertyKey {
 
-    private final GenericType ownerType;
+    private final JavaType ownerType;
     private final String name;
 
-    public PropertyKey(GenericType ownerType, String name) {
+    public PropertyKey(JavaType ownerType, String name) {
         this.ownerType = ownerType;
         this.name = name;
     }
 
-    public GenericType getOwnerType() {
+    public JavaType getOwnerType() {
         return ownerType;
     }
 

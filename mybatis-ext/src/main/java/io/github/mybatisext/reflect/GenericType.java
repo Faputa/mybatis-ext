@@ -1,6 +1,9 @@
 package io.github.mybatisext.reflect;
 
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -14,7 +17,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class GenericType implements Type {
+import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.model.JavaAnnotation;
+import io.github.mybatisext.model.JavaBeanProperty;
+import io.github.mybatisext.model.JavaType;
+
+public class GenericType implements Type, JavaType {
 
     private final Class<?> type;
     private final Map<TypeVariable<?>, Type> typeMap;
@@ -46,6 +54,11 @@ public class GenericType implements Type {
 
     public Class<?> getType() {
         return type;
+    }
+
+    @Override
+    public boolean isInterface() {
+        return type != null && type.isInterface();
     }
 
     public GenericType[] getTypeParameters() {
@@ -151,6 +164,18 @@ public class GenericType implements Type {
         return type.isAssignableFrom(cls.type);
     }
 
+    @Override
+    public boolean isAssignableTo(Class<?> target) {
+        return target.isAssignableFrom(getRawClass());
+    }
+
+    private Class<?> getRawClass() {
+        if (type != null) {
+            return type;
+        }
+        return Array.newInstance(componentType.getRawClass(), 0).getClass();
+    }
+
     public <A extends Annotation> A getAnnotation(Class<A> annotationClass) {
         return type.getAnnotation(annotationClass);
     }
@@ -167,6 +192,33 @@ public class GenericType implements Type {
             return componentType.getSimpleName() + "[]";
         }
         return type.getSimpleName();
+    }
+
+    @Override
+    public JavaAnnotation annotation(Class<? extends Annotation> annotationType) {
+        return ReflectionAnnotations.get(type, annotationType);
+    }
+
+    @Override
+    public JavaAnnotation[] annotations(Class<? extends Annotation> annotationType) {
+        return ReflectionAnnotations.getAll(type, annotationType);
+    }
+
+    @Override
+    public JavaBeanProperty[] getBeanProperties() {
+        try {
+            Map<Method, GenericMethod> methods = Arrays.stream(getMethods()).collect(Collectors.toMap(GenericMethod::getMethod, v -> v));
+            return Arrays.stream(Introspector.getBeanInfo(type, Introspector.IGNORE_ALL_BEANINFO).getPropertyDescriptors())
+                    .map(p -> new JavaBeanProperty(p.getName(), methods.get(p.getReadMethod()), p.getWriteMethod() == null))
+                    .toArray(JavaBeanProperty[]::new);
+        } catch (IntrospectionException e) {
+            throw new MybatisExtException(e);
+        }
+    }
+
+    @Override
+    public String getTypeName() {
+        return getName();
     }
 
     @Override

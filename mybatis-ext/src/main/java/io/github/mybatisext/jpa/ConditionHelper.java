@@ -23,34 +23,6 @@ import io.github.mybatisext.util.StringUtils;
 
 public class ConditionHelper {
 
-    public static Condition buildForConditionList(ConditionList conditionList) {
-        List<Condition> andConditions = new ArrayList<>();
-        List<Condition> orConditions = new ArrayList<>();
-        for (ConditionList list = conditionList; list != null; list = list.getTailList()) {
-            andConditions.add(list.getCondition());
-            if (list.getLogicalOperator() == LogicalOperator.OR) {
-                Condition condition = new Condition(ConditionType.COMPLEX);
-                condition.setPropertyInfos(list.getCondition().getPropertyInfos());
-                condition.setLogicalOperator(LogicalOperator.AND);
-                condition.getSubConditions().addAll(andConditions);
-                andConditions.clear();
-                orConditions.add(condition);
-            }
-        }
-        if (!andConditions.isEmpty()) {
-            Condition condition = new Condition(ConditionType.COMPLEX);
-            condition.setPropertyInfos(conditionList.getCondition().getPropertyInfos());
-            condition.setLogicalOperator(LogicalOperator.AND);
-            condition.getSubConditions().addAll(andConditions);
-            orConditions.add(condition);
-        }
-        Condition condition = new Condition(ConditionType.COMPLEX);
-        condition.setPropertyInfos(conditionList.getCondition().getPropertyInfos());
-        condition.setLogicalOperator(LogicalOperator.OR);
-        condition.getSubConditions().addAll(orConditions);
-        return condition;
-    }
-
     public static @Nullable Condition simplifyCondition(Condition condition) {
         if (condition.getTestMode() == TestMode.False && StringUtils.isBlank(condition.getTestTemplate())) {
             return null;

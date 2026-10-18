@@ -36,7 +36,7 @@ import io.github.mybatisext.util.TypeUtils;
 public class MappedStatementHelper {
 
     private static final Log log = LogFactory.getLog(MappedStatementHelper.class);
-    private final Map<String, Map<Semantic, String>> semanticCache = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Semantic>> semanticCache = new ConcurrentHashMap<>();
     private final JpaParser jpaParser;
     private final Configuration configuration;
     private final ExtContext extContext;
@@ -53,9 +53,9 @@ public class MappedStatementHelper {
 
     public MappedStatement build(String id, GenericType tableType, List<GenericMethod> methods, GenericType returnType, boolean writeConfiguration) {
         log.debug(id);
-        Map<Semantic, String> semantics = semanticCache.computeIfAbsent(id, key -> buildSemanticToSignature(tableInfoFactory.buildTableInfo(tableType), methods, returnType));
+        Map<String, Semantic> signatureToSemantic = semanticCache.computeIfAbsent(id,
+                key -> buildSignatureToSemantic(key, tableInfoFactory.buildTableInfo(tableType), methods, returnType));
         Dialect dialect = selectDialect();
-        Map<String, Semantic> signatureToSemantic = buildSignatureToSemantic(semantics);
         String script = SemanticScriptHelper.buildScript(signatureToSemantic, dialect);
         log.debug(script);
         SqlCommandType sqlCommandType = resolveSqlCommandType(signatureToSemantic.values().iterator().next());
@@ -66,22 +66,17 @@ public class MappedStatementHelper {
         return builder.resultMaps(resultMaps).resultSetType(ResultSetType.DEFAULT).build();
     }
 
-    private Map<Semantic, String> buildSemanticToSignature(TableInfo tableInfo, List<GenericMethod> methods, GenericType returnType) {
-        Map<Semantic, String> map = new HashMap<>();
-        for (GenericMethod method : methods) {
-            Semantic semantic = jpaParser.parse(tableInfo, method.getName(), method.getParameters(), returnType);
-            map.put(semantic, buildParameterSignature(method));
-        }
-        return Collections.unmodifiableMap(map);
-    }
-
-    private Map<String, Semantic> buildSignatureToSemantic(Map<Semantic, String> semantics) {
+    private Map<String, Semantic> buildSignatureToSemantic(String id, TableInfo tableInfo, List<GenericMethod> methods, GenericType returnType) {
         Map<String, Semantic> signatureToSemantic = new HashMap<>();
-        for (Map.Entry<Semantic, String> entry : semantics.entrySet()) {
-            // TODO 处理归一化后签名相同但语义不同的重载冲突，目前保留先遇到的语义。
-            signatureToSemantic.putIfAbsent(entry.getValue(), entry.getKey());
+        for (GenericMethod method : methods) {
+            Semantic semantic = jpaParser.parse(tableInfo, method, returnType);
+            String signature = buildParameterSignature(method);
+            Semantic previous = signatureToSemantic.putIfAbsent(signature, semantic);
+            if (previous != null && !previous.equals(semantic)) {
+                throw new MybatisExtException("Conflicting overload semantics for " + id + ", normalized parameter signature: " + signature);
+            }
         }
-        return signatureToSemantic;
+        return Collections.unmodifiableMap(signatureToSemantic);
     }
 
     private String buildParameterSignature(GenericMethod method) {

@@ -23,11 +23,21 @@ import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.Table;
-import io.github.mybatisext.mapper.ExtMapper;
-import io.github.mybatisext.dialect.SqlServerDialect;
 import io.github.mybatisext.dialect.SqlServer2008Dialect;
+import io.github.mybatisext.dialect.SqlServerDialect;
+import io.github.mybatisext.mapper.ExtMapper;
 
 class MapperQueryRegressionIntegrationTest {
+
+    @Test
+    void appliesAndPrecedenceAndPreservesRepeatedConditions() throws Exception {
+        try (SqlSession session = openSession(ConditionMapper.class)) {
+            ConditionMapper mapper = session.getMapper(ConditionMapper.class);
+            assertEquals(1, mapper.countByIdOrIdAndName(1L, 2L, "missing"));
+            assertEquals(1, mapper.countByIdAndNameOrId(1L, "missing", 2L));
+            assertEquals(2, mapper.countByIdOrIdOrId(1L, 2L, 99L));
+        }
+    }
 
     @Test
     void dispatchesNoArgumentAndNamedOverloads() throws Exception {
@@ -133,6 +143,7 @@ class MapperQueryRegressionIntegrationTest {
 
     @Table(name = "query_entity", alias = "e")
     public static class Entity {
+
         @Column
         public Long id;
         @Column
@@ -143,38 +154,59 @@ class MapperQueryRegressionIntegrationTest {
 
     @Table(name = "query_child")
     public static class Child {
+
         @Column
         public Long entityId;
         @Column
         public String name;
     }
 
+    public interface ConditionMapper extends ExtMapper<Entity> {
+
+        long countByIdOrIdAndName(long first, long second, String third);
+
+        long countByIdAndNameOrId(long first, String second, long third);
+
+        long countByIdOrIdOrId(long first, long second, long third);
+    }
+
     public interface NoArgMapper extends ExtMapper<Entity> {
+
         long count();
+
         long count(@Param("name") String name);
     }
 
     public interface PrimitiveMapper extends ExtMapper<Entity> {
+
         long count(@Param("id") long id);
+
         long count(@Param("name") String name);
     }
 
     public interface EntityMapper extends ExtMapper<Entity> {
+
         long count(Entity filter);
     }
 
     public interface BoxingMapper extends ExtMapper<Entity> {
+
         long count(@Param("id") long id);
+
         long count(@Param("id") Long id);
+
         long count(@Param("name") String name);
     }
 
     public interface ScalarBoxingMapper extends ExtMapper<Entity> {
+
         long countById(long id);
+
         long countById(Long id);
     }
 
     public interface HavingMapper extends ExtMapper<Entity> {
+
         List<String> listNameGroupByNameOrderByName(@Param("childName") @Filterable(exprTemplate = "MAX({propertyInfo}) = {variable.##placeholder}") String childName);
     }
 }

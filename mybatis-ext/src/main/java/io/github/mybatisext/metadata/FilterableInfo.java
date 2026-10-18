@@ -2,10 +2,10 @@ package io.github.mybatisext.metadata;
 
 import java.util.Objects;
 
-import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.TestMode;
 import io.github.mybatisext.jpa.CompareOperator;
 import io.github.mybatisext.jpa.LogicalOperator;
+import io.github.mybatisext.model.JavaAnnotation;
 
 public class FilterableInfo {
 
@@ -21,15 +21,15 @@ public class FilterableInfo {
     public FilterableInfo() {
     }
 
-    public FilterableInfo(Filterable filterable) {
-        this.testMode = filterable.test();
-        this.operator = filterable.operator();
-        this.logicalOperator = filterable.logicalOperator();
-        this.ignorecase = filterable.ignorecase();
-        this.not = filterable.not();
-        this.testTemplate = filterable.testTemplate();
-        this.exprTemplate = filterable.exprTemplate();
-        this.secondVariable = filterable.secondVariable();
+    public FilterableInfo(JavaAnnotation filterable) {
+        this.testMode = filterable.value("test");
+        this.operator = filterable.value("operator");
+        this.logicalOperator = filterable.value("logicalOperator");
+        this.ignorecase = filterable.value("ignorecase");
+        this.not = filterable.value("not");
+        this.testTemplate = filterable.value("testTemplate");
+        this.exprTemplate = filterable.value("exprTemplate");
+        this.secondVariable = filterable.value("secondVariable");
     }
 
     public TestMode getTestMode() {

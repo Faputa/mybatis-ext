@@ -131,9 +131,13 @@ class ParameterSignatureHelperTest {
     }
 
     interface SignatureMapper {
+
         void query(@Param("ids") List<Long> ids, RowBounds rowBounds);
+
         void primitive(long id);
+
         void boxed(Long id);
+
         void namedPrimitive(@Param("id") long id);
     }
 }

@@ -6,7 +6,7 @@ import io.github.mybatisext.annotation.Table;
 
 /**
  * 用户和岗位关联 sys_user_post
- * 
+ *
  * @author ruoyi
  */
 @Table

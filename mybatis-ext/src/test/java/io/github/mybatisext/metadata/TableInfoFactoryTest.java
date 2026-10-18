@@ -1,14 +1,21 @@
 package io.github.mybatisext.metadata;
 
-import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.reflect.GenericTypeFactory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
+
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ibatis.mapping.Environment;
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.mapping.FetchType;
-import org.apache.ibatis.type.JdbcType;
+import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
+import org.apache.ibatis.type.JdbcType;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -18,29 +25,54 @@ import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.ColumnRef;
 import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Id;
+import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.IdType;
 import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.annotation.TableRef;
+import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.fixture.permission.RowPermission;
 import io.github.mybatisext.fixture.permission.TablePermission;
 import io.github.mybatisext.fixture.permission.TablePermissionEmbed;
 import io.github.mybatisext.fixture.permission.TablePermissionVO;
 import io.github.mybatisext.fixture.school.StudentCourse;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.idgenerator.IdGenerator;
+import io.github.mybatisext.reflect.GenericField;
+import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.reflect.GenericTypeFactory;
 
 class TableInfoFactoryTest {
+
+    @Test
+    void nestedColumnRefKeepsOuterTableAndFinalMappingSource() throws Exception {
+        TableInfo table = buildTableInfo(EmbeddedView.class);
+        PropertyInfo city = table.get("city");
+        assertNotNull(city);
+        assertEquals("city", city.getColumnName());
+        assertEquals(EmbeddedAddress.class.getDeclaredField("city"), ((GenericField) city.getMappingSource()).getField());
+        assertEquals(EmbeddedView.class.getDeclaredField("city"), ((GenericField) city.getSource()).getField());
+    }
+
+    @Table
+    static class EmbeddedEntity {
+
+        @Column
+        EmbeddedAddress address;
+    }
+
+    static class EmbeddedAddress {
+
+        @Column
+        String city;
+    }
+
+    @TableRef(EmbeddedEntity.class)
+    static class EmbeddedView {
+
+        @ColumnRef("address.city")
+        String city;
+    }
 
     private static ExtContext extContext;
     private static Configuration configuration;
@@ -81,7 +113,7 @@ class TableInfoFactoryTest {
         assertEquals("role_id", tableInfo.get("roleId").getColumnName());
         assertNull(tableInfo.get("roleId").getJdbcType());
         assertEquals(PropertyType.COLLECTION, tableInfo.get("rowPermissions").getPropertyType());
-        assertEquals(RowPermission.class, tableInfo.get("rowPermissions").getOfType().getType());
+        assertEquals(GenericTypeFactory.build(RowPermission.class), tableInfo.get("rowPermissions").getOfType());
         assertNull(tableInfo.get("rowPermissions").getFetchType());
         assertEquals(FetchType.DEFAULT, tableInfo.get("rowPermissions2").getFetchType());
         assertEquals("schema_name", tableInfo.get("schemaName").getColumnName());
@@ -167,7 +199,7 @@ class TableInfoFactoryTest {
         TableInfo inherited = buildTableInfo(InheritedDto.class);
         TableInfo selected = buildTableInfo(SelectedDto.class);
 
-        assertTrue(inherited.getNameToPropertyInfo().keySet().containsAll(java.util.Arrays.asList("id", "source", "createdBy")));
+        assertTrue(inherited.getNameToPropertyInfo().keySet().containsAll(Arrays.asList("id", "source", "createdBy")));
         assertEquals(2, selected.getNameToPropertyInfo().size());
         assertNotNull(selected.get("id"));
         assertEquals("source_value", selected.get("displayName").getColumnName());
@@ -194,6 +226,8 @@ class TableInfoFactoryTest {
 
         assertTrue(exception.getMessage().contains("Circular property reference detected"));
         assertTrue(exception.getMessage().contains("CircularEmbeddedValue.child"));
+        assertEquals("child", exception.getDiagnostic().getLocation().getPath());
+        assertFalse(exception.getDiagnostic().hasRange());
     }
 
     @Test
@@ -201,6 +235,7 @@ class TableInfoFactoryTest {
         MybatisExtException exception = assertThrows(MybatisExtException.class, () -> buildTableInfo(CircularTableRefA.class));
 
         assertTrue(exception.getMessage().contains("Circular @TableRef reference detected"));
+        assertEquals(TableRef.class, exception.getDiagnostic().getLocation().getAnnotationType());
     }
 
     @Test
@@ -208,6 +243,9 @@ class TableInfoFactoryTest {
         MybatisExtException exception = assertThrows(MybatisExtException.class, () -> buildTableInfo(UnknownAliasOwner.class));
 
         assertTrue(exception.getMessage().contains("Unknown left table alias 'missing'"));
+        assertEquals(JoinRelation.class, exception.getDiagnostic().getLocation().getAnnotationType());
+        assertEquals("joinColumn.leftTableAlias", exception.getDiagnostic().getLocation().getAnnotationMember());
+        assertEquals(UnknownAliasOwner.class.getName(), exception.getDiagnostic().getLocation().getOwner().getName());
     }
 
     @Test
@@ -215,6 +253,7 @@ class TableInfoFactoryTest {
         MybatisExtException exception = assertThrows(MybatisExtException.class, () -> buildTableInfo(DuplicateAliasOwner.class));
 
         assertTrue(exception.getMessage().contains("Duplicate table alias 'target'"));
+        assertEquals("tableAlias", exception.getDiagnostic().getLocation().getAnnotationMember());
     }
 
     @Test
@@ -222,6 +261,7 @@ class TableInfoFactoryTest {
         MybatisExtException exception = assertThrows(MybatisExtException.class, () -> buildTableInfo(InvalidJoinParent.class));
 
         assertTrue(exception.getMessage().contains("requires a superclass"));
+        assertEquals(JoinParent.class, exception.getDiagnostic().getLocation().getAnnotationType());
     }
 
     @Test
@@ -229,6 +269,8 @@ class TableInfoFactoryTest {
         MybatisExtException exception = assertThrows(MybatisExtException.class, () -> buildTableInfo(InvalidIdGeneratorEntity.class));
 
         assertTrue(exception.getMessage().contains("customIdGenerator cannot be instantiated"));
+        assertEquals(Id.class, exception.getDiagnostic().getLocation().getAnnotationType());
+        assertTrue(exception.getCause() instanceof ReflectiveOperationException);
     }
 
     @Test
@@ -248,6 +290,7 @@ class TableInfoFactoryTest {
 
     @Table(name = "training_entity")
     static class TrainingEntity {
+
         @Column
         private Long id;
         @Column(name = "source_value", jdbcType = JdbcType.VARCHAR)
@@ -262,6 +305,7 @@ class TableInfoFactoryTest {
 
     @TableRef(TrainingEntity.class)
     static class SelectedDto {
+
         @ColumnRef
         private Long id;
         @ColumnRef("source")
@@ -270,6 +314,7 @@ class TableInfoFactoryTest {
 
     @Table(name = "annotated_entity", schema = "training", alias = "ae")
     static class AnnotatedEntity {
+
         @Column(name = "display_name", jdbcType = JdbcType.VARCHAR)
         private String name;
         private String getterValue;
@@ -282,6 +327,7 @@ class TableInfoFactoryTest {
 
     @Table
     static class FetchTarget {
+
         @Id
         @Column
         private Long id;
@@ -289,6 +335,7 @@ class TableInfoFactoryTest {
 
     @Table
     static class FetchOwner {
+
         @Column
         private Long targetId;
         @Fetch(FetchType.LAZY)
@@ -298,11 +345,13 @@ class TableInfoFactoryTest {
 
     @Table
     static class CircularEmbeddedEntity {
+
         @Column
         private CircularEmbeddedValue value;
     }
 
     static class CircularEmbeddedValue {
+
         @Column
         private CircularEmbeddedValue child;
     }
@@ -317,6 +366,7 @@ class TableInfoFactoryTest {
 
     @Table
     static class AliasTarget {
+
         @Id
         @Column
         private Long id;
@@ -324,6 +374,7 @@ class TableInfoFactoryTest {
 
     @Table
     static class UnknownAliasOwner {
+
         @Column
         private Long targetId;
         @JoinRelation(table = AliasTarget.class, joinColumn = @JoinColumn(leftTableAlias = "missing", leftColumn = "targetId", rightColumn = "id"))
@@ -332,6 +383,7 @@ class TableInfoFactoryTest {
 
     @Table
     static class DuplicateAliasOwner {
+
         @Column
         private Long targetId;
         @JoinRelation(table = AliasTarget.class, tableAlias = "target", joinColumn = @JoinColumn(leftColumn = "targetId", rightColumn = "id"))
@@ -342,18 +394,21 @@ class TableInfoFactoryTest {
     @Table
     @JoinParent(joinColumn = @JoinColumn(leftColumn = "id", rightColumn = "id"))
     static class InvalidJoinParent {
+
         @Column
         private Long id;
     }
 
     @Table
     static class InvalidIdGeneratorEntity {
+
         @Id(idType = IdType.CUSTOM, customIdGenerator = InaccessibleIdGenerator.class)
         @Column
         private String id;
     }
 
     static class InaccessibleIdGenerator implements IdGenerator<String> {
+
         private InaccessibleIdGenerator() {
         }
 

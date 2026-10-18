@@ -25,6 +25,7 @@ class MethodSignatureTest {
     }
 
     static class SampleMethods {
+
         void find(String value, int limit) {
         }
 

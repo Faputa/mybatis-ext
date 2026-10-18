@@ -10,7 +10,7 @@ import io.github.mybatisext.annotation.Table;
 
 /**
  * 部门表 sys_dept
- * 
+ *
  * @author ruoyi
  */
 @Table

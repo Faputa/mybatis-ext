@@ -8,7 +8,10 @@ import java.lang.reflect.TypeVariable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GenericMethod {
+import io.github.mybatisext.model.JavaAnnotation;
+import io.github.mybatisext.model.JavaMethod;
+
+public class GenericMethod implements JavaMethod {
 
     private final Method method;
     private final Map<TypeVariable<?>, Type> typeMap;
@@ -20,6 +23,21 @@ public class GenericMethod {
 
     public Method getMethod() {
         return method;
+    }
+
+    @Override
+    public GenericType getDeclaringType() {
+        return GenericTypeFactory.build(method.getDeclaringClass(), new HashMap<>(typeMap));
+    }
+
+    @Override
+    public JavaAnnotation annotation(Class<? extends Annotation> annotationType) {
+        return ReflectionAnnotations.get(method, annotationType);
+    }
+
+    @Override
+    public JavaAnnotation[] annotations(Class<? extends Annotation> annotationType) {
+        return ReflectionAnnotations.getAll(method, annotationType);
     }
 
     public GenericParameter[] getParameters() {

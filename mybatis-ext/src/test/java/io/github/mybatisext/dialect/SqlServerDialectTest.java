@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import io.github.mybatisext.adapter.ConfigurationFactory;
 import io.github.mybatisext.adapter.ExtContext;
+import io.github.mybatisext.fixture.school.Student;
 import io.github.mybatisext.jpa.Limit;
 import io.github.mybatisext.jpa.OrderByElement;
 import io.github.mybatisext.jpa.OrderByType;
@@ -27,7 +28,6 @@ import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
-import io.github.mybatisext.fixture.school.Student;
 
 class SqlServerDialectTest {
 

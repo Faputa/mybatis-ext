@@ -76,6 +76,14 @@ public class State<T extends Tokenizer> {
         return matches;
     }
 
+    public List<MatchResult> getAllMatches() {
+        List<MatchResult> matches = new ArrayList<>();
+        for (State<T> state = this; state != null; state = state.prevState) {
+            matches.addAll(state.matchResults);
+        }
+        return matches;
+    }
+
     public MatchResult getMatch(Symbol<T> symbol) {
         List<MatchResult> matches = getMatches(symbol);
         if (matches.isEmpty()) {
@@ -85,7 +93,7 @@ public class State<T extends Tokenizer> {
     }
 
     public boolean addMatch(Symbol<T> symbol, Scope<T> scope, String text, Object value) {
-        MatchResult matchResult = new MatchResult(symbol, scope, text, value);
+        MatchResult matchResult = new MatchResult(symbol, scope, text, value, tokenizer.getCursor() - text.length(), tokenizer.getCursor());
         return matchResults.add(matchResult);
     }
 
@@ -104,7 +112,7 @@ public class State<T extends Tokenizer> {
 
     public boolean addMatch(String name, Symbol<T> symbol, Scope<T> scope, String text, Object value) {
         Map<String, MatchResult> nameToMatchResult = scopeToNameToMatchResult.computeIfAbsent(scope, k -> new HashMap<>());
-        MatchResult matchResult = new MatchResult(symbol, scope, text, value);
+        MatchResult matchResult = new MatchResult(symbol, scope, text, value, tokenizer.getCursor() - text.length(), tokenizer.getCursor());
         nameToMatchResult.put(name, matchResult);
         return true;
     }

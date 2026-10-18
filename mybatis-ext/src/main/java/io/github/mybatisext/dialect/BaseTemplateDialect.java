@@ -33,7 +33,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
                 parameter,
                 joinTableInfos,
                 where,
-                parameter.getJavaType().isArray() || Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                parameter.getJavaType().isArray() || parameter.getJavaType().isAssignableTo(Collection.class),
                 joinTableInfos.size() > 1, ignoreNull);
     }
 
@@ -45,7 +45,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
                 parameter,
                 joinTableInfos,
                 where,
-                parameter != null && (parameter.getJavaType().isArray() || Collection.class.isAssignableFrom(parameter.getJavaType().getType())),
+                parameter != null && (parameter.getJavaType().isArray() || parameter.getJavaType().isAssignableTo(Collection.class)),
                 joinTableInfos.size() > 1);
     }
 
@@ -54,7 +54,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
         return buildInsert(
                 tableInfo,
                 parameter,
-                parameter.getJavaType().isArray() || Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                parameter.getJavaType().isArray() || parameter.getJavaType().isAssignableTo(Collection.class),
                 ignoreNull);
     }
 

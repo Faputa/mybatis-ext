@@ -25,7 +25,8 @@ import io.github.mybatisext.metadata.PropertyType;
 import io.github.mybatisext.metadata.TableDefFactory;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaType;
+import io.github.mybatisext.reflect.ReflectionTypePolicy;
 
 public class ResultMapHelper {
 
@@ -39,20 +40,20 @@ public class ResultMapHelper {
         this.tableInfoFactory = tableInfoFactory;
     }
 
-    public ResultMap buildResultMap(GenericType returnType, Dialect dialect, boolean writeConfiguration) {
+    public ResultMap buildResultMap(JavaType returnType, Dialect dialect, boolean writeConfiguration) {
         String id = PREFIX + returnType.getName();
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
         }
-        if (void.class.equals(returnType.getType()) || configuration.getTypeHandlerRegistry().hasTypeHandler(returnType.getType()) || TableDefFactory.resolveTableType(returnType) == null) {
-            return buildSimpleTypeResultMap(returnType.getType());
+        if (void.class.equals(ReflectionTypePolicy.requireClass(returnType)) || configuration.getTypeHandlerRegistry().hasTypeHandler(ReflectionTypePolicy.requireClass(returnType)) || TableDefFactory.resolveTableType(returnType) == null) {
+            return buildSimpleTypeResultMap(ReflectionTypePolicy.requireClass(returnType));
         }
         TableInfo tableInfo = tableInfoFactory.buildTableInfo(returnType);
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo propertyInfo : tableInfo.getNameToPropertyInfo().values()) {
             resultMappings.add(buildResultMapping(tableInfo, propertyInfo, dialect, writeConfiguration, false));
         }
-        return new ResultMap.Builder(configuration, id, returnType.getType(), resultMappings).build();
+        return new ResultMap.Builder(configuration, id, ReflectionTypePolicy.requireClass(returnType), resultMappings).build();
     }
 
     public ResultMap buildSimpleTypeResultMap(Class<?> type) {
@@ -60,27 +61,27 @@ public class ResultMapHelper {
     }
 
     public ResultMap buildPropertyResultMap(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
-        GenericType tableClass = tableInfo.getClassType();
+        JavaType tableClass = tableInfo.getClassType();
         String id = PREFIX + tableClass.getName() + "#" + propertyInfo.getFullName();
         if (configuration.hasResultMap(id)) {
             return configuration.getResultMap(id);
         }
-        GenericType propertyType = propertyInfo.getPropertyType() == PropertyType.COLLECTION ? propertyInfo.getOfType() : propertyInfo.getJavaType();
+        JavaType propertyType = propertyInfo.getPropertyType() == PropertyType.COLLECTION ? propertyInfo.getOfType() : propertyInfo.getJavaType();
         if (propertyInfo.getColumnName() != null) {
-            return buildSimpleTypeResultMap(propertyType.getType());
+            return buildSimpleTypeResultMap(ReflectionTypePolicy.requireClass(propertyType));
         }
         List<ResultMapping> resultMappings = new ArrayList<>();
         for (PropertyInfo subPropertyInfo : propertyInfo.getNameToPropertyInfo().values()) {
             resultMappings.add(buildResultMapping(tableInfo, subPropertyInfo, dialect, writeConfiguration, inNestedSelect));
         }
-        return new ResultMap.Builder(configuration, id, propertyType.getType(), resultMappings).build();
+        return new ResultMap.Builder(configuration, id, ReflectionTypePolicy.requireClass(propertyType), resultMappings).build();
     }
 
     private ResultMapping buildResultMapping(TableInfo tableInfo, PropertyInfo propertyInfo, Dialect dialect, boolean writeConfiguration, boolean inNestedSelect) {
         if (propertyInfo.getPropertyType() == PropertyType.ID) {
             return new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(propertyInfo.getFullName())
-                    .javaType(propertyInfo.getJavaType().getType())
+                    .javaType(ReflectionTypePolicy.requireClass(propertyInfo.getJavaType()))
                     .jdbcType(propertyInfo.getJdbcType())
                     .flags(Collections.singletonList(ResultFlag.ID))
                     .build();
@@ -88,7 +89,7 @@ public class ResultMapHelper {
         if (propertyInfo.getPropertyType() == PropertyType.RESULT) {
             return new ResultMapping.Builder(configuration, propertyInfo.getName())
                     .column(propertyInfo.getFullName())
-                    .javaType(propertyInfo.getJavaType().getType())
+                    .javaType(ReflectionTypePolicy.requireClass(propertyInfo.getJavaType()))
                     .jdbcType(propertyInfo.getJdbcType())
                     .build();
         }
@@ -97,7 +98,7 @@ public class ResultMapHelper {
             if (inNestedSelect || propertyInfo.getFetchType() == null) {
                 ResultMap resultMap = addNestedResultMap(tableInfo, propertyInfo, dialect, writeConfiguration, inNestedSelect);
                 return new ResultMapping.Builder(configuration, propertyInfo.getName())
-                        .javaType(propertyInfo.getJavaType().getType())
+                        .javaType(ReflectionTypePolicy.requireClass(propertyInfo.getJavaType()))
                         .nestedResultMapId(resultMap.getId())
                         .build();
             }
@@ -108,7 +109,7 @@ public class ResultMapHelper {
                     .column(column)
                     .composites(parseCompositeColumnName(column))
                     .nestedQueryId(mappedStatement.getId())
-                    .javaType(propertyInfo.getJavaType().getType());
+                    .javaType(ReflectionTypePolicy.requireClass(propertyInfo.getJavaType()));
             if (propertyInfo.getFetchType() == FetchType.LAZY) {
                 builder.lazy(true);
             } else if (propertyInfo.getFetchType() == FetchType.EAGER) {

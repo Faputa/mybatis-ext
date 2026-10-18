@@ -1,6 +1,7 @@
 package io.github.mybatisext.statement;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,15 +14,19 @@ import io.github.mybatisext.ognl.Ognl;
 public class SemanticScriptHelper {
 
     public static String buildScript(Map<String, Semantic> signatureToSemantic, Dialect dialect) {
-        if (signatureToSemantic.size() == 1) {
-            for (Semantic semantic : signatureToSemantic.values()) {
-                return "<script>" + buildScriptContent(semantic, dialect) + "</script>";
-            }
+        Map<Semantic, List<String>> semanticToSignatures = new LinkedHashMap<>();
+        for (Map.Entry<String, Semantic> entry : signatureToSemantic.entrySet()) {
+            semanticToSignatures.computeIfAbsent(entry.getValue(), key -> new ArrayList<>()).add(entry.getKey());
+        }
+        if (semanticToSignatures.size() == 1) {
+            Semantic semantic = semanticToSignatures.keySet().iterator().next();
+            return "<script>" + buildScriptContent(semantic, dialect) + "</script>";
         }
         List<String> ss = new ArrayList<>();
-        for (Map.Entry<String, Semantic> entry : signatureToSemantic.entrySet()) {
-            ss.add("<if test=\"" + Ognl.IsParameterSignatureMatch + "(_parameter, '" + entry.getKey() + "')\">");
-            ss.add(buildScriptContent(entry.getValue(), dialect));
+        for (Map.Entry<Semantic, List<String>> entry : semanticToSignatures.entrySet()) {
+            String signatures = "\"" + String.join("\", \"", entry.getValue()) + "\"";
+            ss.add("<if test='" + Ognl.IsParameterSignatureMatch + "(_parameter, " + signatures + ")'>");
+            ss.add(buildScriptContent(entry.getKey(), dialect));
             ss.add("</if>");
         }
         return "<script>" + String.join(" ", ss) + "</script>";

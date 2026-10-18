@@ -2,28 +2,28 @@ package io.github.mybatisext.metadata;
 
 import java.util.Map;
 
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaType;
 
 public class TableDef {
 
-    private GenericType classType;
-    private GenericType tableType;
+    private JavaType classType;
+    private JavaType tableType;
     private Map<String, PropertyDef> nameToPropertyDef;
     private TableName tableName;
 
-    public GenericType getClassType() {
+    public JavaType getClassType() {
         return classType;
     }
 
-    public void setClassType(GenericType classType) {
+    public void setClassType(JavaType classType) {
         this.classType = classType;
     }
 
-    public GenericType getTableType() {
+    public JavaType getTableType() {
         return tableType;
     }
 
-    public void setTableType(GenericType tableType) {
+    public void setTableType(JavaType tableType) {
         this.tableType = tableType;
     }
 

@@ -6,7 +6,7 @@ import io.github.mybatisext.annotation.Table;
 
 /**
  * 角色和菜单关联 sys_role_menu
- * 
+ *
  * @author ruoyi
  */
 @Table

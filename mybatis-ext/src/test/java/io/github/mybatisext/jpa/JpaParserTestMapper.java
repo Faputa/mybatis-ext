@@ -1,13 +1,13 @@
 package io.github.mybatisext.jpa;
 
-import java.util.List;
 import java.sql.Timestamp;
+import java.util.List;
 
-import io.github.mybatisext.annotation.OnlyById;
 import org.apache.ibatis.annotations.Param;
 
-import io.github.mybatisext.mapper.BaseMapper;
+import io.github.mybatisext.annotation.OnlyById;
 import io.github.mybatisext.fixture.permission.TablePermission;
+import io.github.mybatisext.mapper.BaseMapper;
 
 public interface JpaParserTestMapper extends BaseMapper<TablePermission> {
 
