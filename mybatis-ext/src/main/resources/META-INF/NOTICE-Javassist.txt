@@ -1,0 +1,15 @@
+This artifact bundles Javassist 3.30.2-GA.
+
+Copyright (C) 1999- Shigeru Chiba. All Rights Reserved.
+Project: https://www.javassist.org/
+Source: https://github.com/jboss-javassist/javassist/tree/rel_3_30_2_ga
+Maven coordinates: org.javassist:javassist:3.30.2-GA
+
+Javassist offers MPL 1.1, LGPL 2.1 or Apache License 2.0 licensing.
+This distribution uses the Apache License, Version 2.0, included in
+META-INF/LICENSE-Javassist.txt. Javassist is not covered by the MIT license
+of MyBatis Ext.
+
+Modification by MyBatis Ext contributors: Javassist bytecode package names
+and references are relocated from javassist to io.github.mybatisext.javassist
+using the Gradle Shadow plugin. No Javassist source behavior is modified.

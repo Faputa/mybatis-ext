@@ -241,6 +241,17 @@ MyBatis-Ext 通过以下机制实现其核心功能：
 4. **动态生成语句** - 在运行时动态生成 `MappedStatement`，无需提前定义XML
 5. **Bean后处理** - 通过 Spring 的 `BeanPostProcessor` 机制自动增强 `SqlSessionFactory`
 
+## 开发与构建
+
+在 IDEA 中导入根目录的 `settings.gradle.kts`，使用 Gradle Wrapper 和 JDK 17 以上的构建环境。
+
+```powershell
+.\gradlew.bat spotlessApply spotlessCheck
+.\gradlew.bat check
+```
+
+环境配置、测试和打包见[构建说明](docs/build.md)。
+
 ## 贡献与支持
 
 欢迎提交 Issue 或 Pull Request 来完善本项目。

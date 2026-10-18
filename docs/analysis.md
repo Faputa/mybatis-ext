@@ -108,5 +108,5 @@ if (metadata.isSuccess()) {
 `MybatisExtAnalyzerTest` 对照内存模型与反射模型的元数据、CRUD 语义、引用、诊断和补全，核心 SQL 集成测试验证运行时行为。
 
 ```powershell
-mvn -pl mybatis-ext-test -am test
+.\gradlew.bat :mybatis-ext:test :mybatis-ext-test:test
 ```
