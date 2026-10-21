@@ -216,7 +216,7 @@ public abstract class BaseDialect implements Dialect {
         return String.join(" ", ss);
     }
 
-    protected List<JoinTableInfo> collectJoinTableInfo(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, List<PropertyInfo> groupBy, List<OrderByElement> orderBy) {
+    protected List<JoinTableInfo> collectJoinTableInfo(TableInfo tableInfo, Condition where, List<PropertyInfo> selectItems, List<PropertyInfo> groupBy, List<OrderByElement> orderBy, Condition having) {
         Set<JoinTableInfo> directJoinTableInfos = new HashSet<>();
         directJoinTableInfos.add(tableInfo.getJoinTableInfo());
         if (selectItems != null) {
@@ -236,6 +236,9 @@ public abstract class BaseDialect implements Dialect {
             for (OrderByElement orderByElement : orderBy) {
                 orderByElement.getPropertyInfo().collectUsedJoinTableInfo(directJoinTableInfos);
             }
+        }
+        if (having != null) {
+            ConditionHelper.collectUsedJoinTableInfo(having, directJoinTableInfos);
         }
         LinkedHashMap<String, JoinTableInfo> orderJoinTableInfos = new LinkedHashMap<>();
         for (JoinTableInfo joinTableInfo : directJoinTableInfos) {

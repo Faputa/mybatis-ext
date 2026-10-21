@@ -55,7 +55,7 @@ public class ConditionHelper {
             return null;
         }
         if (condition.getType() == ConditionType.COMPLEX) {
-            if (condition.getSubConditions().size() == 1 && condition.getTestMode() == TestMode.None && StringUtils.isBlank(condition.getTestTemplate())) {
+            if (condition.getSubConditions().size() == 1 && condition.getTestMode() == TestMode.None && StringUtils.isBlank(condition.getTestTemplate()) && !condition.isNot()) {
                 return simplifyCondition(condition.getSubConditions().iterator().next());
             }
             for (Condition c : new ArrayList<>(condition.getSubConditions())) {
@@ -168,7 +168,7 @@ public class ConditionHelper {
     }
 
     public static String toWhere(Condition condition, Dialect dialect) {
-        if (condition.hasTest()) {
+        if (condition.hasTest() || condition.isNot()) {
             return "<where>" + toScript(condition, condition.getLogicalOperator(), dialect) + "</where>";
         }
         if (condition.getType() == ConditionType.COMPLEX) {
@@ -197,8 +197,8 @@ public class ConditionHelper {
     }
 
     public static String toHaving(Condition condition, Dialect dialect) {
-        if (condition.hasTest()) {
-            return "<trim prefix=\"HAVING\" prefixOverrides=" + condition.getLogicalOperator() + ">" + toScript(condition, condition.getLogicalOperator(), dialect) + "</trim>";
+        if (condition.hasTest() || condition.isNot()) {
+            return "<trim prefix=\"HAVING\" prefixOverrides=\"" + condition.getLogicalOperator() + "\">" + toScript(condition, condition.getLogicalOperator(), dialect) + "</trim>";
         }
         if (condition.getType() == ConditionType.COMPLEX) {
             return toHaving(condition.getSubConditions(), condition.getLogicalOperator(), dialect);
@@ -212,9 +212,9 @@ public class ConditionHelper {
         }
         List<String> ss = new ArrayList<>();
         if (conditions.stream().anyMatch(Condition::hasTest)) {
-            ss.add("<trim prefix=\"HAVING\" prefixOverrides=" + LogicalOperator.AND + ">");
+            ss.add("<trim prefix=\"HAVING\" prefixOverrides=\"" + logicalOperator + "\">");
             for (Condition condition : conditions) {
-                ss.add(toScript(condition, LogicalOperator.AND, dialect));
+                ss.add(toScript(condition, logicalOperator, dialect));
             }
             ss.add("</trim>");
             return String.join(" ", ss);
@@ -229,7 +229,7 @@ public class ConditionHelper {
 
     private static String toScript(Condition condition, @Nullable LogicalOperator logicalOperator, Dialect dialect) {
         if (condition.hasTest()) {
-            if (condition.getSubConditions().size() == 1 && StringUtils.isBlank(condition.getExprTemplate())) {
+            if (condition.getSubConditions().size() == 1 && StringUtils.isBlank(condition.getExprTemplate()) && !condition.isNot()) {
                 Condition subCondition = condition.getSubConditions().iterator().next();
                 if (!subCondition.hasTest()) {
                     return "<if test=\"" + toTestOgnl(condition) + "\">" + toExprWithPrefix(subCondition, logicalOperator, dialect) + "</if>";

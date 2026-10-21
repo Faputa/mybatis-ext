@@ -16,7 +16,7 @@ public class SqlServerDialect extends BaseTemplateDialect {
     @Override
     public String select(TableInfo tableInfo, List<PropertyInfo> selectItems, Condition where, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
         boolean offset = limit != null && (limit.getOffset() != null || limit.getOffsetVariable() != null);
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, selectItems, groupBy, orderBy);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, selectItems, groupBy, orderBy, having);
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (distinct) {

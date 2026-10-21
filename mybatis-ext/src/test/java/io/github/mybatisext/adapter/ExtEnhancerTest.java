@@ -2,9 +2,12 @@ package io.github.mybatisext.adapter;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ibatis.annotations.Param;
@@ -20,6 +23,7 @@ import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.mapper.ExtMapper;
+import io.github.mybatisext.dialect.H2Dialect;
 
 class ExtEnhancerTest {
 
@@ -69,6 +73,37 @@ class ExtEnhancerTest {
         assertTrue(enhancer.hasStatement(statementId));
         assertSame(SqlCommandType.SELECT, statement.getSqlCommandType());
         assertDoesNotThrow(enhancer::validateAllMapperMethod);
+    }
+
+    @Test
+    void validatesEachOverloadGroupOnceWithoutRegisteringStatements() throws Exception {
+        try (BasicDataSource dataSource = new BasicDataSource()) {
+            dataSource.setUrl("jdbc:h2:mem:overload_validation");
+            Configuration configuration = new Configuration(new Environment("test", new JdbcTransactionFactory(), dataSource));
+            configuration.addMapper(OverloadedMapper.class);
+            AtomicInteger builds = new AtomicInteger();
+            ExtContext context = new ExtContext();
+            context.setDialectSelector(url -> {
+                builds.incrementAndGet();
+                return new H2Dialect();
+            });
+            ExtEnhancer enhancer = new ExtEnhancer(configuration, context);
+            String id = OverloadedMapper.class.getName() + ".count";
+
+            enhancer.validateAllMapperMethod();
+            assertEquals(1, builds.get());
+            assertFalse(configuration.hasStatement(id));
+            MappedStatement statement = enhancer.getMappedStatement(id);
+            assertEquals(2, builds.get());
+            assertSame(statement, configuration.getMappedStatement(id));
+            assertSame(statement, enhancer.getMappedStatement(id));
+            assertEquals(2, builds.get());
+        }
+    }
+
+    interface OverloadedMapper extends ExtMapper<AdapterEntity> {
+        long count(@Param("id") long id);
+        long count(@Param("id") Long id);
     }
 
     private MappedStatement statement(Configuration configuration, String id) {

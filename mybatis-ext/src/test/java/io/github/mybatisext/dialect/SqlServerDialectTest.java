@@ -47,7 +47,7 @@ class SqlServerDialectTest {
         ExtContext extContext = new ExtContext();
         Configuration configuration = ConfigurationFactory.create(environment, extContext);
         GenericType genericType = GenericTypeFactory.build(Student.class);
-        tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
+        tableInfo = new TableInfoFactory(configuration, extContext).buildTableInfo(genericType);
         selectItems = new ArrayList<>(tableInfo.getNameToPropertyInfo().values());
 
         OrderByElement orderByElement = new OrderByElement();

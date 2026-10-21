@@ -26,26 +26,26 @@ public abstract class BaseTemplateDialect extends BaseDialect {
 
     @Override
     public String update(TableInfo tableInfo, List<PropertyInfo> selectItems, Variable parameter, Condition where, boolean ignoreNull) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, selectItems, null, null);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, selectItems, null, null, null);
         return buildUpdate(
                 tableInfo,
                 selectItems,
                 parameter,
                 joinTableInfos,
                 where,
-                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                parameter.getJavaType().isArray() || Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
                 joinTableInfos.size() > 1, ignoreNull);
     }
 
     @Override
     public String delete(TableInfo tableInfo, Variable parameter, Condition where) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null, null);
         return buildDelete(
                 tableInfo,
                 parameter,
                 joinTableInfos,
                 where,
-                parameter != null && Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                parameter != null && (parameter.getJavaType().isArray() || Collection.class.isAssignableFrom(parameter.getJavaType().getType())),
                 joinTableInfos.size() > 1);
     }
 
@@ -54,13 +54,13 @@ public abstract class BaseTemplateDialect extends BaseDialect {
         return buildInsert(
                 tableInfo,
                 parameter,
-                Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                parameter.getJavaType().isArray() || Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
                 ignoreNull);
     }
 
     @Override
     public String select(TableInfo tableInfo, List<PropertyInfo> selectItems, Condition where, boolean distinct, List<OrderByElement> orderBy, List<PropertyInfo> groupBy, Condition having, Limit limit) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, selectItems, groupBy, orderBy);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, selectItems, groupBy, orderBy, having);
         List<String> ss = new ArrayList<>();
         ss.add("SELECT");
         if (distinct) {
@@ -93,7 +93,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
 
     @Override
     public String exists(TableInfo tableInfo, Condition where) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null, null);
         List<String> ss = new ArrayList<>();
         ss.add("SELECT 1 FROM");
         ss.add(buildTableAndJoin(joinTableInfos));
@@ -105,7 +105,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
 
     @Override
     public String count(TableInfo tableInfo, Condition where) {
-        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null);
+        List<JoinTableInfo> joinTableInfos = collectJoinTableInfo(tableInfo, where, null, null, null, null);
         List<String> ss = new ArrayList<>();
         ss.add("SELECT COUNT(1) FROM");
         ss.add(buildTableAndJoin(joinTableInfos));

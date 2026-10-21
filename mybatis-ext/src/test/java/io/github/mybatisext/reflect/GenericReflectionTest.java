@@ -5,7 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -62,6 +65,42 @@ class GenericReflectionTest {
     }
 
     @Test
+    void resolvesDiamondMethodsOnceWithGenericTypes() {
+        GenericMethod[] methods = GenericTypeFactory.build(Diamond.class).getMethods();
+        assertEquals(1, methods.length);
+        assertEquals(GenericRoot.class, methods[0].getDeclaringClass());
+        assertEquals(String.class, methods[0].getGenericReturnType().getType());
+        assertEquals(String.class, methods[0].getParameters()[0].getType());
+    }
+
+    @Test
+    void resolvesDiamondFieldsOnce() {
+        GenericField[] fields = GenericTypeFactory.build(Diamond.class).getFields();
+        assertEquals(1, fields.length);
+        assertEquals("LABEL", fields[0].getName());
+        assertEquals(String.class, fields[0].getType());
+        assertEquals(GenericRoot.class, fields[0].getField().getDeclaringClass());
+    }
+
+    @Test
+    void preservesOverriddenMethodsInDiamondInheritance() {
+        GenericMethod[] methods = GenericTypeFactory.build(OverriddenDiamond.class).getMethods();
+        Set<Method> actual = new HashSet<>();
+        boolean foundOverride = false;
+        for (GenericMethod method : methods) {
+            assertTrue(actual.add(method.getMethod()));
+            if (!method.isBridge() && method.getName().equals("convert")) {
+                assertEquals(OverriddenDiamond.class, method.getDeclaringClass());
+                assertEquals(String.class, method.getGenericReturnType().getType());
+                assertEquals(String.class, method.getParameters()[0].getType());
+                foundOverride = true;
+            }
+        }
+        assertTrue(foundOverride);
+        assertEquals(new HashSet<>(Arrays.asList(OverriddenDiamond.class.getMethods())), actual);
+    }
+
+    @Test
     void rejectsUnsupportedWildcardTypesWithClearMessage() {
         MybatisExtException exception = assertThrows(MybatisExtException.class, () -> GenericTypeFactory.build(WildcardHolder.class).getDeclaredFields());
 
@@ -96,6 +135,25 @@ class GenericReflectionTest {
     }
 
     static class IntegerChild extends GenericParent<Integer> {
+    }
+
+    interface GenericRoot<T> {
+        String LABEL = "root";
+        T convert(T input);
+    }
+
+    interface Left extends GenericRoot<String> {
+    }
+
+    interface Right extends GenericRoot<String> {
+    }
+
+    interface Diamond extends Left, Right {
+    }
+
+    interface OverriddenDiamond extends Left, Right {
+        @Override
+        String convert(String input);
     }
 
     static class WildcardHolder {

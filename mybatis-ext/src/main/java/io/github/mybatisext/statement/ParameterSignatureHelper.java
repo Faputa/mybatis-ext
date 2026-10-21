@@ -16,12 +16,11 @@ import org.apache.ibatis.binding.MapperMethod;
 import org.apache.ibatis.reflection.ParamNameResolver;
 import org.apache.ibatis.reflection.ParamNameUtil;
 import org.apache.ibatis.session.Configuration;
-import org.apache.ibatis.session.ResultHandler;
-import org.apache.ibatis.session.RowBounds;
 
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.util.TypeUtils;
 
 public class ParameterSignatureHelper {
 
@@ -34,7 +33,7 @@ public class ParameterSignatureHelper {
         SortedMap<Integer, String> map = new TreeMap<>();
         int paramCount = paramAnnotations.length;
         for (int paramIndex = 0; paramIndex < paramCount; paramIndex++) {
-            if (isSpecialParameter(paramTypes[paramIndex].getType())) {
+            if (TypeUtils.isSpecialParameter(paramTypes[paramIndex].getType())) {
                 continue;
             }
             String name = null;
@@ -57,10 +56,6 @@ public class ParameterSignatureHelper {
         }
         SortedMap<Integer, String> names = Collections.unmodifiableSortedMap(map);
         return getNamedParams(method.getGenericParameterTypes(), names, useActualParamName, hasParamAnnotation);
-    }
-
-    private static boolean isSpecialParameter(Class<?> clazz) {
-        return RowBounds.class.isAssignableFrom(clazz) || ResultHandler.class.isAssignableFrom(clazz);
     }
 
     public static ParameterSignature getNamedParams(GenericType[] parameterTypes, SortedMap<Integer, String> names, boolean useActualParamName, boolean hasParamAnnotation) {
@@ -113,8 +108,8 @@ public class ParameterSignatureHelper {
     }
 
     public static boolean isParameterSignatureMatch(Object object, ParameterSignature parameterSignature) {
-        if (object == null) {
-            return parameterSignature.getType() == null;
+        if (object == null || parameterSignature.getType() == null) {
+            return object == null && parameterSignature.getType() == null;
         }
         if (object instanceof MapperMethod.ParamMap) {
             MapperMethod.ParamMap<?> paramMap = (MapperMethod.ParamMap<?>) object;
@@ -126,13 +121,13 @@ public class ParameterSignatureHelper {
                     return false;
                 }
                 Object value = paramMap.get(entry.getKey());
-                if (value != null && !entry.getValue().isInstance(value)) {
+                if (value != null && !TypeUtils.wrapPrimitive(entry.getValue()).isInstance(value)) {
                     return false;
                 }
             }
             return true;
         }
-        return parameterSignature.getType().isInstance(object);
+        return TypeUtils.wrapPrimitive(parameterSignature.getType()).isInstance(object);
     }
 
     public static String toString(ParameterSignature parameterSignature) {
@@ -151,7 +146,7 @@ public class ParameterSignatureHelper {
         }
         try {
             ParameterSignature parameterSignature = new ParameterSignature();
-            parameterSignature.setType(Class.forName(ss[0]));
+            parameterSignature.setType(ss[0].isEmpty() ? null : TypeUtils.resolveClass(ss[0]));
             if (ss[1].isEmpty()) {
                 return parameterSignature;
             }
@@ -161,7 +156,7 @@ public class ParameterSignatureHelper {
                 if (split.length != 2) {
                     throw new MybatisExtException("Invalid parameter format: Expected 'name:class' pairs separated by commas.");
                 }
-                parameterSignature.getNameToType().put(split[0], Class.forName(split[1]));
+                parameterSignature.getNameToType().put(split[0], TypeUtils.resolveClass(split[1]));
             }
             return parameterSignature;
         } catch (ClassNotFoundException e) {

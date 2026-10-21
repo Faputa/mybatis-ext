@@ -61,7 +61,7 @@ class TableInfoFactoryTest {
     @Test
     void buildsMetadataForInheritedRelations() {
         GenericType genericType = GenericTypeFactory.build(TablePermission.class);
-        TableInfo tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
+        TableInfo tableInfo = new TableInfoFactory(configuration, extContext).buildTableInfo(genericType);
         assertEquals(5, tableInfo.getAliasToJoinTableInfo().size());
         assertTrue(tableInfo.get("tableId2").isReadonly());
         // 测试关联属性
@@ -90,7 +90,7 @@ class TableInfoFactoryTest {
     @Test
     void buildsMetadataForEmbeddedRelations() {
         GenericType genericType = GenericTypeFactory.build(TablePermissionEmbed.class);
-        TableInfo tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
+        TableInfo tableInfo = new TableInfoFactory(configuration, extContext).buildTableInfo(genericType);
         assertEquals(5, tableInfo.getAliasToJoinTableInfo().size());
         assertTrue(tableInfo.get("tablePermission").get("tableId2").isReadonly());
         // 测试子属性关联属性
@@ -111,7 +111,7 @@ class TableInfoFactoryTest {
     @Test
     void buildsMetadataForReferencedDto() {
         GenericType genericType = GenericTypeFactory.build(TablePermissionVO.class);
-        TableInfo tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
+        TableInfo tableInfo = new TableInfoFactory(configuration, extContext).buildTableInfo(genericType);
         assertEquals(5, tableInfo.getAliasToJoinTableInfo().size());
         assertTrue(tableInfo.get("tableId2").isReadonly());
         // 测试关联属性
@@ -136,7 +136,7 @@ class TableInfoFactoryTest {
     @Test
     void buildsMetadataForCascadedStudentCourseGraph() {
         GenericType genericType = GenericTypeFactory.build(StudentCourse.class);
-        TableInfo tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
+        TableInfo tableInfo = new TableInfoFactory(configuration, extContext).buildTableInfo(genericType);
         assertEquals(20, tableInfo.getAliasToJoinTableInfo().size());
         // 测试属性
         assertNotNull(tableInfo.get("studentId"));
@@ -243,7 +243,7 @@ class TableInfoFactoryTest {
     }
 
     private TableInfo buildTableInfo(Class<?> type) {
-        return TableInfoFactory.buildTableInfo(GenericTypeFactory.build(type), configuration, extContext);
+        return new TableInfoFactory(configuration, extContext).buildTableInfo(GenericTypeFactory.build(type));
     }
 
     @Table(name = "training_entity")

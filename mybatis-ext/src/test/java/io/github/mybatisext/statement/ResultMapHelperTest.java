@@ -21,6 +21,7 @@ import io.github.mybatisext.adapter.ConfigurationFactory;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.H2Dialect;
 import io.github.mybatisext.fixture.permission.TablePermission;
+import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
 
@@ -38,7 +39,7 @@ public class ResultMapHelperTest {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         ExtContext extContext = new ExtContext();
         Configuration configuration = ConfigurationFactory.create(environment, extContext);
-        ResultMapHelper resultMapHelper = new ResultMapHelper(configuration, extContext);
+        ResultMapHelper resultMapHelper = new ResultMapHelper(configuration, new TableInfoFactory(configuration, extContext));
         GenericType returnType = GenericTypeFactory.build(TablePermission.class);
         ResultMap resultMap = resultMapHelper.buildResultMap(returnType, new H2Dialect(), false);
         Map<String, ResultMapping> mappings = resultMap.getResultMappings().stream().collect(Collectors.toMap(ResultMapping::getProperty, Function.identity()));

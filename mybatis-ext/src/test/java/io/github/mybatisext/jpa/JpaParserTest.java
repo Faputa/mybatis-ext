@@ -48,8 +48,9 @@ public class JpaParserTest {
         ExtContext extContext = new ExtContext();
         configuration = ConfigurationFactory.create(environment, extContext);
         GenericType genericType = GenericTypeFactory.build(TablePermission.class);
-        tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
-        jpaParser = new JpaParser(configuration, extContext);
+        TableInfoFactory tableInfoFactory = new TableInfoFactory(configuration, extContext);
+        tableInfo = tableInfoFactory.buildTableInfo(genericType);
+        jpaParser = new JpaParser(configuration, tableInfoFactory);
     }
 
     @Test

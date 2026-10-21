@@ -6,6 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +22,7 @@ import io.github.mybatisext.reflect.GenericTypeFactory;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
+import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
@@ -46,7 +54,7 @@ public class ConditionHelperTest {
         ExtContext extContext = new ExtContext();
         Configuration configuration = ConfigurationFactory.create(environment, extContext);
         GenericType genericType = GenericTypeFactory.build(TablePermission.class);
-        TableInfo tableInfo = TableInfoFactory.buildTableInfo(genericType, configuration, extContext);
+        TableInfo tableInfo = new TableInfoFactory(configuration, extContext).buildTableInfo(genericType);
         Condition condition = ConditionHelper.buildForTableInfo(tableInfo, false, "pt");
         assertNotNull(condition);
         assertEquals(ConditionType.COMPLEX, condition.getType());
@@ -108,13 +116,91 @@ public class ConditionHelperTest {
         assertNull(buildTableInfo(DisabledFilterCriteria.class, disabled).get("value").getFilterableInfo());
     }
 
+    @Test
+    void executesDynamicHavingAndOmitsDisabledCondition() throws Exception {
+        Condition condition = expression("n = 1", true);
+        String having = ConditionHelper.toHaving(condition, new H2Dialect());
+        assertEquals(Arrays.asList(1), executeCondition(having, true, true));
+        assertEquals(Arrays.asList(1, 2, 3), executeCondition(having, false, true));
+    }
+
+    @Test
+    void preservesLogicalOperatorInDynamicHaving() throws Exception {
+        List<Condition> conditions = Arrays.asList(expression("n = 1", true), expression("n = 3", true));
+        assertEquals(Arrays.asList(1, 3), executeCondition(ConditionHelper.toHaving(conditions, LogicalOperator.OR, new H2Dialect()), true, true));
+        assertEquals(Collections.emptyList(), executeCondition(ConditionHelper.toHaving(conditions, LogicalOperator.AND, new H2Dialect()), true, true));
+        assertEquals(Arrays.asList(1, 2, 3), executeCondition(ConditionHelper.toHaving(conditions, LogicalOperator.OR, new H2Dialect()), false, true));
+    }
+
+    @Test
+    void preservesNegationWhenSimplifyingSingleChild() throws Exception {
+        Condition condition = negated(expression("n = 1", false));
+        Condition simplified = ConditionHelper.simplifyCondition(condition);
+        assertEquals(Arrays.asList(2, 3), executeCondition(ConditionHelper.toWhere(simplified, new H2Dialect()), true, false));
+    }
+
+    @Test
+    void preservesNegationOfMultipleDynamicChildren() throws Exception {
+        Condition condition = negated(expression("n >= 1", true), expression("n &lt;= 2", true));
+        String where = ConditionHelper.toWhere(condition, new H2Dialect());
+        assertEquals(Arrays.asList(3), executeCondition(where, true, false));
+        assertEquals(Arrays.asList(1, 2, 3), executeCondition(where, false, false));
+    }
+
+    @Test
+    void preservesNegationWithOuterTestAndSingleStaticChild() throws Exception {
+        Condition condition = negated(expression("n = 1", false));
+        condition.setTestTemplate("enabled");
+        String where = ConditionHelper.toWhere(condition, new H2Dialect());
+        assertEquals(Arrays.asList(2, 3), executeCondition(where, true, false));
+        assertEquals(Arrays.asList(1, 2, 3), executeCondition(where, false, false));
+    }
+
+    @Test
+    void preservesNegationInHaving() throws Exception {
+        Condition condition = negated(expression("n >= 1", true), expression("n &lt;= 2", true));
+        String having = ConditionHelper.toHaving(condition, new H2Dialect());
+        assertEquals(Arrays.asList(3), executeCondition(having, true, true));
+        assertEquals(Arrays.asList(1, 2, 3), executeCondition(having, false, true));
+    }
+
+    private Condition expression(String expression, boolean dynamic) {
+        Condition condition = new Condition(ConditionType.BASIC);
+        condition.setExprTemplate(expression);
+        condition.setLogicalOperator(LogicalOperator.AND);
+        if (dynamic) {
+            condition.setTestTemplate("enabled");
+        }
+        return condition;
+    }
+
+    private Condition negated(Condition... children) {
+        Condition condition = new Condition(ConditionType.COMPLEX);
+        condition.setLogicalOperator(LogicalOperator.AND);
+        condition.setNot(true);
+        condition.getSubConditions().addAll(Arrays.asList(children));
+        return condition;
+    }
+
+    private List<Integer> executeCondition(String condition, boolean enabled, boolean having) throws Exception {
+        String script = "<script>SELECT n FROM (VALUES (1), (2), (3)) t(n) " + (having ? "GROUP BY n " : "") + condition + " ORDER BY n</script>";
+        String sql = new XMLLanguageDriver().createSqlSource(new Configuration(), script, Object.class).getBoundSql(Collections.singletonMap("enabled", enabled)).getSql();
+        List<Integer> rows = new ArrayList<>();
+        try (Connection connection = DriverManager.getConnection("jdbc:h2:mem:condition_script"); Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery(sql)) {
+            while (result.next()) {
+                rows.add(result.getInt(1));
+            }
+        }
+        return rows;
+    }
+
     private TableInfo buildTableInfo(Class<?> type, ExtContext extContext) {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("org.h2.Driver");
         dataSource.setUrl("jdbc:h2:mem:condition_metadata;DB_CLOSE_DELAY=-1;MODE=MYSQL");
         Environment environment = new Environment("development", new JdbcTransactionFactory(), dataSource);
         Configuration configuration = ConfigurationFactory.create(environment, extContext);
-        return TableInfoFactory.buildTableInfo(GenericTypeFactory.build(type), configuration, extContext);
+        return new TableInfoFactory(configuration, extContext).buildTableInfo(GenericTypeFactory.build(type));
     }
 
     @Table(name = "filter_criteria", alias = "fc")
