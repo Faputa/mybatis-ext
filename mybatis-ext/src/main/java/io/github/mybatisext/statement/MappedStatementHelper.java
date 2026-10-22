@@ -69,7 +69,7 @@ public class MappedStatementHelper {
     private Map<Semantic, String> buildSemanticToSignature(TableInfo tableInfo, List<GenericMethod> methods, GenericType returnType) {
         Map<Semantic, String> map = new HashMap<>();
         for (GenericMethod method : methods) {
-            Semantic semantic = jpaParser.parse(tableInfo, method.getName(), method.getParameters(), returnType);
+            Semantic semantic = jpaParser.parse(tableInfo, method, returnType);
             map.put(semantic, buildParameterSignature(method));
         }
         return Collections.unmodifiableMap(map);

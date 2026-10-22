@@ -188,6 +188,7 @@ class IdGenerationIntegrationTest {
 
     @Table(name = "sys_user")
     public static class UuidSysUser {
+
         @Id(idType = IdType.UUID)
         @Column
         private String email;
@@ -226,6 +227,7 @@ class IdGenerationIntegrationTest {
 
     @Table(name = "sys_user")
     public static class CustomSysUser {
+
         @Id(idType = IdType.CUSTOM, customIdGenerator = CustomIdGenerator.class)
         @Column
         private String email;
@@ -264,6 +266,7 @@ class IdGenerationIntegrationTest {
 
     @Table(name = "sys_user")
     public static class AutoSysUser {
+
         @Id(idType = IdType.AUTO)
         @Column
         private Long userId;
@@ -302,6 +305,7 @@ class IdGenerationIntegrationTest {
 
     @Table(name = "sys_user")
     public static class CompositeSysUser {
+
         @Id
         @Column
         private Long userId;
@@ -349,6 +353,7 @@ class IdGenerationIntegrationTest {
     }
 
     public static class CustomIdGenerator implements IdGenerator<String> {
+
         @Override
         public String getId() {
             return "custom-generated-id";

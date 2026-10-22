@@ -1,6 +1,5 @@
 package io.github.mybatisext.jpa;
 
-import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -40,17 +39,5 @@ public class ExpectedTokens {
 
     public String getMessage() {
         return "Expected " + String.join(" or ", expects) + ", but found '" + text.substring(cursor) + "'.";
-    }
-
-    public void printMessage(PrintStream printStream) {
-        printStream.println(text);
-        for (int i = 0; i < cursor; i++) {
-            printStream.print(' ');
-        }
-        for (int i = cursor; i < text.length(); i++) {
-            printStream.print('~');
-        }
-        printStream.println();
-        printStream.println(getMessage());
     }
 }

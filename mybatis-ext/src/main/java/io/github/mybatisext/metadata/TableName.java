@@ -1,8 +1,8 @@
 package io.github.mybatisext.metadata;
 
-import io.github.mybatisext.util.StringUtils;
-
 import java.util.Objects;
+
+import io.github.mybatisext.util.StringUtils;
 
 public class TableName {
 

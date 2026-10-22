@@ -1,0 +1,26 @@
+MybatisX icon resources
+
+Source project: MybatisX, maintained by baomidou and its contributors
+Source repository: https://gitee.com/baomidou/MybatisX
+Source revision: cf7ba8bdb259b51db652228ec28bd3b487a0f1c6
+
+The following resources are copied without modification:
+  src/main/resources/images/mapper_method.svg -> icons/xml.svg
+  src/main/resources/images/statement.svg -> icons/mapper.svg
+
+The plugin logo reuses mapper_method.svg with only its root width and height set to 40:
+  src/main/resources/images/mapper_method.svg -> META-INF/pluginIcon.svg
+The original paths, colors, gradients, and aspect ratio are preserved.
+
+The following resources are modified outline variants of the bird paths in statement.svg:
+  icons/table.svg
+  icons/table_dark.svg
+  icons/tableref.svg
+  icons/tableref_dark.svg
+Modified by MyBatis Ext contributors on 2026-10-22: outline-only paths, simplified
+details, 16x16 canvas, and colors for light and dark themes.
+TableRef variants add a reference arrow on 2026-10-25.
+
+These resources are distributed under the Apache License, Version 2.0.
+The full upstream license is included in META-INF/LICENSE-MybatisX.txt.
+The MyBatis Ext plugin is an independent project and does not bundle MybatisX code.

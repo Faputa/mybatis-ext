@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
 public class OgnlMapperIntegrationTest {
+
     public static ThreadLocal<Configuration> configuration = new ThreadLocal<>();
     public static ThreadLocal<List<Object>> parameterObjects = ThreadLocal.withInitial(ArrayList::new);
 

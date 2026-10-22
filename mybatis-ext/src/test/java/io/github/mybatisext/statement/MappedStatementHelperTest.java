@@ -18,10 +18,10 @@ import org.junit.jupiter.api.Test;
 import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Table;
-import io.github.mybatisext.metadata.TableInfoFactory;
-import io.github.mybatisext.metadata.TableInfo;
-import io.github.mybatisext.jpa.Condition;
 import io.github.mybatisext.dialect.H2Dialect;
+import io.github.mybatisext.jpa.Condition;
+import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericParameter;
 import io.github.mybatisext.reflect.GenericType;
@@ -63,6 +63,7 @@ class MappedStatementHelperTest {
             ExtContext context = new ExtContext();
             AtomicInteger scripts = new AtomicInteger();
             context.setDialectSelector(url -> new H2Dialect() {
+
                 @Override
                 public String count(TableInfo tableInfo, Condition where) {
                     return "/* generation " + scripts.incrementAndGet() + " */ " + super.count(tableInfo, where);
@@ -77,6 +78,7 @@ class MappedStatementHelperTest {
 
     private GenericMethod countingMethod(Class<?> parameterType, AtomicInteger parses) throws Exception {
         return new GenericMethod(Mapper.class.getMethod("count", parameterType), Collections.emptyMap()) {
+
             @Override
             public GenericParameter[] getParameters() {
                 parses.incrementAndGet();
@@ -86,12 +88,15 @@ class MappedStatementHelperTest {
     }
 
     interface Mapper {
+
         long count(@Param("id") long id);
+
         long count(@Param("id") Long id);
     }
 
     @Table(name = "cache_entity")
     static class Entity {
+
         @Column
         private Long id;
     }

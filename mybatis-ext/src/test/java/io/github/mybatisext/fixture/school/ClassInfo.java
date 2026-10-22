@@ -1,13 +1,13 @@
 package io.github.mybatisext.fixture.school;
 
+import java.util.List;
+
 import io.github.mybatisext.annotation.Column;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.Table;
-
-import java.util.List;
 
 /**
  * 班级表

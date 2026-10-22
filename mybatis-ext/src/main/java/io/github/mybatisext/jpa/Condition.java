@@ -1,9 +1,10 @@
 package io.github.mybatisext.jpa;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import io.github.mybatisext.annotation.TestMode;
 import io.github.mybatisext.metadata.PropertyInfo;
@@ -12,7 +13,7 @@ import io.github.mybatisext.util.StringUtils;
 public class Condition {
 
     private final ConditionType type;
-    private final Set<Condition> subConditions = new HashSet<>();
+    private final List<Condition> subConditions = new ArrayList<>();
     private LogicalOperator logicalOperator;
     private CompareOperator compareOperator;
     private PropertyInfo propertyInfo;
@@ -34,7 +35,7 @@ public class Condition {
         return type;
     }
 
-    public Set<Condition> getSubConditions() {
+    public List<Condition> getSubConditions() {
         return subConditions;
     }
 
@@ -92,7 +93,7 @@ public class Condition {
     }
 
     public void setVariable(Variable variable) {
-        this.variable = variable;
+        this.variable = variable == null ? null : new Variable(variable);
         syncJdbcType();
     }
 
@@ -109,7 +110,7 @@ public class Condition {
     }
 
     public void setSecondVariable(Variable secondVariable) {
-        this.secondVariable = secondVariable;
+        this.secondVariable = secondVariable == null ? null : new Variable(secondVariable);
         syncJdbcType();
     }
 
@@ -162,11 +163,11 @@ public class Condition {
             return false;
         }
         Condition condition = (Condition) o;
-        return ignorecase == condition.ignorecase && not == condition.not && type == condition.type && Objects.equals(subConditions, condition.subConditions) && logicalOperator == condition.logicalOperator && compareOperator == condition.compareOperator && Objects.equals(propertyInfo, condition.propertyInfo) && Objects.equals(variable, condition.variable) && Objects.equals(secondVariable, condition.secondVariable) && testMode == condition.testMode && Objects.equals(testTemplate, condition.testTemplate) && Objects.equals(exprTemplate, condition.exprTemplate);
+        return ignorecase == condition.ignorecase && not == condition.not && type == condition.type && Objects.equals(new HashSet<>(subConditions), new HashSet<>(condition.subConditions)) && logicalOperator == condition.logicalOperator && compareOperator == condition.compareOperator && Objects.equals(propertyInfo, condition.propertyInfo) && Objects.equals(variable, condition.variable) && Objects.equals(secondVariable, condition.secondVariable) && testMode == condition.testMode && Objects.equals(testTemplate, condition.testTemplate) && Objects.equals(exprTemplate, condition.exprTemplate);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, subConditions, logicalOperator, compareOperator, propertyInfo, ignorecase, not, variable, secondVariable, testMode, testTemplate, exprTemplate);
+        return Objects.hash(type, new HashSet<>(subConditions), logicalOperator, compareOperator, propertyInfo, ignorecase, not, variable, secondVariable, testMode, testTemplate, exprTemplate);
     }
 }

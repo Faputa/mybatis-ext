@@ -11,6 +11,7 @@ import io.github.mybatisext.jpa.Variable;
 import io.github.mybatisext.metadata.JoinTableInfo;
 import io.github.mybatisext.metadata.PropertyInfo;
 import io.github.mybatisext.metadata.TableInfo;
+import io.github.mybatisext.model.JavaTypes;
 
 public abstract class BaseTemplateDialect extends BaseDialect {
 
@@ -33,7 +34,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
                 parameter,
                 joinTableInfos,
                 where,
-                parameter.getJavaType().isArray() || Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                parameter.getJavaType().isArray() || JavaTypes.isAssignableTo(parameter.getJavaType(), Collection.class.getName()),
                 joinTableInfos.size() > 1, ignoreNull);
     }
 
@@ -45,7 +46,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
                 parameter,
                 joinTableInfos,
                 where,
-                parameter != null && (parameter.getJavaType().isArray() || Collection.class.isAssignableFrom(parameter.getJavaType().getType())),
+                parameter != null && (parameter.getJavaType().isArray() || JavaTypes.isAssignableTo(parameter.getJavaType(), Collection.class.getName())),
                 joinTableInfos.size() > 1);
     }
 
@@ -54,7 +55,7 @@ public abstract class BaseTemplateDialect extends BaseDialect {
         return buildInsert(
                 tableInfo,
                 parameter,
-                parameter.getJavaType().isArray() || Collection.class.isAssignableFrom(parameter.getJavaType().getType()),
+                parameter.getJavaType().isArray() || JavaTypes.isAssignableTo(parameter.getJavaType(), Collection.class.getName()),
                 ignoreNull);
     }
 

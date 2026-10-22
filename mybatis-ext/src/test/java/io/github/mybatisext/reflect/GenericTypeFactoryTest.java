@@ -79,11 +79,13 @@ public class GenericTypeFactoryTest {
     }
 
     static class GenericHolder<T> {
+
         private T value;
         private List<T> values;
     }
 
     static class ParameterizedFields {
+
         private List<String> first;
         private List<String> second;
         private GenericHolder<Long> holder;

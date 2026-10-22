@@ -63,12 +63,14 @@ class OgnlTest {
     }
 
     public static class Bean {
+
         public String getName() {
             return "name";
         }
     }
 
     public static class TestIdGenerator implements IdGenerator<String> {
+
         @Override
         public String getId() {
             return "generated";

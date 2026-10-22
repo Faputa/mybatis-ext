@@ -17,9 +17,8 @@ import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.session.Configuration;
 
-import io.github.mybatisext.annotation.MapTable;
+import io.github.mybatisext.analysis.MapperResolver;
 import io.github.mybatisext.mapper.BaseMapper;
-import io.github.mybatisext.mapper.ExtMapper;
 import io.github.mybatisext.metadata.TableInfoFactory;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
@@ -180,15 +179,12 @@ public class ExtEnhancer implements MethodHandler {
     }
 
     private boolean isNotEnhancedMapper(Class<?> mapperClass) {
-        return !mapperClass.isInterface() || mapperClass.getTypeParameters().length > 0 || (!mapperClass.isAnnotationPresent(MapTable.class) && !ExtMapper.class.isAssignableFrom(mapperClass));
+        return !mapperClass.isInterface() || mapperClass.getTypeParameters().length > 0
+                || !MapperResolver.isEnhancedMapper(GenericTypeFactory.build(mapperClass));
     }
 
     private GenericType getEntityClass(Class<?> mapperClass) {
-        MapTable annotation = mapperClass.getAnnotation(MapTable.class);
-        if (annotation != null) {
-            return GenericTypeFactory.build(annotation.value());
-        }
-        return TypeUtils.resolveGenericTypeArgument(mapperClass, ExtMapper.class, 0);
+        return (GenericType) MapperResolver.entityType(GenericTypeFactory.build(mapperClass));
     }
 
     private Class<?> getMapperClass(String namespace) {

@@ -1,6 +1,5 @@
 package io.github.mybatisext.jpa;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -34,29 +33,6 @@ public class TokenMarker {
             begin = end;
         }
         return tokens;
-    }
-
-    public void printDiff(TokenMarker tokenMarker, PrintStream printStream) {
-        int begin = 0;
-        int end1;
-        int end2;
-        for (int i = 0; i < endMarks.size() && i < tokenMarker.endMarks.size(); i++) {
-            end1 = endMarks.get(i);
-            end2 = tokenMarker.endMarks.get(i);
-            if (end1 != end2) {
-                printStream.println(text);
-                for (int j = 0; j < begin; j++) {
-                    printStream.print(' ');
-                }
-                printStream.println(text.substring(begin, end1));
-                for (int j = 0; j < begin; j++) {
-                    printStream.print(' ');
-                }
-                printStream.println(text.substring(begin, end2));
-                return;
-            }
-            begin = end1;
-        }
     }
 
     public int getDiffBegin(TokenMarker tokenMarker) {

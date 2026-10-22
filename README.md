@@ -8,7 +8,7 @@ MyBatis-Ext 是一个基于 MyBatis 的扩展插件，旨在简化和增强 MyBa
 
 - **方法名CRUD** - 根据符合规范的方法名自动生成CRUD操作，无需手动编写SQL
 
-- **轻量级设计** - 除了依赖MyBatis等核心库外，没有其他第三方库依赖
+- **轻量级设计** - 核心依赖 MyBatis 和 JSR-305 注解，字节码增强所需的 Javassist 内置并重定位，避免与业务项目冲突
 
 - **无感增强** - 在原有的Spring Boot+MyBatis项目中引入本插件starter，无需修改配置即可获得增强能力
 
@@ -23,6 +23,22 @@ MyBatis-Ext 项目由以下几个主要模块组成：
 - **mybatis-ext** - 核心模块，提供基础功能实现
 - **mybatis-ext-spring** - Spring集成模块
 - **mybatis-ext-spring-boot-starter** - Spring Boot starter，提供自动配置
+- **[mybatis-ext-idea-plugin](mybatis-ext-idea-plugin/README.md)** - IDEA 插件，提供 MyBatis XML 与核心共享的元数据、方法 CRUD 诊断、跳转和补全；与核心使用同一 Gradle 多模块构建
+
+## 开发与构建
+
+在 IDEA 中导入根目录的 `settings.gradle.kts`，使用根目录 Gradle Wrapper。核心及 Spring 模块目标为 Java 8；插件固定基于 IDEA Community 2023.3.8 SDK，以 Java 17 编译和测试。Gradle JVM 可使用 IDEA 自带 JBR 25，构建工具的 JVM 不决定插件的最低版本。现有 Maven 项目需要先取消 Maven 关联，再关联根 Gradle 工程。
+
+```powershell
+$env:JAVA_HOME = 'C:\Program Files\JetBrains\IntelliJ IDEA 2026.2.0.1\jbr'
+.\gradlew.bat verifyAll
+```
+
+`verifyAll` 验证全部模块、插件结构及安装包，并生成 Maven 发布 POM。模块版本统一配置在根 `gradle.properties`；插件通过 `project(":mybatis-ext")` 直接使用当前核心，不需要先安装本地 Maven 产物。业务项目仍可通过原 Maven 坐标使用发布包。详见[构建、IDE 联动与发布说明](docs/build.md)。
+
+本次变更包含核心扩展 API 的不兼容调整及首次 IDEA 插件交付，详见[变更记录](docs/changelog.md)和[升级迁移指南](docs/migration.md)。运行 `.\gradlew.bat spotlessApply` 统一格式，运行 `.\gradlew.bat releaseBundle` 验证并生成本地交付包，不对外上传。
+
+早期思想实验：[总体设计](docs/old-overall-design.md)、[方法名 CRUD 解析器设计](docs/old-jpa-parser-design.md)、[CRUD 参数与 SQL 生成设计](docs/old-jpa-to-sql.md)。
 
 ## 集成方式
 

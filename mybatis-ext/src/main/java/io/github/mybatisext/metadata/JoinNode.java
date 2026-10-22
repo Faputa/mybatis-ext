@@ -3,12 +3,12 @@ package io.github.mybatisext.metadata;
 import java.util.Objects;
 import java.util.Set;
 
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaType;
 
 public class JoinNode {
 
     private Set<JoinPath> leftJoinPaths;
-    private GenericType tableType;
+    private JavaType tableType;
     private String alias;
 
     public Set<JoinPath> getLeftJoinPaths() {
@@ -19,11 +19,11 @@ public class JoinNode {
         this.leftJoinPaths = leftJoinPaths;
     }
 
-    public GenericType getTableType() {
+    public JavaType getTableType() {
         return tableType;
     }
 
-    public void setTableType(GenericType tableType) {
+    public void setTableType(JavaType tableType) {
         this.tableType = tableType;
     }
 

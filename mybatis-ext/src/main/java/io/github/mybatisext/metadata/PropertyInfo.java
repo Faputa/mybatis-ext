@@ -9,15 +9,18 @@ import org.apache.ibatis.mapping.FetchType;
 import org.apache.ibatis.type.JdbcType;
 
 import io.github.mybatisext.annotation.IdType;
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaAnnotatedElement;
+import io.github.mybatisext.model.JavaType;
 import io.github.mybatisext.util.Getter;
 
 public class PropertyInfo implements Getter<PropertyInfo> {
 
+    private JavaAnnotatedElement source;
+    private JavaAnnotatedElement mappingSource;
     private String name;
     private String fullName;
     private JoinTableInfo joinTableInfo;
-    private GenericType javaType;
+    private JavaType javaType;
     private JdbcType jdbcType;
     private boolean ownColumn;
     private boolean readonly;
@@ -29,11 +32,28 @@ public class PropertyInfo implements Getter<PropertyInfo> {
     private PropertyType propertyType;
     // resultType=ID
     private IdType idType;
-    private Class<?> customIdGenerator;
+    private JavaType customIdGenerator;
     // resultType=COLLECTION
-    private GenericType ofType;
+    private JavaType ofType;
     private FetchType fetchType;
     private final Map<String, PropertyInfo> nameToPropertyInfo = new HashMap<>();
+
+    public JavaAnnotatedElement getSource() {
+        return source;
+    }
+
+    public void setSource(JavaAnnotatedElement source) {
+        this.source = source;
+    }
+
+    /** 最终映射的声明或关联类型；直接声明的列对应值为空。 */
+    public JavaAnnotatedElement getMappingSource() {
+        return mappingSource;
+    }
+
+    public void setMappingSource(JavaAnnotatedElement mappingSource) {
+        this.mappingSource = mappingSource;
+    }
 
     public String getName() {
         return name;
@@ -59,11 +79,11 @@ public class PropertyInfo implements Getter<PropertyInfo> {
         this.joinTableInfo = joinTableInfo;
     }
 
-    public GenericType getJavaType() {
+    public JavaType getJavaType() {
         return javaType;
     }
 
-    public void setJavaType(GenericType javaType) {
+    public void setJavaType(JavaType javaType) {
         this.javaType = javaType;
     }
 
@@ -123,19 +143,19 @@ public class PropertyInfo implements Getter<PropertyInfo> {
         this.idType = idType;
     }
 
-    public Class<?> getCustomIdGenerator() {
+    public JavaType getCustomIdGenerator() {
         return customIdGenerator;
     }
 
-    public void setCustomIdGenerator(Class<?> customIdGenerator) {
+    public void setCustomIdGenerator(JavaType customIdGenerator) {
         this.customIdGenerator = customIdGenerator;
     }
 
-    public GenericType getOfType() {
+    public JavaType getOfType() {
         return ofType;
     }
 
-    public void setOfType(GenericType ofType) {
+    public void setOfType(JavaType ofType) {
         this.ofType = ofType;
     }
 

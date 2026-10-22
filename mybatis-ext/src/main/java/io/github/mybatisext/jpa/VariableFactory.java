@@ -1,67 +1,52 @@
 package io.github.mybatisext.jpa;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.ibatis.session.Configuration;
 
-import io.github.mybatisext.exception.MybatisExtException;
-import io.github.mybatisext.reflect.GenericField;
-import io.github.mybatisext.reflect.GenericMethod;
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaBeanProperty;
+import io.github.mybatisext.model.JavaField;
+import io.github.mybatisext.model.JavaMethod;
+import io.github.mybatisext.model.JavaType;
+import io.github.mybatisext.model.JavaTypes;
+import io.github.mybatisext.model.TypePolicy;
+import io.github.mybatisext.reflect.ReflectionTypePolicy;
 
 public class VariableFactory {
 
     public static void addChildren(Configuration configuration, Variable variable) {
-        Map<String, Variable> nameToVariable = variable.getNameToVariable();
-        if (!nameToVariable.isEmpty()) {
+        addChildren(new ReflectionTypePolicy(configuration), variable);
+    }
+
+    public static void addChildren(TypePolicy typePolicy, Variable variable) {
+        Map<String, Variable> children = variable.getNameToVariable();
+        if (!children.isEmpty() || !hasSubVariable(typePolicy, variable.getJavaType())) {
             return;
         }
-        GenericType javaType = variable.getJavaType();
-        if (!hasSubVariable(configuration, javaType)) {
-            return;
-        }
-
-        BeanInfo beanInfo;
-        try {
-            beanInfo = Introspector.getBeanInfo(javaType.getType(), Introspector.IGNORE_ALL_BEANINFO);
-        } catch (IntrospectionException e) {
-            throw new MybatisExtException(e);
-        }
-        Map<Method, GenericMethod> methodMap = Arrays.stream(javaType.getMethods()).collect(Collectors.toMap(GenericMethod::getMethod, v -> v));
-
-        for (GenericType c = javaType; c != null && c.getType() != Object.class; c = c.getGenericSuperclass()) {
-            for (GenericField field : c.getDeclaredFields()) {
-                if (nameToVariable.containsKey(field.getName())) {
-                    continue;
-                }
-                nameToVariable.put(field.getName(), new Variable(variable.getFullName(), field.getName(), field.getGenericType()));
+        JavaBeanProperty[] properties = variable.getJavaType().getBeanProperties();
+        for (JavaType c = variable.getJavaType(); c != null && !JavaTypes.is(c, Object.class.getName()); c = c.getGenericSuperclass()) {
+            for (JavaField field : c.getDeclaredFields()) {
+                children.putIfAbsent(field.getName(), new Variable(variable.getFullName(), field.getName(), field.getGenericType(), field));
             }
-            for (PropertyDescriptor propertyDescriptor : beanInfo.getPropertyDescriptors()) {
-                if (nameToVariable.containsKey(propertyDescriptor.getName())) {
-                    continue;
+            for (JavaBeanProperty property : properties) {
+                JavaMethod readMethod = property.getReadMethod();
+                if (readMethod != null && readMethod.getDeclaringType().equals(c)) {
+                    children.putIfAbsent(property.getName(), new Variable(variable.getFullName(), property.getName(), readMethod.getGenericReturnType(), readMethod));
                 }
-                GenericMethod readMethod = methodMap.get(propertyDescriptor.getReadMethod());
-                if (readMethod == null || readMethod.getMethod().getDeclaringClass() != c.getType()) {
-                    continue;
-                }
-                nameToVariable.put(propertyDescriptor.getName(), new Variable(variable.getFullName(), propertyDescriptor.getName(), readMethod.getGenericReturnType()));
             }
         }
     }
 
-    public static boolean hasSubVariable(Configuration configuration, GenericType genericType) {
-        return hasSubVariable(configuration, genericType.getType());
+    public static boolean hasSubVariable(Configuration configuration, Class<?> type) {
+        return !configuration.getTypeHandlerRegistry().hasTypeHandler(type)
+                && !Map.class.isAssignableFrom(type)
+                && !Collection.class.isAssignableFrom(type) && !type.isArray();
     }
 
-    public static boolean hasSubVariable(Configuration configuration, Class<?> javaType) {
-        return !configuration.getTypeHandlerRegistry().hasTypeHandler(javaType) && !Map.class.isAssignableFrom(javaType) && !Collection.class.isAssignableFrom(javaType) && !javaType.isArray();
+    public static boolean hasSubVariable(TypePolicy policy, JavaType type) {
+        return !policy.isScalar(type) && !type.isArray()
+                && !JavaTypes.isAssignableTo(type, Map.class.getName())
+                && !JavaTypes.isAssignableTo(type, Collection.class.getName());
     }
 }

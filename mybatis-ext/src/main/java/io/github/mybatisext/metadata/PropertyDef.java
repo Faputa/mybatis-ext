@@ -4,29 +4,53 @@ import java.util.Map;
 
 import org.apache.ibatis.type.JdbcType;
 
-import io.github.mybatisext.annotation.Cascade;
-import io.github.mybatisext.annotation.Fetch;
-import io.github.mybatisext.annotation.Filterable;
-import io.github.mybatisext.annotation.Id;
-import io.github.mybatisext.annotation.JoinRelation;
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaAnnotatedElement;
+import io.github.mybatisext.model.JavaAnnotation;
+import io.github.mybatisext.model.JavaType;
 
 public class PropertyDef {
 
+    private JavaAnnotatedElement source;
+    private JavaAnnotatedElement mappingSource;
+    private JavaType sourceType;
     private String name;
-    private GenericType classType;
-    private GenericType declaringType;
+    private JavaType classType;
+    private JavaType declaringType;
     private JdbcType jdbcType;
     private boolean ownColumn;
     private boolean readonly;
     // 只处理@Column注解的属性
     private String columnName;
-    private Id id;
-    private JoinRelation[] joinRelations;
-    private Filterable filterable;
-    private Fetch fetch;
-    private Cascade cascade;
+    private JavaAnnotation id;
+    private JavaAnnotation[] joinRelations;
+    private JavaAnnotation filterable;
+    private JavaAnnotation fetch;
+    private JavaAnnotation cascade;
     private Map<String, PropertyDef> nameToPropertyDef;
+
+    public JavaAnnotatedElement getSource() {
+        return source;
+    }
+
+    public void setSource(JavaAnnotatedElement source) {
+        this.source = source;
+    }
+
+    public JavaAnnotatedElement getMappingSource() {
+        return mappingSource;
+    }
+
+    public void setMappingSource(JavaAnnotatedElement mappingSource) {
+        this.mappingSource = mappingSource;
+    }
+
+    public JavaType getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(JavaType sourceType) {
+        this.sourceType = sourceType;
+    }
 
     public String getName() {
         return name;
@@ -36,19 +60,19 @@ public class PropertyDef {
         this.name = name;
     }
 
-    public GenericType getClassType() {
+    public JavaType getClassType() {
         return classType;
     }
 
-    public void setClassType(GenericType classType) {
+    public void setClassType(JavaType classType) {
         this.classType = classType;
     }
 
-    public GenericType getDeclaringType() {
+    public JavaType getDeclaringType() {
         return declaringType;
     }
 
-    public void setDeclaringType(GenericType declaringType) {
+    public void setDeclaringType(JavaType declaringType) {
         this.declaringType = declaringType;
     }
 
@@ -84,43 +108,43 @@ public class PropertyDef {
         this.columnName = columnName;
     }
 
-    public Id getId() {
+    public JavaAnnotation getId() {
         return id;
     }
 
-    public void setId(Id id) {
+    public void setId(JavaAnnotation id) {
         this.id = id;
     }
 
-    public JoinRelation[] getJoinRelations() {
+    public JavaAnnotation[] getJoinRelations() {
         return joinRelations;
     }
 
-    public void setJoinRelations(JoinRelation[] joinRelations) {
+    public void setJoinRelations(JavaAnnotation[] joinRelations) {
         this.joinRelations = joinRelations;
     }
 
-    public Filterable getFilterable() {
+    public JavaAnnotation getFilterable() {
         return filterable;
     }
 
-    public void setFilterable(Filterable filterable) {
+    public void setFilterable(JavaAnnotation filterable) {
         this.filterable = filterable;
     }
 
-    public Fetch getFetch() {
+    public JavaAnnotation getFetch() {
         return fetch;
     }
 
-    public void setFetch(Fetch fetch) {
+    public void setFetch(JavaAnnotation fetch) {
         this.fetch = fetch;
     }
 
-    public Cascade getCascade() {
+    public JavaAnnotation getCascade() {
         return cascade;
     }
 
-    public void setCascade(Cascade cascade) {
+    public void setCascade(JavaAnnotation cascade) {
         this.cascade = cascade;
     }
 

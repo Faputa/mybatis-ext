@@ -7,7 +7,10 @@ import java.lang.reflect.TypeVariable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GenericField {
+import io.github.mybatisext.model.JavaAnnotation;
+import io.github.mybatisext.model.JavaField;
+
+public class GenericField implements JavaField {
 
     private final Field field;
     private final GenericType genericType;
@@ -27,6 +30,16 @@ public class GenericField {
 
     public Class<?> getType() {
         return genericType.getType();
+    }
+
+    @Override
+    public JavaAnnotation annotation(Class<? extends Annotation> annotationType) {
+        return ReflectionAnnotations.get(field, annotationType);
+    }
+
+    @Override
+    public JavaAnnotation[] annotations(Class<? extends Annotation> annotationType) {
+        return ReflectionAnnotations.getAll(field, annotationType);
     }
 
     public String getName() {

@@ -50,6 +50,7 @@ public class ParameterizedTypeTest {
     }
 
     static class ParameterizedFields {
+
         private List<String> strings;
         private List<String> stringsCopy;
         private List<Integer> integers;

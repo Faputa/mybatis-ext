@@ -3,13 +3,13 @@ package io.github.mybatisext.metadata;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.model.JavaType;
 import io.github.mybatisext.util.Getter;
 
 public class TableInfo implements Getter<PropertyInfo> {
 
     private TableName tableName;
-    private GenericType classType;
+    private JavaType classType;
     private JoinGraph joinGraph;
     private JoinTableInfo joinTableInfo;
     private final Map<String, JoinTableInfo> aliasToJoinTableInfo = new HashMap<>();
@@ -23,11 +23,11 @@ public class TableInfo implements Getter<PropertyInfo> {
         this.tableName = tableName;
     }
 
-    public GenericType getClassType() {
+    public JavaType getClassType() {
         return classType;
     }
 
-    public void setClassType(GenericType classType) {
+    public void setClassType(JavaType classType) {
         this.classType = classType;
     }
 

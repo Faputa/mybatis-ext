@@ -74,7 +74,7 @@ public class SimpleStringTemplate {
     }
 
     /**
-     * like lodash get
+     * 类似 lodash 的 get，按路径获取值
      */
     private static Object deepGet(Object obj, List<String> keys) {
         for (String key : keys) {

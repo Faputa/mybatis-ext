@@ -13,6 +13,7 @@ public class ConditionHook {
     private final PropertyInfo propertyInfo;
     private final Set<JoinTableInfo> joinTableInfos = new HashSet<>();
     private final Map<String, PropertyInfo> propertyInfos = new HashMap<String, PropertyInfo>() {
+
         @Override
         public PropertyInfo get(Object key) {
             PropertyInfo propertyInfo = super.get(key);

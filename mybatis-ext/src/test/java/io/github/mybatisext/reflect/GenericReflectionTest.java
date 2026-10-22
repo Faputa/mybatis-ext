@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -117,6 +117,7 @@ class GenericReflectionTest {
     }
 
     static class GenericParent<T> {
+
         private T value;
         private List<T> values;
         private T[] array;
@@ -138,7 +139,9 @@ class GenericReflectionTest {
     }
 
     interface GenericRoot<T> {
+
         String LABEL = "root";
+
         T convert(T input);
     }
 
@@ -152,11 +155,13 @@ class GenericReflectionTest {
     }
 
     interface OverriddenDiamond extends Left, Right {
+
         @Override
         String convert(String input);
     }
 
     static class WildcardHolder {
+
         private List<? extends Number> values;
     }
 }

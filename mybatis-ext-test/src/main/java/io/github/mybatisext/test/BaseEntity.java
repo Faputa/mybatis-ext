@@ -6,7 +6,7 @@ import io.github.mybatisext.annotation.Column;
 
 /**
  * Entity基类
- * 
+ *
  * @author ruoyi
  */
 public class BaseEntity {

@@ -75,19 +75,6 @@ public class TypeUtils {
         return RowBounds.class.isAssignableFrom(clazz) || ResultHandler.class.isAssignableFrom(clazz);
     }
 
-    public static Class<?> unwrapToClass(GenericType type) {
-        if (type.isArray()) {
-            return type.getComponentType().getType();
-        }
-        if (Collection.class.isAssignableFrom(type.getType())) {
-            return resolveTypeArgument(type, Collection.class, 0);
-        }
-        if (Optional.class.isAssignableFrom(type.getType())) {
-            return resolveTypeArgument(type, Optional.class, 0);
-        }
-        return type.getType();
-    }
-
     public static GenericType unwrapToGenericType(GenericType type) {
         if (type.isArray()) {
             return type.getComponentType();

@@ -13,16 +13,14 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.reflect.GenericTypeFactory;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.ibatis.mapping.Environment;
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.scripting.xmltags.XMLLanguageDriver;
+import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.junit.jupiter.api.Test;
@@ -35,9 +33,11 @@ import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.annotation.TableRef;
 import io.github.mybatisext.annotation.TestMode;
 import io.github.mybatisext.dialect.H2Dialect;
+import io.github.mybatisext.fixture.permission.TablePermission;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
-import io.github.mybatisext.fixture.permission.TablePermission;
+import io.github.mybatisext.reflect.GenericType;
+import io.github.mybatisext.reflect.GenericTypeFactory;
 
 public class ConditionHelperTest {
 
@@ -77,6 +77,24 @@ public class ConditionHelperTest {
         set.add(tableRef);
         set.add(tableRef2);
         assertEquals(1, set.size());
+    }
+
+    @Test
+    void preservesConditionOrderAndDuplicatesWhileComparingAsSets() {
+        Condition first = expression("n = 1", false);
+        Condition second = expression("n = 2", false);
+        Condition ordered = negated(first, second, first);
+        Condition reordered = negated(second, first);
+
+        assertEquals(Arrays.asList(first, second, first), new ArrayList<>(ordered.getSubConditions()));
+        assertEquals(ordered, reordered);
+        assertEquals(reordered, ordered);
+        assertEquals(ordered.hashCode(), reordered.hashCode());
+
+        Condition parent = negated(ordered);
+        Condition otherParent = negated(reordered);
+        assertEquals(parent, otherParent);
+        assertEquals(parent.hashCode(), otherParent.hashCode());
     }
 
     @Test
@@ -205,6 +223,7 @@ public class ConditionHelperTest {
 
     @Table(name = "filter_criteria", alias = "fc")
     static class ExplicitFilterCriteria {
+
         @Column
         private String unfiltered;
         @Column
@@ -229,12 +248,14 @@ public class ConditionHelperTest {
 
     @Table
     static class DefaultFilterCriteria {
+
         @Column
         private String value;
     }
 
     @Table
     static class DisabledFilterCriteria {
+
         @Column
         private String value;
     }

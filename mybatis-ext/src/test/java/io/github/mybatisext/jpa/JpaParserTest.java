@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
@@ -21,9 +21,9 @@ import io.github.mybatisext.adapter.ExtContext;
 import io.github.mybatisext.dialect.Dialect;
 import io.github.mybatisext.dialect.H2Dialect;
 import io.github.mybatisext.exception.MybatisExtException;
+import io.github.mybatisext.fixture.permission.TablePermission;
 import io.github.mybatisext.metadata.TableInfo;
 import io.github.mybatisext.metadata.TableInfoFactory;
-import io.github.mybatisext.fixture.permission.TablePermission;
 import io.github.mybatisext.reflect.GenericMethod;
 import io.github.mybatisext.reflect.GenericType;
 import io.github.mybatisext.reflect.GenericTypeFactory;
@@ -145,6 +145,7 @@ public class JpaParserTest {
     }
 
     interface InvalidMapper {
+
         int updatePermissionTypeByRoleId(@Param("permissionType") String permissionType, @Param("roleId") String roleId);
     }
 }

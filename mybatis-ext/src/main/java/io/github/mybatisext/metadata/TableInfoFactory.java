@@ -13,40 +13,47 @@ import javax.annotation.Nullable;
 import org.apache.ibatis.session.Configuration;
 
 import io.github.mybatisext.adapter.ExtContext;
-import io.github.mybatisext.annotation.Fetch;
-import io.github.mybatisext.annotation.Filterable;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.IdType;
-import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.Table;
 import io.github.mybatisext.annotation.TableRef;
 import io.github.mybatisext.annotation.TestMode;
+import io.github.mybatisext.diagnostic.Diagnostic;
+import io.github.mybatisext.diagnostic.DiagnosticLocation;
 import io.github.mybatisext.exception.MybatisExtException;
 import io.github.mybatisext.jpa.CompareOperator;
 import io.github.mybatisext.jpa.LogicalOperator;
-import io.github.mybatisext.reflect.GenericType;
-import io.github.mybatisext.reflect.GenericTypeFactory;
+import io.github.mybatisext.model.JavaAnnotation;
+import io.github.mybatisext.model.JavaType;
+import io.github.mybatisext.model.JavaTypes;
+import io.github.mybatisext.model.TypePolicy;
+import io.github.mybatisext.reflect.ReflectionTypePolicy;
 import io.github.mybatisext.util.StringUtils;
-import io.github.mybatisext.util.TypeUtils;
 
 public class TableInfoFactory {
 
-    private final Map<GenericType, TableInfo> classTypeToTableInfo = new ConcurrentHashMap<>();
+    private final Map<JavaType, TableInfo> classTypeToTableInfo = new ConcurrentHashMap<>();
 
-    private final Configuration configuration;
+    private final TypePolicy typePolicy;
+    private boolean validateRuntimeTypes;
     private final ExtContext extContext;
     private final TableDefFactory tableDefFactory;
     private final JoinGraphFactory joinGraphFactory = new JoinGraphFactory();
 
     public TableInfoFactory(Configuration configuration, ExtContext extContext) {
-        this.configuration = configuration;
-        this.extContext = extContext;
-        this.tableDefFactory = new TableDefFactory(configuration);
+        this(new ReflectionTypePolicy(configuration), extContext);
+        this.validateRuntimeTypes = true;
     }
 
-    public TableInfo buildTableInfo(GenericType classType) {
+    public TableInfoFactory(TypePolicy typePolicy, ExtContext extContext) {
+        this.typePolicy = typePolicy;
+        this.extContext = extContext;
+        this.tableDefFactory = new TableDefFactory(typePolicy);
+    }
+
+    public synchronized TableInfo buildTableInfo(JavaType classType) {
         TableInfo _tableInfo = classTypeToTableInfo.get(classType);
         if (_tableInfo != null) {
             return _tableInfo;
@@ -56,8 +63,19 @@ public class TableInfoFactory {
         return classTypeToTableInfo.computeIfAbsent(classType, k -> tableInfo);
     }
 
-    public TableInfo buildTableInfo(TableDef tableDef) {
-        JoinGraph joinGraph = joinGraphFactory.buildJoinGraph(tableDef);
+    public synchronized TableInfo buildTableInfo(TableDef tableDef) {
+        JoinGraph shared = joinGraphFactory.buildJoinGraph(tableDef);
+        JoinGraph working = new JoinGraph();
+        working.getJoinNodeToAlias().putAll(shared.getJoinNodeToAlias());
+        working.getAliasRegistry().addAll(shared.getAliasRegistry());
+        TableInfo result = buildTableInfo(tableDef, working);
+        shared.getJoinNodeToAlias().putAll(working.getJoinNodeToAlias());
+        shared.getAliasRegistry().addAll(working.getAliasRegistry());
+        result.setJoinGraph(shared);
+        return result;
+    }
+
+    private TableInfo buildTableInfo(TableDef tableDef, JoinGraph joinGraph) {
         JoinNode joinNode = JoinGraphFactory.buildJoinNode(joinGraph, tableDef);
         JoinTableInfo joinTableInfo = new JoinTableInfo();
         joinTableInfo.setTableDef(tableDef);
@@ -74,21 +92,21 @@ public class TableInfoFactory {
         return tableInfo;
     }
 
-    private void processNameToPropertyDef(GenericType classType, Map<String, PropertyDef> nameToPropertyDef, Map<String, PropertyInfo> nameToPropertyInfo, String propertyPrefix, String ownPropertyPrefix, JoinTableInfo joinTableInfo, TableInfo tableInfo) {
+    private void processNameToPropertyDef(JavaType classType, Map<String, PropertyDef> nameToPropertyDef, Map<String, PropertyInfo> nameToPropertyInfo, String propertyPrefix, String ownPropertyPrefix, JoinTableInfo joinTableInfo, TableInfo tableInfo) {
         TableName tableName = null;
         String alias = null;
-        if (classType.isAnnotationPresent(TableRef.class)) {
+        if (classType.hasAnnotation(TableRef.class)) {
             tableName = tableDefFactory.buildTableDef(classType).getTableName();
-            TableRef tableRef = classType.getAnnotation(TableRef.class);
-            alias = tableRef.alias();
-            processNameToPropertyDef(GenericTypeFactory.build(tableRef.value()), nameToPropertyDef, nameToPropertyInfo, propertyPrefix, ownPropertyPrefix, joinTableInfo, tableInfo);
-        } else if (classType.isAnnotationPresent(Table.class)) {
+            JavaAnnotation tableRef = classType.annotation(TableRef.class);
+            alias = tableRef.value("alias");
+            processNameToPropertyDef(tableRef.<JavaType>value("value"), nameToPropertyDef, nameToPropertyInfo, propertyPrefix, ownPropertyPrefix, joinTableInfo, tableInfo);
+        } else if (classType.hasAnnotation(Table.class)) {
             tableName = tableDefFactory.buildTableDef(classType).getTableName();
-            alias = classType.getAnnotation(Table.class).alias();
+            alias = classType.annotation(Table.class).value("alias");
         }
         if (tableName != null) {
             if (!tableName.equals(joinTableInfo.getTableDef().getTableName())) {
-                throw new MybatisExtException("Table name mismatch: expected '" + joinTableInfo.getTableDef().getTableName() + "', but got '" + tableName + "'");
+                throw new MybatisExtException(new Diagnostic(Diagnostic.Code.SEMANTIC_ERROR, "Table name mismatch: expected '" + joinTableInfo.getTableDef().getTableName() + "', but got '" + tableName + "'", new DiagnosticLocation(classType, classType, classType.hasAnnotation(TableRef.class) ? TableRef.class : Table.class, classType.hasAnnotation(TableRef.class) ? "value" : "name", propertyPrefix)));
             }
         }
         Map<String, JoinTableInfo> localAliasToJoinTableInfo = new HashMap<>();
@@ -97,25 +115,25 @@ public class TableInfoFactory {
         }
 
         JoinTableInfo parentJoinTableInfo = null;
-        GenericType superclass = classType.getGenericSuperclass();
-        JoinParent joinParent = classType.getAnnotation(JoinParent.class);
+        JavaType superclass = classType.getGenericSuperclass();
+        JavaAnnotation joinParent = classType.annotation(JoinParent.class);
         if (joinParent != null) {
-            if (superclass == null || superclass.getType() == Object.class) {
-                throw new MybatisExtException("@JoinParent on '" + classType.getName() + "' requires a superclass.");
+            if (superclass == null || JavaTypes.is(superclass, Object.class.getName())) {
+                throw new MybatisExtException(new Diagnostic(Diagnostic.Code.SEMANTIC_ERROR, "@JoinParent on '" + classType.getName() + "' requires a superclass.", new DiagnosticLocation(classType, classType, JoinParent.class, null, propertyPrefix)));
             }
             TableDef parentTableDef = tableDefFactory.buildTableDef(superclass);
             Set<JoinColumnInfo> joinColumnInfos = new HashSet<>();
-            for (JoinColumn joinColumn : joinParent.joinColumn()) {
-                joinColumnInfos.add(buildJoinColumnInfo(joinTableInfo, parentTableDef, ownPropertyPrefix + joinColumn.leftColumn(), joinColumn.rightColumn()));
+            for (JavaAnnotation joinColumn : joinParent.<JavaAnnotation[]>value("joinColumn")) {
+                joinColumnInfos.add(buildJoinColumnInfo(joinTableInfo, parentTableDef, ownPropertyPrefix + joinColumn.value("leftColumn"), joinColumn.value("rightColumn"), new DiagnosticLocation(classType, classType, JoinParent.class, "joinColumn", propertyPrefix), joinColumn.value("leftColumn")));
             }
             Set<JoinPath> joinPaths = buildJoinPaths(joinColumnInfos);
-            JoinNode parentJoinNode = JoinGraphFactory.deriveJoinNode(tableInfo.getJoinGraph(), joinPaths, parentTableDef, joinParent.alias());
+            JoinNode parentJoinNode = JoinGraphFactory.deriveJoinNode(tableInfo.getJoinGraph(), joinPaths, parentTableDef, joinParent.value("alias"));
             parentJoinTableInfo = buildJoinTableInfo(tableInfo, parentJoinNode, parentTableDef, joinColumnInfos);
-            if (StringUtils.isNotBlank(joinParent.alias())) {
-                if (localAliasToJoinTableInfo.containsKey(joinParent.alias())) {
-                    throw new MybatisExtException("Duplicate alias '" + joinParent.alias() + "' in @JoinParent");
+            if (StringUtils.isNotBlank(joinParent.value("alias"))) {
+                if (localAliasToJoinTableInfo.containsKey(joinParent.value("alias"))) {
+                    throw new MybatisExtException(new Diagnostic(Diagnostic.Code.SEMANTIC_ERROR, "Duplicate alias '" + joinParent.value("alias") + "' in @JoinParent", new DiagnosticLocation(classType, classType, JoinParent.class, "alias", propertyPrefix)));
                 }
-                localAliasToJoinTableInfo.put(joinParent.alias(), parentJoinTableInfo);
+                localAliasToJoinTableInfo.put(joinParent.value("alias"), parentJoinTableInfo);
             }
         }
 
@@ -129,7 +147,7 @@ public class TableInfoFactory {
             PropertyInfo propertyInfo = buildPropertyInfo(propertyDef, tableInfo, propertyPrefix, ownPropertyPrefix, joinTableInfo, new HashMap<>(localAliasToJoinTableInfo));
             nameToPropertyInfo.put(propertyInfo.getName(), propertyInfo);
         }
-        if (superclass == null || superclass.getType() == Object.class) {
+        if (superclass == null || JavaTypes.is(superclass, Object.class.getName())) {
             return;
         }
         if (parentJoinTableInfo != null) {
@@ -141,6 +159,8 @@ public class TableInfoFactory {
 
     private PropertyInfo buildPropertyInfo(PropertyDef propertyDef, TableInfo tableInfo, String propertyPrefix, String ownPropertyPrefix, JoinTableInfo joinTableInfo, Map<String, JoinTableInfo> localAliasToJoinTableInfo) {
         PropertyInfo propertyInfo = new PropertyInfo();
+        propertyInfo.setSource(propertyDef.getSource());
+        propertyInfo.setMappingSource(propertyDef.getMappingSource());
         propertyInfo.setName(propertyDef.getName());
         propertyInfo.setFullName(propertyPrefix + propertyDef.getName());
         propertyInfo.setColumnName(propertyDef.getColumnName());
@@ -149,87 +169,88 @@ public class TableInfoFactory {
         propertyInfo.setFilterableInfo(buildFilterableInfo(propertyDef.getFilterable()));
         propertyInfo.setJdbcType(propertyDef.getJdbcType());
 
-        GenericType propertyType = propertyDef.getClassType();
-        if (Collection.class.isAssignableFrom(propertyType.getType())) {
+        JavaType propertyType = propertyDef.getClassType();
+        if (JavaTypes.isAssignableTo(propertyType, Collection.class.getName())) {
             propertyInfo.setJavaType(propertyType);
-            propertyInfo.setOfType(TypeUtils.unwrapToGenericType(propertyType));
+            propertyInfo.setOfType(JavaTypes.unwrap(propertyType));
             propertyInfo.setPropertyType(PropertyType.COLLECTION);
-        } else if (propertyType.getType() == Optional.class) {
-            propertyInfo.setJavaType(TypeUtils.unwrapToGenericType(propertyType));
+        } else if (JavaTypes.is(propertyType, Optional.class.getName())) {
+            propertyInfo.setJavaType(JavaTypes.unwrap(propertyType));
         } else if (propertyType.getTypeParameters().length == 0) {
             propertyInfo.setJavaType(propertyType);
         }
         if (propertyInfo.getJavaType() == null) {
-            throw new MybatisExtException("Unsupported property type: " + propertyType);
+            throw new MybatisExtException(new Diagnostic(Diagnostic.Code.SEMANTIC_ERROR, "Unsupported property type: " + propertyType, new DiagnosticLocation(propertyDef.getSourceType(), propertyDef.getSource(), null, null, propertyInfo.getFullName())));
         }
         if (propertyInfo.getPropertyType() == null) {
-            if (configuration.getTypeHandlerRegistry().hasTypeHandler(propertyInfo.getJavaType().getType())) {
+            if (typePolicy.isScalar(propertyInfo.getJavaType(), new DiagnosticLocation(propertyDef.getSourceType(), propertyDef.getSource(), null, null, propertyInfo.getFullName()))) {
                 propertyInfo.setPropertyType(PropertyType.RESULT);
             } else {
                 propertyInfo.setPropertyType(PropertyType.ASSOCIATION);
             }
         }
 
-        Id id = propertyDef.getId();
+        JavaAnnotation id = propertyDef.getId();
         if (id != null) {
-            if (id.idType() == IdType.CUSTOM) {
-                try {
-                    id.customIdGenerator().newInstance();
-                } catch (InstantiationException | IllegalAccessException e) {
-                    throw new MybatisExtException("customIdGenerator cannot be instantiated", e);
+            if (id.value("idType") == IdType.CUSTOM) {
+                if (validateRuntimeTypes) {
+                    ReflectionTypePolicy.validateIdGenerator(id.value("customIdGenerator"), new DiagnosticLocation(propertyDef.getSourceType(), propertyDef.getSource(), Id.class, "customIdGenerator", propertyInfo.getFullName()));
                 }
-                propertyInfo.setCustomIdGenerator(id.customIdGenerator());
+                propertyInfo.setCustomIdGenerator(id.<JavaType>value("customIdGenerator"));
             }
-            propertyInfo.setIdType(id.idType());
+            propertyInfo.setIdType(id.value("idType"));
             propertyInfo.setPropertyType(PropertyType.ID);
         }
 
-        Fetch fetch = propertyDef.getFetch();
+        JavaAnnotation fetch = propertyDef.getFetch();
         if (fetch != null) {
-            propertyInfo.setFetchType(fetch.value());
+            propertyInfo.setFetchType(fetch.value("value"));
             if (propertyInfo.getPropertyType() == PropertyType.RESULT) {
                 propertyInfo.setPropertyType(PropertyType.ASSOCIATION);
             }
         }
 
         JoinTableInfo originJoinTableInfo = joinTableInfo;
-        JoinRelation[] joinRelations = propertyDef.getJoinRelations();
-        for (JoinRelation joinRelation : joinRelations) {
-            GenericType rightTableType = resolveJoinRelationTableType(propertyInfo, joinRelation);
+        JavaAnnotation[] joinRelations = propertyDef.getJoinRelations();
+        for (JavaAnnotation joinRelation : joinRelations) {
+            JavaType rightTableType = resolveJoinRelationTableType(propertyInfo, joinRelation);
             TableDef rightTableDef = tableDefFactory.buildTableDef(rightTableType);
             Set<JoinColumnInfo> joinColumnInfos = new HashSet<>();
-            for (JoinColumn joinColumn : joinRelation.joinColumn()) {
+            for (JavaAnnotation joinColumn : joinRelation.<JavaAnnotation[]>value("joinColumn")) {
                 JoinTableInfo leftJoinTableInfo;
-                if (StringUtils.isNotBlank(joinColumn.leftTableAlias())) {
-                    leftJoinTableInfo = localAliasToJoinTableInfo.get(joinColumn.leftTableAlias());
+                if (StringUtils.isNotBlank(joinColumn.value("leftTableAlias"))) {
+                    leftJoinTableInfo = localAliasToJoinTableInfo.get(joinColumn.value("leftTableAlias"));
                     if (leftJoinTableInfo == null) {
-                        throw new MybatisExtException("Unknown left table alias '" + joinColumn.leftTableAlias() + "' in @JoinColumn");
+                        throw new MybatisExtException(new Diagnostic(Diagnostic.Code.SEMANTIC_ERROR, "Unknown left table alias '" + joinColumn.value("leftTableAlias") + "' in @JoinColumn", new DiagnosticLocation(propertyDef.getSourceType(), propertyDef.getSource(), JoinRelation.class, "joinColumn.leftTableAlias", propertyInfo.getFullName())));
                     }
                 } else {
                     leftJoinTableInfo = joinTableInfo;
                 }
-                joinColumnInfos.add(buildJoinColumnInfo(leftJoinTableInfo, rightTableDef, originJoinTableInfo == leftJoinTableInfo ? ownPropertyPrefix + joinColumn.leftColumn() : joinColumn.leftColumn(), joinColumn.rightColumn()));
+                joinColumnInfos.add(buildJoinColumnInfo(leftJoinTableInfo, rightTableDef, originJoinTableInfo == leftJoinTableInfo ? ownPropertyPrefix + joinColumn.value("leftColumn") : joinColumn.value("leftColumn"), joinColumn.value("rightColumn"), new DiagnosticLocation(propertyDef.getSourceType(), propertyDef.getSource(), JoinRelation.class, "joinColumn", propertyInfo.getFullName()), joinColumn.value("leftColumn")));
             }
             Set<JoinPath> joinPaths = buildJoinPaths(joinColumnInfos);
-            JoinNode rightJoinNode = JoinGraphFactory.deriveJoinNode(tableInfo.getJoinGraph(), joinPaths, rightTableDef, joinRelation.tableAlias());
+            JoinNode rightJoinNode = JoinGraphFactory.deriveJoinNode(tableInfo.getJoinGraph(), joinPaths, rightTableDef, joinRelation.value("tableAlias"));
             JoinTableInfo rightJoinTableInfo = buildJoinTableInfo(tableInfo, rightJoinNode, rightTableDef, joinColumnInfos);
-            if (StringUtils.isNotBlank(joinRelation.tableAlias())) {
-                if (localAliasToJoinTableInfo.containsKey(joinRelation.tableAlias())) {
-                    throw new MybatisExtException("Duplicate table alias '" + joinRelation.tableAlias() + "' in @JoinRelation");
+            if (StringUtils.isNotBlank(joinRelation.value("tableAlias"))) {
+                if (localAliasToJoinTableInfo.containsKey(joinRelation.value("tableAlias"))) {
+                    throw new MybatisExtException(new Diagnostic(Diagnostic.Code.SEMANTIC_ERROR, "Duplicate table alias '" + joinRelation.value("tableAlias") + "' in @JoinRelation", new DiagnosticLocation(propertyDef.getSourceType(), propertyDef.getSource(), JoinRelation.class, "tableAlias", propertyInfo.getFullName())));
                 }
-                localAliasToJoinTableInfo.put(joinRelation.tableAlias(), rightJoinTableInfo);
+                localAliasToJoinTableInfo.put(joinRelation.value("tableAlias"), rightJoinTableInfo);
             }
             joinTableInfo = rightJoinTableInfo;
         }
         propertyInfo.setJoinTableInfo(joinTableInfo);
 
         if (joinRelations.length > 0) {
-            JoinRelation joinRelation = joinRelations[joinRelations.length - 1];
-            if (joinRelation.table() != void.class) {
-                String refName = StringUtils.isNotBlank(joinRelation.column()) ? joinRelation.column() : propertyInfo.getName();
-                PropertyDef refPropertyDef = TableDefFactory.getOwnSingleColumn(joinTableInfo.getTableDef(), refName);
+            JavaAnnotation joinRelation = joinRelations[joinRelations.length - 1];
+            if (!JavaTypes.is(joinRelation.value("table"), "void")) {
+                String refName = StringUtils.isNotBlank(joinRelation.value("column")) ? joinRelation.value("column") : propertyInfo.getName();
+                PropertyDef refPropertyDef = TableDefFactory.getOwnSingleColumn(joinTableInfo.getTableDef(), refName, new DiagnosticLocation(propertyDef.getSourceType(), propertyDef.getSource(), JoinRelation.class, "column", refName).forPath(refName, StringUtils.isNotBlank(joinRelation.value("column")) ? refName : null));
                 propertyInfo.setColumnName(refPropertyDef.getColumnName());
                 propertyInfo.setJdbcType(refPropertyDef.getJdbcType());
+                propertyInfo.setMappingSource(refPropertyDef.getMappingSource() != null ? refPropertyDef.getMappingSource() : refPropertyDef.getSource());
+            } else {
+                propertyInfo.setMappingSource(resolveJoinRelationTableType(propertyInfo, joinRelation));
             }
             ownPropertyPrefix = "";
         } else {
@@ -237,7 +258,7 @@ public class TableInfoFactory {
         }
 
         if (propertyDef.getNameToPropertyDef() != null) {
-            GenericType genericType = TypeUtils.unwrapToGenericType(propertyDef.getClassType());
+            JavaType genericType = JavaTypes.unwrap(propertyDef.getClassType());
             processNameToPropertyDef(genericType, propertyDef.getNameToPropertyDef(), propertyInfo.getNameToPropertyInfo(), propertyInfo.getFullName() + ".", ownPropertyPrefix, joinTableInfo, tableInfo);
         }
 
@@ -257,7 +278,7 @@ public class TableInfoFactory {
         return parentJoinTableInfo;
     }
 
-    private FilterableInfo buildFilterableInfo(@Nullable Filterable filterable) {
+    private FilterableInfo buildFilterableInfo(@Nullable JavaAnnotation filterable) {
         if (filterable == null) {
             if (!extContext.isDefaultFilterable()) {
                 return null;
@@ -271,9 +292,9 @@ public class TableInfoFactory {
         return new FilterableInfo(filterable);
     }
 
-    private static GenericType resolveJoinRelationTableType(PropertyInfo propertyInfo, JoinRelation joinRelation) {
-        if (joinRelation.table() != void.class) {
-            return GenericTypeFactory.build(joinRelation.table());
+    private static JavaType resolveJoinRelationTableType(PropertyInfo propertyInfo, JavaAnnotation joinRelation) {
+        if (!JavaTypes.is(joinRelation.value("table"), "void")) {
+            return joinRelation.<JavaType>value("table");
         }
         if (propertyInfo.getOfType() != null) {
             return propertyInfo.getOfType();
@@ -293,37 +314,27 @@ public class TableInfoFactory {
         return joinPaths;
     }
 
-    private static JoinColumnInfo buildJoinColumnInfo(JoinTableInfo leftJoinTableInfo, TableDef rightTableDef, String leftColumn, String rightColumn) {
+    private static JoinColumnInfo buildJoinColumnInfo(JoinTableInfo leftJoinTableInfo, TableDef rightTableDef, String leftColumn, String rightColumn, DiagnosticLocation location, String leftSourceText) {
         JoinColumnInfo joinColumnInfo = new JoinColumnInfo();
         joinColumnInfo.setLeftJoinTableInfo(leftJoinTableInfo);
         joinColumnInfo.setLeftFullName(leftColumn);
         joinColumnInfo.setRightFullName(rightColumn);
-        joinColumnInfo.setLeftColumn(TableDefFactory.getOwnSingleColumn(leftJoinTableInfo.getTableDef(), leftColumn));
-        joinColumnInfo.setRightColumn(TableDefFactory.getOwnSingleColumn(rightTableDef, rightColumn));
+        joinColumnInfo.setLeftColumn(TableDefFactory.getOwnSingleColumn(leftJoinTableInfo.getTableDef(), leftColumn, location.member("joinColumn.leftColumn").forPath(leftColumn, leftSourceText)));
+        joinColumnInfo.setRightColumn(TableDefFactory.getOwnSingleColumn(rightTableDef, rightColumn, location.member("joinColumn.rightColumn").forPath(rightColumn, rightColumn)));
         return joinColumnInfo;
     }
 
     public static PropertyInfo getPropertyInfo(TableInfo tableInfo, String fullName) {
-        Map<String, PropertyInfo> map = tableInfo.getNameToPropertyInfo();
-        PropertyInfo propertyInfo = null;
-        for (String key : fullName.split("\\.")) {
-            if ((propertyInfo = map.get(key)) == null) {
-                break;
-            }
-            map = propertyInfo.getNameToPropertyInfo();
-        }
-        if (propertyInfo == null) {
-            throw new MybatisExtException("Property '" + fullName + "' not found in " + tableInfo.getClassType().getSimpleName());
-        }
-        return propertyInfo;
+        return PropertyPath.resolve(tableInfo.getNameToPropertyInfo(), fullName, tableInfo.getClassType(), PropertyInfo::getNameToPropertyInfo,
+                new DiagnosticLocation(tableInfo.getClassType(), tableInfo.getClassType(), null, null, fullName).forPath(fullName, fullName), null);
     }
 
-    public static boolean isSameTableType(GenericType left, GenericType right) {
-        GenericType leftTableType = TableDefFactory.resolveTableType(left);
+    public static boolean isSameTableType(JavaType left, JavaType right) {
+        JavaType leftTableType = TableDefFactory.resolveTableType(left);
         if (leftTableType == null) {
             return false;
         }
-        GenericType rightTableType = TableDefFactory.resolveTableType(right);
+        JavaType rightTableType = TableDefFactory.resolveTableType(right);
         if (rightTableType == null) {
             return false;
         }

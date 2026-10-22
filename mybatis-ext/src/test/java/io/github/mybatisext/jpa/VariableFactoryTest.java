@@ -64,15 +64,17 @@ class VariableFactoryTest {
         assertEquals("__names__bind", variable.getBindName());
         assertEquals("#{__names__bind, jdbcType=VARCHAR}", variable.getBindPlaceholder());
         assertEquals("__names__item", item.getName());
-        assertEquals(String.class, item.getJavaType().getType());
+        assertEquals(GenericTypeFactory.build(String.class), item.getJavaType());
         assertEquals("#{__names__item, jdbcType=VARCHAR}", item.getPlaceholder());
     }
 
     static class ParentBean {
+
         private String parentField;
     }
 
     static class ChildBean extends ParentBean {
+
         private Long childField;
 
         public String getDerivedValue() {
@@ -81,6 +83,7 @@ class VariableFactoryTest {
     }
 
     static class GenericHolder {
+
         private List<String> names;
     }
 }

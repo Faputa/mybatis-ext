@@ -1,12 +1,12 @@
 package io.github.mybatisext.fixture.permission;
 
+import java.sql.Timestamp;
+
 import io.github.mybatisext.annotation.Column;
 import io.github.mybatisext.annotation.Id;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.Table;
-
-import java.sql.Timestamp;
 
 @Table(name = "table_permission")
 public class TablePermissionEmbed {

@@ -10,9 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.NestedExceptionUtils;
+import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.data.repository.Repository;
-import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.data.repository.query.QueryCreationException;
 
 @SpringBootTest
@@ -39,6 +39,7 @@ public class SpringDataJpaCompatibilityIntegrationTest {
     }
 
     private interface InvalidSysUserRepository extends Repository<SysUser, Long> {
+
         long countSysUser();
     }
 }

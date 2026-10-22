@@ -6,6 +6,8 @@ target/
 !**/src/test/**/target/
 .flattened-pom.xml
 dependency-reduced-pom.xml
+.gradle/
+.intellijPlatform/
 
 ### STS ###
 .apt_generated

@@ -2,6 +2,7 @@ package io.github.mybatisext.test.spring;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,6 @@ public class DepartmentUserCollectionMappingIntegrationTest {
         assertEquals(1, department.getUsers().size());
         assertEquals(userId, department.getUsers().get(0).getUserId());
         assertEquals(loginName, department.getUsers().get(0).getLoginName());
-        assertEquals(java.util.Collections.singletonList(userName), department.getUserNames());
+        assertEquals(Collections.singletonList(userName), department.getUserNames());
     }
 }

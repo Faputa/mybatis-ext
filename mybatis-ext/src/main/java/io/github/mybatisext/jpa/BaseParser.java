@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 public abstract class BaseParser<T extends Tokenizer> {
 
     public class Symbol extends io.github.mybatisext.jpa.Symbol<T> {
+
         public Symbol(String name) {
             super(name);
         }

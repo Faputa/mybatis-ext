@@ -1,16 +1,16 @@
 package io.github.mybatisext.fixture.permission;
 
+import java.sql.Timestamp;
+import java.util.List;
+
 import io.github.mybatisext.annotation.Cascade;
 import io.github.mybatisext.annotation.ColumnRef;
+import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.JoinColumn;
 import io.github.mybatisext.annotation.JoinParent;
 import io.github.mybatisext.annotation.JoinRelation;
 import io.github.mybatisext.annotation.JoinRelations;
-import io.github.mybatisext.annotation.Fetch;
 import io.github.mybatisext.annotation.TableRef;
-
-import java.sql.Timestamp;
-import java.util.List;
 
 @TableRef(value = TablePermission.class, alias = "tp")
 @JoinParent(alias = "dt", joinColumn = @JoinColumn(leftColumn = "tableId", rightColumn = "id"))

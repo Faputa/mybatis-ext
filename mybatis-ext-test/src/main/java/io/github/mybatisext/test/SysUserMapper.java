@@ -18,6 +18,8 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
 
     long countByStatus(@Param("status") String status);
 
+    long count(@Param("status") String status);
+
     boolean existsByEmail(@Param("email") String email);
 
     List<SysUser> listTop1ByStatusOrderByUserIdDesc(@Param("status") String status);
@@ -41,6 +43,8 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
     SysUser getByUserId(SysUser query);
 
     SysUser getByUserId(@Param("userId") Long userId);
+
+    SysUser get(@Param("userId") Long userId);
 
     int updateStatusByParentId(SysUser query);
 

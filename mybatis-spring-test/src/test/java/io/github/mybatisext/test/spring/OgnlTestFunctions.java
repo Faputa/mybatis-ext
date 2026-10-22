@@ -1,6 +1,7 @@
 package io.github.mybatisext.test.spring;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -9,6 +10,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 
 public class OgnlTestFunctions {
+
     public static List<Object> objectToList(Object obj) {
         List<Object> list = new ArrayList<>();
         list.add(obj);
@@ -17,7 +19,7 @@ public class OgnlTestFunctions {
     }
 
     public static List<Object> varargsToList(Object... obj) {
-        return java.util.Arrays.asList(obj);
+        return Arrays.asList(obj);
     }
 
     public static List<Object> callMapperStatement(String statement, Object... parameter) {
