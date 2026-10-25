@@ -1,0 +1,35 @@
+<idea-plugin>
+  <id>io.github.mybatisext.idea</id>
+  <name>MyBatis Ext</name>
+  <vendor>mybatis-ext</vendor>
+  <description><![CDATA[MyBatis XML recognition, navigation, inspections and completion; shared-core mybatis-ext metadata and derived CRUD analysis.]]></description>
+  <change-notes><![CDATA[
+    <ul>
+      <li>MyBatis Mapper/XML recognition, offline DTDs, references, completion, inspections and bidirectional gutter navigation.</li>
+      <li>Shared-core metadata and derived CRUD analysis, navigation and completion for mybatis-ext.</li>
+      <li>CRUD documentation previews with dynamic MyBatis tags, datasource dialect detection and analysis failure details.</li>
+      <li>Mapper/XML bird icons and outline Table/TableRef icons. Baseline: IntelliJ IDEA 2023.3, Java 17.</li>
+    </ul>
+  ]]></change-notes>
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.java</depends>
+  <extensions defaultExtensionNs="com.intellij">
+    <fileBasedIndex implementation="io.github.mybatisext.idea.xml.MapperIndex"/>
+    <iconProvider implementation="io.github.mybatisext.idea.xml.MapperIconProvider"/>
+    <standardResourceProvider implementation="io.github.mybatisext.idea.xml.MybatisResources"/>
+    <psi.referenceContributor language="XML" implementation="io.github.mybatisext.idea.xml.MybatisReferences"/>
+    <psi.referenceContributor language="JAVA" implementation="io.github.mybatisext.idea.ext.ExtReferences"/>
+    <methodReferencesSearch implementation="io.github.mybatisext.idea.xml.PropertyMethodReferencesSearch"/>
+    <completion.contributor language="XML" implementationClass="io.github.mybatisext.idea.xml.MybatisCompletion"/>
+    <completion.contributor language="JAVA" implementationClass="io.github.mybatisext.idea.ext.ExtCompletion"/>
+    <codeInsight.lineMarkerProvider language="JAVA" implementationClass="io.github.mybatisext.idea.xml.MapperNavigation"/>
+    <codeInsight.lineMarkerProvider language="XML" implementationClass="io.github.mybatisext.idea.xml.MapperNavigation"/>
+    <codeInsight.lineMarkerProvider language="JAVA" implementationClass="io.github.mybatisext.idea.ext.ExtNavigation"/>
+    <psi.implicitReferenceProvider implementation="io.github.mybatisext.idea.ext.ExtImplicitReferences"/>
+    <lang.documentationProvider language="JAVA" implementationClass="io.github.mybatisext.idea.ext.CrudDocumentation" order="first"/>
+    <localInspection language="XML" shortName="MybatisExtXml" displayName="MyBatis mapping references" groupName="MyBatis Ext" enabledByDefault="true" level="ERROR" implementationClass="io.github.mybatisext.idea.xml.MybatisInspection"/>
+    <localInspection language="JAVA" shortName="MybatisExtMapper" displayName="MyBatis mapper statements" groupName="MyBatis Ext" enabledByDefault="true" level="ERROR" implementationClass="io.github.mybatisext.idea.xml.MapperInspection"/>
+    <localInspection language="JAVA" shortName="MybatisExtAnalysis" displayName="MyBatis Ext metadata and CRUD" groupName="MyBatis Ext" enabledByDefault="true" level="ERROR" implementationClass="io.github.mybatisext.idea.ext.ExtInspection"/>
+    <projectConfigurable id="io.github.mybatisext.idea.settings" displayName="MyBatis Ext" instance="io.github.mybatisext.idea.ext.AnalysisConfigurable"/>
+  </extensions>
+</idea-plugin>

@@ -9,6 +9,7 @@ plugins {
     signing
     id("com.diffplug.spotless") version "8.2.1"
     id("com.gradleup.shadow") version "9.2.2" apply false
+    id("org.jetbrains.intellij.platform") version "2.19.0" apply false
     id("com.gradleup.nmcp") version "1.6.2" apply false
     id("com.gradleup.nmcp.aggregation") version "1.6.2"
 }
@@ -238,8 +239,13 @@ tasks.named("publishToMavenLocal") {
 
 tasks.register("verifyAll") {
     group = "verification"
-    description = "Test all modules and generate Maven publication metadata."
-    dependsOn("check")
+    description =
+        "Test all modules, verify the IDEA plugin, build its ZIP and generate Maven publication metadata."
+    dependsOn(
+        "check",
+        ":mybatis-ext-idea-plugin:verifyPluginStructure",
+        ":mybatis-ext-idea-plugin:verifyPlugin",
+    )
     dependsOn(tasks.withType<GenerateMavenPom>())
     dependsOn(
         subprojects
@@ -256,8 +262,8 @@ tasks.register("compile") {
 
 tasks.register("package") {
     group = "build"
-    description = "Run checks and tests, then build all module archives."
-    dependsOn("check", "assemble")
+    description = "Run checks and tests, then build all module archives and the IDEA plugin ZIP."
+    dependsOn("check", "assemble", ":mybatis-ext-idea-plugin:buildPlugin")
 }
 
 tasks.register("install") {
