@@ -2,6 +2,8 @@
 
 根工程是唯一的 Gradle 构建，包含八个 Java 模块及 `mybatis-ext-idea-plugin`。Maven POM 和双重构建入口已移除，发布结果仍使用原 Maven 坐标。
 
+早期思想实验：[总体设计](old-overall-design.md)、[方法名 CRUD 解析器设计](old-jpa-parser-design.md)、[CRUD 参数与 SQL 生成设计](old-jpa-to-sql.md)。
+
 ## 环境
 
 - Gradle Wrapper：9.4.0，启动 JVM 使用 JDK 17 以上，建议使用 IDEA 的 JBR 25。
