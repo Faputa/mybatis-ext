@@ -16,4 +16,5 @@ include(
     "mybatis-plus-test",
     "mybatis-spring-test",
     "spring-data-jpa-test",
+    "mybatis-ext-idea-plugin",
 )

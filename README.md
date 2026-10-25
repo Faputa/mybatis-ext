@@ -1,28 +1,31 @@
 # MyBatis-Ext
 
-MyBatis-Ext 是一个基于 MyBatis 的扩展插件，旨在简化和增强 MyBatis 的使用体验，提供更多便捷的特性和功能。
+MyBatis-Ext 是一个 MyBatis 增强插件，支持基于注解的元数据映射、通用 CRUD 和根据方法名自动生成 SQL，并提供配套 IDEA 插件。
 
 ## 特性
 
-- **强大的元数据表达能力** - 可以表达任意复杂的关联关系和层次结构，支持多表连接、继承关系和嵌套对象
+- **注解映射** - 支持多表连接、继承映射和嵌套对象
 
 - **方法名CRUD** - 根据符合规范的方法名自动生成CRUD操作，无需手动编写SQL
 
-- **轻量级设计** - 除了依赖MyBatis等核心库外，没有其他第三方库依赖
+- **[IDEA 插件](mybatis-ext-idea-plugin/README.md)** - 提供方法名 CRUD 的诊断、补全和 SQL 预览，以及 MyBatis XML 的导航与补全
+
+- **轻量级设计** - 依赖精简，内置字节码增强组件，减少依赖冲突
 
 - **无感增强** - 在原有的Spring Boot+MyBatis项目中引入本插件starter，无需修改配置即可获得增强能力
 
-- **无侵入性** - 添加或移除插件不会影响原有的代码逻辑，完全兼容现有MyBatis项目
+- **兼容已有映射** - 可与已有 MyBatis XML 和 SQL 注解映射共同使用
 
 - **多数据库方言支持** - 内置支持MySQL、Oracle、DM（达梦）、H2等多种数据库方言，可自定义扩展
 
-## 项目架构
+## 模块说明
 
 MyBatis-Ext 项目由以下几个主要模块组成：
 
 - **mybatis-ext** - 核心模块，提供基础功能实现
 - **mybatis-ext-spring** - Spring集成模块
 - **mybatis-ext-spring-boot-starter** - Spring Boot starter，提供自动配置
+- **mybatis-ext-idea-plugin** - IDEA 插件，提供 MyBatis XML 的诊断、导航和补全，以及实体映射检查与方法名 CRUD 诊断、补全
 
 ## 集成方式
 
@@ -38,7 +41,7 @@ MyBatis-Ext 项目由以下几个主要模块组成：
 </dependency>
 ```
 
-### 通过Spring MVC方式集成
+### 通过 Spring 方式集成
 
 ```xml
 <dependency>
@@ -70,15 +73,65 @@ MyBatis-Ext 可以与其他流行的MyBatis扩展框架集成使用：
 # 是否启用MyBatis-Ext (默认: true)
 mybatis-ext.enabled=true
 
-# 默认是否启用过滤 (默认: true)
+# 未标注 @Filterable 的实体属性是否默认参与条件生成 (默认: true)
 mybatis-ext.default-filterable=true
 ```
 
 ## 使用指南
 
-### 定义元数据
+### 快速入门
 
-插件使用注解方式描述元数据，支持表达任意复杂的关联关系和嵌套结构：
+引入依赖并完成 MyBatis 数据源和 Mapper 扫描配置后，即可定义实体和 Mapper。假设数据库中已有 `demo_user` 表，包含 `id` 和 `name` 两列。
+
+实体类 `User`：
+
+```java
+import io.github.mybatisext.annotation.Column;
+import io.github.mybatisext.annotation.Id;
+import io.github.mybatisext.annotation.Table;
+
+@Table(name = "demo_user")
+public class User {
+
+    @Id
+    @Column
+    public Long id;
+
+    @Column
+    public String name;
+}
+```
+
+Mapper 继承 `BaseMapper`，同时声明按方法名生成 SQL 的查询：
+
+```java
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+
+import io.github.mybatisext.mapper.BaseMapper;
+
+@Mapper
+public interface UserMapper extends BaseMapper<User> {
+
+    List<User> listByNameOrderById(String name);
+}
+```
+
+获取 `UserMapper` Bean 后，可调用通用方法或自定义方法，无需编写对应的 XML：
+
+```java
+User query = new User();
+query.name = "Alice";
+List<User> users = userMapper.list(query);
+List<User> orderedUsers = userMapper.listByNameOrderById("Alice");
+```
+
+默认配置下，`list(query)` 仅使用非空的 `name` 生成等值条件；自定义方法则根据方法名按 `name` 查询并按 `id` 升序排列。
+
+### 实体与映射配置
+
+插件使用注解描述表、列、关联关系和嵌套结构：
 
 - `@Table` - 描述实体类对应的表，如未指定表名，则使用类名的下划线小写形式作为表名
 
@@ -105,6 +158,18 @@ mybatis-ext.default-filterable=true
 - `@MapTable` - 如不想继承CRUD接口，可用`@MapTable`注解自定义的CRUD接口，类似于继承`ExtMapper`
 
 - `@OnlyById` - 标记参数只使用ID属性作为过滤条件
+
+### 查询条件与空值处理
+
+`list(query)`、`count(query)` 等方法根据实体属性自动生成条件时，遵循以下规则：
+
+- `mybatis-ext.default-filterable=true`：未标注 `@Filterable` 的普通属性默认在值非空时参与等值比较，多个条件以 `AND` 连接。
+- `mybatis-ext.default-filterable=false`：未标注 `@Filterable` 的属性不参与自动条件生成，需通过注解显式指定。
+- 属性上的 `@Filterable` 优先于默认设置，可指定比较方式和条件生效规则；默认 `test=TestMode.NotNull`，`test=TestMode.False` 可排除该属性。
+
+方法名中显式声明的条件按命名规则生成，不受上述开关影响，也不会因参数为 `null` 自动省略。例如 `listByNameOrderById(null)` 仍保留 `name = ?` 条件；查询空值应使用 `IsNull`。`@OnlyById` 参数按主键匹配，同样不会因主键为 `null` 而省略主键条件。
+
+动态过滤条件全部被省略时，可能不生成 `WHERE` 子句；使用此类条件更新或删除数据时，应确认实际生效的过滤范围。
 
 ### 通用CRUD方法
 
@@ -136,11 +201,26 @@ BaseMapper 默认提供以下方法：
 
 - `List<T> list(T query)` - 按实体条件查询，可用@Filterable指定过滤行为
 
-- `List<T> list(T query, RowBounds rowBounds)` - 按实体条件分页查询，可用@Filterable指定过滤行为，兼容PageHelper
+- `List<T> list(T query, RowBounds rowBounds)` - 按实体条件查询并传递分页参数，可用@Filterable指定过滤行为，可配合 PageHelper 使用，详见[分页](#分页)
 
 - `long count(T query)` - 按实体条件统计总数，可用@Filterable指定过滤行为
 
 - `boolean exists(T query)` - 按实体条件检查记录是否存在，可用@Filterable指定过滤行为
+
+### 分页
+
+MyBatis-Ext 支持通过方法名中的 `Top`、`Limit` 限制查询范围，但不内置分页插件或自动总数查询。需要分页及总记录数时，可以配合 [PageHelper](https://github.com/pagehelper/Mybatis-PageHelper) 使用。在项目中引入并配置 PageHelper 后，可通过 `BaseMapper.list(T query, RowBounds rowBounds)` 重载传入 PageHelper 的 `PageRowBounds`：
+
+```java
+import com.github.pagehelper.PageRowBounds;
+
+SysUser query = new SysUser();
+PageRowBounds rowBounds = new PageRowBounds(0, 20);
+List<SysUser> users = sysUserMapper.list(query, rowBounds);
+Long total = rowBounds.getTotal();
+```
+
+以上示例按 PageHelper 默认配置查询偏移量为 `0`、最多 `20` 条的数据，并通过 `getTotal()` 获取总记录数。分页 SQL 改写及总数查询由 PageHelper 负责，具体行为以 PageHelper 配置为准。
 
 ### 方法名CRUD
 
@@ -166,7 +246,7 @@ BaseMapper 默认提供以下方法：
 
 - `property` - 属性，来自实体类或DTO类中对应列的属性，支持`Dot`语法获取内部属性
 
-- `conditionList` - 条件列表，命名规则`<condition>(And|Or)<conditionList>`
+- `conditionList` - 条件表达式，命名规则 `<condition>((And|Or)<condition>)*`；`And` 优先于 `Or`
 
 - `condition` - 条件，命名规则如下
   - `<property>[Ignorecase][Not]` - 等值比较
@@ -194,7 +274,7 @@ BaseMapper 默认提供以下方法：
 
 - `orderByList` - 排序列表，命名规则`<property>[Asc|Desc][And<orderByList>]`
 
-- `limit` - 分页子句，命名规则`Limit((<integer>|<variable>)To(<integer>|<variable>)|(<integer>|<variable>))`
+- `limit` - 查询范围限制子句，命名规则`Limit((<integer>|<variable>)To(<integer>|<variable>)|(<integer>|<variable>))`
 
 #### 查询是否存在
 
@@ -216,6 +296,19 @@ BaseMapper 默认提供以下方法：
 
 命名规则：`(save|insert)[Batch][IgnoreNull]`
 
+#### 方法重载与空参数
+
+重载方法对应 SQL 的选择基于生成脚本的 OGNL 表达式实现，根据参数名称和值的类型选择对应的 SQL。若参数名相同、仅类型不同，传入 `null` 时可能无法区分，例如：
+
+```java
+long count(@Param("id") Long id);
+long count(@Param("id") String id);
+```
+
+即使传入 `(Long) null`，XML 仍只能获得空值，无法得知调用了哪个重载，可能匹配多个不同的 SQL 分支并导致 SQL 错误。
+
+建议为不同查询意图使用不同的方法名，如 `countById`、`countByName`，避免仅靠可空参数的类型区分重载。
+
 ### 数据库方言支持
 
 MyBatis-Ext 提供了多种数据库方言支持，以适应不同的数据库环境：
@@ -233,24 +326,18 @@ MyBatis-Ext 提供了多种数据库方言支持，以适应不同的数据库�
 
 ## 实现原理
 
-MyBatis-Ext 通过以下机制实现其核心功能：
-
-1. **配置替换** - 使用动态代理替换原本的 MyBatis `Configuration` 类
-2. **方法解析** - 通过 `JpaParser` 解析符合命名规则的方法
-3. **元数据分析** - 使用 `TableInfoFactory` 分析实体类的元数据信息
-4. **动态生成语句** - 在运行时动态生成 `MappedStatement`，无需提前定义XML
-5. **Bean后处理** - 通过 Spring 的 `BeanPostProcessor` 机制自动增强 `SqlSessionFactory`
+MyBatis-Ext 根据实体元数据和方法名解析结果，在运行时生成 MyBatis `MappedStatement`。运行时与 IDEA 插件共用元数据及方法名 CRUD 分析逻辑，使编辑期诊断、补全与运行时行为保持一致。详见[分析 API 与适配契约](docs/analysis.md)。
 
 ## 开发与构建
 
-在 IDEA 中导入根目录的 `settings.gradle.kts`，使用 Gradle Wrapper 和 JDK 17 以上的构建环境。
+在 IDEA 中导入根目录的 `settings.gradle.kts`，使用 Gradle Wrapper 和 JDK 17 以上的构建环境。核心及 Spring 模块目标为 Java 8；IDEA 插件基于 2023.3.8 SDK，以 Java 17 编译和测试。
 
 ```powershell
 .\gradlew.bat spotlessApply spotlessCheck
-.\gradlew.bat check
+.\gradlew.bat check :mybatis-ext-idea-plugin:verifyPluginStructure :mybatis-ext-idea-plugin:buildPlugin
 ```
 
-环境配置、测试和打包见[构建说明](docs/build.md)。
+环境配置、IDE 导入、兼容验证及交付包生成见[构建说明](docs/build.md)。功能变化见[变更记录](docs/changelog.md)。
 
 ## 贡献与支持
 
@@ -258,4 +345,4 @@ MyBatis-Ext 通过以下机制实现其核心功能：
 
 ## 许可证
 
-MyBatis-Ext 使用开源许可证，详情请查看项目许可文件。
+MyBatis-Ext 使用 [MIT 许可证](LICENSE)。

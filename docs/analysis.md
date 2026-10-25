@@ -2,7 +2,7 @@
 
 核心通过统一的 Java 类型模型提供元数据分析、派生 CRUD 方法分析、属性路径解析和补全。运行时适配器通过反射提供类型事实，IDE 适配器通过 PSI 提供相同事实；映射规则、方法语法和语义绑定由核心处理。
 
-`model` 包定义类型和注解模型，`diagnostic` 包提供运行时与工具共用的诊断，`analysis` 包提供分析入口、引用和补全结果。元数据分层、无锁构建及幂等注册见[元数据设计](metadata-design.md)。
+`model` 包定义类型和注解模型，`diagnostic` 包提供运行时与工具共用的诊断，`analysis` 包提供分析入口、引用和补全结果。元数据分层、无锁构建及幂等注册见[元数据设计](metadata-design.md)；IDEA 适配实现及使用说明见 [IDEA 插件](../mybatis-ext-idea-plugin/README.md)。
 
 ## 分析入口
 
@@ -103,10 +103,16 @@ if (metadata.isSuccess()) {
 
 分析能力位于原核心模块，部分注解和元数据依赖 MyBatis 的 `JdbcType`、`FetchType` 等类型。插件通过同一 Gradle 工程依赖并打包核心与 MyBatis；核心语义变化后需要重新构建和升级插件，新增 PSI 类型事实或 UI 入口仍可能需要适配。插件类加载器中的依赖与目标项目的运行时对象分别管理。
 
-## 验证
+## 模型约束与验证
 
-`MybatisExtAnalyzerTest` 对照内存模型与反射模型的元数据、CRUD 语义、引用、诊断和补全，核心 SQL 集成测试验证运行时行为。
+元数据与语义对象使用 `JavaType` 描述类型、使用 `JavaAnnotation` 表示注解值，自定义 ID 生成器以类型描述表示。
+
+仅反射模型可通过 `ReflectionTypePolicy.requireClass(type)` 取得实际 Class。静态分析代码不调用该桥接，也不为检查 ID 生成器而实例化它；构造器自身的运行错误在实际生成 ID 时暴露。
+
+`MybatisExtAnalyzerTest` 对照内存模型与反射模型的元数据、CRUD 语义、引用、诊断和补全；插件契约测试对照反射与 PSI。以下命令验证这些分析契约及核心 SQL 集成行为；Spring、Spring Boot、MyBatis-Plus 和 MyBatis-Flex 集成测试可通过根 `check` 一并执行，真实数据库验证范围见[构建说明](build.md)。
 
 ```powershell
-.\gradlew.bat :mybatis-ext:test :mybatis-ext-test:test
+.\gradlew.bat :mybatis-ext:test :mybatis-ext-test:test :mybatis-ext-idea-plugin:test
 ```
+
+IDEA 本地测试与构建参数见[构建说明](build.md)及[插件说明](../mybatis-ext-idea-plugin/README.md)。

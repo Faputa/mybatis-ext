@@ -8,6 +8,7 @@ plugins {
     signing
     id("com.diffplug.spotless") version "8.2.1"
     id("com.gradleup.shadow") version "9.2.2" apply false
+    id("org.jetbrains.intellij.platform") version "2.19.0" apply false
 }
 
 group = "io.github.mybatis-ext"
@@ -203,8 +204,14 @@ tasks.named("publishToMavenLocal") {
 
 tasks.register("verifyAll") {
     group = "verification"
-    description = "Test all modules and generate Maven publication metadata."
-    dependsOn("check")
+    description =
+        "Test all modules, verify the IDEA plugin, build its ZIP and generate Maven publication metadata."
+    dependsOn(
+        "check",
+        ":mybatis-ext-idea-plugin:buildPlugin",
+        ":mybatis-ext-idea-plugin:verifyPluginStructure",
+        ":mybatis-ext-idea-plugin:verifyPlugin",
+    )
     dependsOn(tasks.withType<GenerateMavenPom>())
     dependsOn(
         subprojects
@@ -216,7 +223,7 @@ tasks.register("verifyAll") {
 tasks.register<Zip>("releaseBundle") {
     group = "distribution"
     description =
-        "Verify and collect the current Maven publications and documentation without uploading."
+        "Verify and collect the current Maven publications, plugin and release documentation without uploading."
     dependsOn("verifyAll", "publish")
     archiveFileName = "mybatis-ext-${project.version}-release.zip"
     destinationDirectory = layout.buildDirectory.dir("distributions")
@@ -227,6 +234,10 @@ tasks.register<Zip>("releaseBundle") {
             }
         )
         into("maven")
+    }
+    from(project(":mybatis-ext-idea-plugin").layout.buildDirectory.dir("distributions")) {
+        include("mybatis-ext-idea-plugin-${project(":mybatis-ext-idea-plugin").version}.zip")
+        into("idea")
     }
     from("docs") { into("docs") }
     from("README.md", "LICENSE")
