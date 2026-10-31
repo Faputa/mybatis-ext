@@ -65,7 +65,7 @@ public final class ExtCompletion extends CompletionContributor {
             String suffix = name.substring(caret);
             for (var item : completed.getValue()) {
                 String replacement = name.substring(0, item.getReplaceStart()) + item.getText() + name.substring(item.getReplaceEnd());
-                result.withPrefixMatcher(prefix).addElement(LookupElementBuilder.create(replacement).withPresentableText(item.getText()).withTypeText("mybatis-ext " + item.getKind().name().toLowerCase())
+                result.withPrefixMatcher(prefix).addElement(LookupElementBuilder.create(item, replacement).withPresentableText(item.getText()).withTypeText("mybatis-ext " + item.getKind().name().toLowerCase())
                         .withInsertHandler((context, lookup) -> {
                             int start = context.getStartOffset();
                             int end = context.getTailOffset();

@@ -19,6 +19,7 @@ import com.intellij.codeInsight.daemon.LineMarkerInfo;
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerInfo;
 import com.intellij.codeInsight.daemon.RelatedItemLineMarkerProvider;
 import com.intellij.codeInsight.lookup.LookupElement;
+import com.intellij.codeInsight.lookup.LookupElementPresentation;
 import com.intellij.codeInsight.navigation.CtrlMouseData;
 import com.intellij.codeInsight.navigation.actions.GotoDeclarationOrUsageHandler2;
 import com.intellij.icons.AllIcons;
@@ -1015,6 +1016,66 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         }
         assertTrue(myFixture.getFile().getText(), myFixture.getFile().getText().contains("findByNameOrderById("));
         assertFalse(myFixture.getFile().getText().contains("OrderByIdOrderById"));
+    }
+
+    public void testCrudCompletionKeepsKeywordsWithTheSameReplacementDistinct() {
+        String prefix = "listByIdNotBetween";
+        for (String suffix : List.of("rderById", "")) {
+            for (String keyword : List.of("Or", "OrderBy")) {
+                myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { java.util.List<User> "
+                        + prefix + "O<caret>" + suffix + "(long lower, long upper); }");
+                LookupElement[] items = myFixture.completeBasic();
+                assertNotNull(items);
+                LookupElement candidate = null;
+                for (LookupElement item : items) {
+                    LookupElementPresentation presentation = new LookupElementPresentation();
+                    item.renderElement(presentation);
+                    if (keyword.equals(presentation.getItemText())) {
+                        candidate = item;
+                        break;
+                    }
+                }
+                assertNotNull("Missing " + keyword + " with suffix: " + suffix, candidate);
+                myFixture.getLookup().setCurrentItem(candidate);
+                myFixture.finishLookup('\n');
+
+                String text = myFixture.getFile().getText();
+                String expectedName = prefix + (suffix.isEmpty() ? keyword : "OrderById");
+                assertTrue(text, text.contains(expectedName + "(long lower, long upper)"));
+                assertFalse(text, text.contains("OrderByIdOrderById"));
+                assertEquals(text.indexOf(prefix) + prefix.length() + keyword.length(), myFixture.getCaretOffset());
+            }
+        }
+    }
+
+    public void testCrudCompletionKeepsPropertiesWithTheSameReplacementDistinct() {
+        myFixture.addClass("package sample; @io.github.mybatisext.annotation.Table public class Account { @io.github.mybatisext.annotation.Column public String user; @io.github.mybatisext.annotation.Column public String userName; }");
+        String prefix = "listBy";
+        for (String suffix : List.of("serName", "serNameOrderByUser", "")) {
+            for (String property : List.of("User", "UserName")) {
+                myFixture.configureByText("AccountMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(Account.class) interface AccountMapper { java.util.List<Account> "
+                        + prefix + "U<caret>" + suffix + "(String value); }");
+                LookupElement[] items = myFixture.completeBasic();
+                assertNotNull(items);
+                LookupElement candidate = null;
+                for (LookupElement item : items) {
+                    LookupElementPresentation presentation = new LookupElementPresentation();
+                    item.renderElement(presentation);
+                    if (property.equals(presentation.getItemText())) {
+                        candidate = item;
+                        break;
+                    }
+                }
+                assertNotNull("Missing " + property + " with suffix: " + suffix, candidate);
+                myFixture.getLookup().setCurrentItem(candidate);
+                myFixture.finishLookup('\n');
+
+                String text = myFixture.getFile().getText();
+                String expectedName = prefix + (suffix.isEmpty() ? property : "U" + suffix);
+                assertTrue(text, text.contains(expectedName + "(String value)"));
+                assertEquals(text.indexOf(prefix) + prefix.length() + property.length(), myFixture.getCaretOffset());
+            }
+        }
     }
 
     public void testCrudCompletionUsesOriginalMethodInIncompleteDeclarations() {
