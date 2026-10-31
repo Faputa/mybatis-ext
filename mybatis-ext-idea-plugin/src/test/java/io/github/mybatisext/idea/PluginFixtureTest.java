@@ -1101,6 +1101,62 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         }
     }
 
+    public void testCrudCompletionBeforeParameterList() {
+        for (String declaration : List.of("list<caret>", "java.util.List<User> list<caret>", "java.util.List<User> list<caret>OrderByIdLimit2", "list<caret>OrderByIdLimit2", "public java.util.List<User>\n list<caret>")) {
+            myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { " + declaration + "\n User getById(long id); }");
+            LookupElement[] items = myFixture.completeBasic();
+            assertNotNull(declaration, items);
+            LookupElement candidate = null;
+            for (LookupElement item : items) {
+                LookupElementPresentation presentation = new LookupElementPresentation();
+                item.renderElement(presentation);
+                if ("By".equals(presentation.getItemText()) && "mybatis-ext keyword".equals(presentation.getTypeText())) {
+                    candidate = item;
+                    break;
+                }
+            }
+            assertNotNull(declaration, candidate);
+            myFixture.getLookup().setCurrentItem(candidate);
+            myFixture.finishLookup('\n');
+            String text = myFixture.getFile().getText();
+            String expectedName = declaration.contains("OrderBy") ? "listByOrderByIdLimit2" : "listBy";
+            assertTrue(text, text.contains(expectedName + "\n"));
+            assertEquals(text.indexOf(expectedName) + "listBy".length(), myFixture.getCaretOffset());
+            assertTrue(text, text.contains("User getById(long id);"));
+        }
+    }
+
+    public void testCrudCompletionBeforeParameterListRequiresMapperMemberName() {
+        for (String declaration : List.of(
+                "class UserMapper { java.util.List<User> list<caret> }",
+                "interface UserMapper { java.util.List<User> list<caret> }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { String list<caret> = \"constant\"; }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { static String list<caret>; }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { final String list<caret>; }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { private java.util.List<User> list<caret> }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { default java.util.List<User> list<caret> }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { @org.apache.ibatis.annotations.Select(\"select * from users\") java.util.List<User> list<caret> }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { @org.apache.ibatis.annotations.SelectProvider(type=User.class, method=\"load\") java.util.List<User> list<caret> }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { private list<caret> }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { default list<caret> }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { static list<caret> }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { @org.apache.ibatis.annotations.Select(\"select * from users\") list<caret> }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User get(long list<caret>); }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { default void run() { String list<caret>; } }",
+                "@io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { java.util.Li<caret>st<User> users; }")) {
+            myFixture.configureByText("UserMapper.java", "package sample; " + declaration);
+            LookupElement[] items = myFixture.completeBasic();
+            if (items == null) {
+                continue;
+            }
+            for (LookupElement item : items) {
+                LookupElementPresentation presentation = new LookupElementPresentation();
+                item.renderElement(presentation);
+                assertFalse(declaration, presentation.getTypeText() != null && presentation.getTypeText().startsWith("mybatis-ext "));
+            }
+        }
+    }
+
     public void testCrudCompletionUsesOriginalMethodInIncompleteDeclarations() {
         for (String declaration : List.of(
                 "User findByNa<caret>(String value);",
