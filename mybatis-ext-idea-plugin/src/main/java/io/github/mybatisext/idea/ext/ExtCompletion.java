@@ -6,6 +6,7 @@ import com.intellij.codeInsight.completion.CompletionContributor;
 import com.intellij.codeInsight.completion.CompletionParameters;
 import com.intellij.codeInsight.completion.CompletionResultSet;
 import com.intellij.codeInsight.completion.CompletionUtilCore;
+import com.intellij.codeInsight.completion.PrioritizedLookupElement;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.util.text.StringUtil;
@@ -65,7 +66,7 @@ public final class ExtCompletion extends CompletionContributor {
             String suffix = name.substring(caret);
             for (var item : completed.getValue()) {
                 String replacement = name.substring(0, item.getReplaceStart()) + item.getText() + name.substring(item.getReplaceEnd());
-                result.withPrefixMatcher(prefix).addElement(LookupElementBuilder.create(item, replacement).withPresentableText(item.getText()).withTypeText("mybatis-ext " + item.getKind().name().toLowerCase())
+                result.withPrefixMatcher(prefix).addElement(PrioritizedLookupElement.withPriority(LookupElementBuilder.create(item, replacement).withPresentableText(item.getText()).withTypeText("mybatis-ext " + item.getKind().name().toLowerCase())
                         .withInsertHandler((context, lookup) -> {
                             int start = context.getStartOffset();
                             int end = context.getTailOffset();
@@ -77,7 +78,7 @@ public final class ExtCompletion extends CompletionContributor {
                             int newCaret = start + item.getReplaceStart() + item.getText().length();
                             context.getEditor().getCaretModel().moveToOffset(newCaret);
                             context.setTailOffset(start + replacement.length());
-                        }));
+                        }), 1));
             }
         } catch (UnresolvedTypeException ignored) {
             // 类型信息不完整时，不提供猜测性的补全。

@@ -21,7 +21,7 @@
     <psi.referenceContributor language="JAVA" implementation="io.github.mybatisext.idea.ext.ExtReferences"/>
     <methodReferencesSearch implementation="io.github.mybatisext.idea.xml.PropertyMethodReferencesSearch"/>
     <completion.contributor language="XML" implementationClass="io.github.mybatisext.idea.xml.MybatisCompletion"/>
-    <completion.contributor language="JAVA" implementationClass="io.github.mybatisext.idea.ext.ExtCompletion"/>
+    <completion.contributor language="JAVA" implementationClass="io.github.mybatisext.idea.ext.ExtCompletion" order="first"/>
     <codeInsight.lineMarkerProvider language="JAVA" implementationClass="io.github.mybatisext.idea.xml.MapperNavigation"/>
     <codeInsight.lineMarkerProvider language="XML" implementationClass="io.github.mybatisext.idea.xml.MapperNavigation"/>
     <codeInsight.lineMarkerProvider language="JAVA" implementationClass="io.github.mybatisext.idea.ext.ExtNavigation"/>
