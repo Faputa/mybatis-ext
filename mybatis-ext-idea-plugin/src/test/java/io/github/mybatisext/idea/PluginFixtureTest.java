@@ -1006,6 +1006,29 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         assertEmpty(ExtReferences.references(alias));
     }
 
+    public void testCrudCompletionRanksBeforeJavaMethodNameSuggestions() {
+        for (String name : List.of("listBy<caret>", "listByIdNotBetweenO<caret>", "listNameBy<caret>IdGreaterThanGroupByNameHavingNameIsTargetOrderByNameLimitCount")) {
+            myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { java.util.List<String> "
+                    + name + "(long lower, long upper); }");
+            LookupElement[] items = myFixture.completeBasic();
+            assertNotNull(items);
+            boolean foundJavaSuggestion = false;
+            boolean foundCrudSuggestion = false;
+            for (LookupElement item : myFixture.getLookup().getItems()) {
+                LookupElementPresentation presentation = new LookupElementPresentation();
+                item.renderElement(presentation);
+                if (presentation.getTypeText() != null && presentation.getTypeText().startsWith("mybatis-ext ")) {
+                    assertFalse("CRUD candidate follows Java suggestion: " + presentation.getItemText(), foundJavaSuggestion);
+                    foundCrudSuggestion = true;
+                } else {
+                    foundJavaSuggestion = true;
+                }
+            }
+            assertTrue(name, foundCrudSuggestion);
+            assertTrue("Java method name suggestions should remain available: " + name, foundJavaSuggestion);
+        }
+    }
+
     public void testCrudCompletionPreservesSuffix() {
         myFixture.configureByText("UserMapper.java", "package sample; import io.github.mybatisext.annotation.*; @MapTable(User.class) interface UserMapper { User findByNa<caret>OrderById(String name); }");
         LookupElement[] items = myFixture.complete(CompletionType.BASIC);
