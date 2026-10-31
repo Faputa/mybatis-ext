@@ -184,6 +184,61 @@ class MybatisExtAnalyzerTest {
     }
 
     @Test
+    void completionCandidatesDependOnThePrefixRatherThanTheSuffix() {
+        TableInfo table = table(memory, record);
+        JavaParameter nameParameter = parameter(text).annotate(Param.class, "value", "name");
+        JavaParameter countParameter = parameter(integer).annotate(Param.class, "value", "count");
+        String[][] scenarios = {
+                {"findByNa", "Name", "meOrderById", "meOrderByMissing"},
+                {"findByNameO", "OrderBy", "rderById", "rderByMissing"},
+                {"findByAddressDotCi", "City", "tyOrderById", "tyOrderByMissing"},
+                {"findByNameIsNa", "Name", "meOrderById", "meOrderByMissing"},
+                {"findByNameLimitCo", "Count", "unt", "untOrderByMissing"}
+        };
+        for (String[] scenario : scenarios) {
+            String prefix = scenario[0];
+            List<CompletionItem> expected = memory.completeMethod(table, method(prefix, record, nameParameter, countParameter), prefix.length()).getValue();
+            assertNotNull(expected, prefix);
+            assertTrue(expected.stream().anyMatch(item -> item.getText().equals(scenario[1])), prefix);
+            for (String suffix : Arrays.asList(scenario[2], scenario[3], "UnexpectedSuffix")) {
+                String name = prefix + suffix;
+                List<CompletionItem> actual = memory.completeMethod(table, method(name, record, nameParameter, countParameter), prefix.length()).getValue();
+                assertNotNull(actual, name);
+                assertEquals(expected.size(), actual.size(), name);
+                for (int i = 0; i < expected.size(); i++) {
+                    CompletionItem before = expected.get(i);
+                    CompletionItem after = actual.get(i);
+                    assertEquals(before.getText(), after.getText(), name);
+                    assertEquals(before.getKind(), after.getKind(), name);
+                    assertEquals(before.getTarget(), after.getTarget(), name);
+                    assertEquals(before.getReplaceStart(), after.getReplaceStart(), name);
+                    assertTrue(after.getReplaceEnd() >= prefix.length() && after.getReplaceEnd() <= name.length(), name);
+                }
+            }
+        }
+    }
+
+    @Test
+    void completionReplacementRangesPreserveTheRemainingSuffix() {
+        TableInfo table = table(memory, record);
+        String prefix = "findByNa";
+        String[][] scenarios = {
+                {"", ""},
+                {"meOrderById", "OrderById"},
+                {"onsenseOrderById", "OrderById"},
+                {"meOrderByMissing", "OrderByMissing"}
+        };
+        for (String[] scenario : scenarios) {
+            String name = prefix + scenario[0];
+            List<CompletionItem> items = memory.completeMethod(table, method(name, record), prefix.length()).getValue();
+            CompletionItem item = items.stream().filter(candidate -> candidate.getText().equals("Name")).findFirst().get();
+            assertEquals("findBy".length(), item.getReplaceStart(), name);
+            assertEquals(name.length() - scenario[1].length(), item.getReplaceEnd(), name);
+            assertEquals("findByName" + scenario[1], name.substring(0, item.getReplaceStart()) + item.getText() + name.substring(item.getReplaceEnd()), name);
+        }
+    }
+
+    @Test
     void referencesReturnTypeNameAndPreservesConditionBinding() {
         TableInfo table = table(memory, record);
         String typeName = record.getSimpleName();

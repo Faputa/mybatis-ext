@@ -12,11 +12,19 @@ import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiLiteralExpression;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiModifier;
+import com.intellij.psi.PsiModifierList;
+import com.intellij.psi.PsiType;
+import com.intellij.psi.PsiTypeElement;
+import com.intellij.psi.impl.light.LightMethodBuilder;
 import com.intellij.psi.util.PsiTreeUtil;
 
 import io.github.mybatisext.idea.model.SourceText;
+import io.github.mybatisext.idea.xml.MybatisProject;
 import io.github.mybatisext.model.UnresolvedTypeException;
 
 public final class ExtCompletion extends CompletionContributor {
@@ -36,7 +44,11 @@ public final class ExtCompletion extends CompletionContributor {
                 return;
             }
             PsiMethod method = PsiTreeUtil.getParentOfType(originalPosition, PsiMethod.class);
-            if (method == null || method.getNameIdentifier() == null || !method.getNameIdentifier().getTextRange().containsOffset(parameters.getOffset())) {
+            PsiElement nameIdentifier = method == null ? originalPosition : method.getNameIdentifier();
+            if (method == null) {
+                method = incompleteMethod(originalPosition);
+            }
+            if (method == null || nameIdentifier == null || !nameIdentifier.getTextRange().containsOffset(parameters.getOffset())) {
                 return;
             }
             PsiClass owner = method.getContainingClass();
@@ -44,8 +56,8 @@ public final class ExtCompletion extends CompletionContributor {
                 return;
             }
             // 使用原始方法名，保留光标后的名称后缀。
-            String name = method.getName();
-            int caret = parameters.getOffset() - method.getNameIdentifier().getTextOffset();
+            String name = nameIdentifier.getText();
+            int caret = parameters.getOffset() - nameIdentifier.getTextOffset();
             if (caret < 0 || caret > name.length()) {
                 return;
             }
@@ -83,6 +95,41 @@ public final class ExtCompletion extends CompletionContributor {
         } catch (UnresolvedTypeException ignored) {
             // 类型信息不完整时，不提供猜测性的补全。
         }
+    }
+
+    /** 尚未输入左括号时，优先按方法名补全，Mapper 身份由调用方检查。 */
+    private static PsiMethod incompleteMethod(PsiElement position) {
+        if (!(position instanceof PsiIdentifier)) {
+            return null;
+        }
+        PsiClass owner;
+        PsiType returnType;
+        PsiModifierList modifiers;
+        if (position.getParent() instanceof PsiField field && position == field.getNameIdentifier()) {
+            if (field.hasInitializer()) {
+                return null;
+            }
+            owner = field.getContainingClass();
+            returnType = field.getType();
+            modifiers = field.getModifierList();
+        } else {
+            PsiTypeElement type = PsiTreeUtil.getParentOfType(position, PsiTypeElement.class);
+            if (type == null || !(type.getParent() instanceof PsiClass cls) || !type.getText().equals(position.getText())) {
+                return null;
+            }
+            owner = cls;
+            returnType = null;
+            PsiElement previous = PsiTreeUtil.skipWhitespacesAndCommentsBackward(type);
+            modifiers = previous instanceof PsiModifierList list ? list : null;
+        }
+        if (owner == null || !owner.isInterface()) {
+            return null;
+        }
+        if (modifiers != null && (modifiers.hasExplicitModifier(PsiModifier.STATIC) || modifiers.hasExplicitModifier(PsiModifier.FINAL)
+                || modifiers.hasExplicitModifier(PsiModifier.PRIVATE) || modifiers.hasExplicitModifier(PsiModifier.DEFAULT) || MybatisProject.hasSqlAnnotation(modifiers))) {
+            return null;
+        }
+        return new LightMethodBuilder(position.getManager(), position.getText()).setContainingClass(owner).setMethodReturnType(returnType);
     }
 
     private void completePath(CompletionParameters parameters, CompletionResultSet result, PsiLiteralExpression literal) {
