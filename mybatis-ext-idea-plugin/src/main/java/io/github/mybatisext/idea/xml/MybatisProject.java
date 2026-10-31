@@ -29,6 +29,7 @@ import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifier;
+import com.intellij.psi.PsiModifierList;
 import com.intellij.psi.PsiPackage;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.search.GlobalSearchScope;
@@ -141,7 +142,11 @@ public final class MybatisProject {
     }
 
     public static boolean hasSqlAnnotation(PsiMethod method) {
-        for (PsiAnnotation a : method.getAnnotations()) {
+        return hasSqlAnnotation(method.getModifierList());
+    }
+
+    public static boolean hasSqlAnnotation(PsiModifierList modifiers) {
+        for (PsiAnnotation a : modifiers.getAnnotations()) {
             String n = a.getQualifiedName();
             if (n != null && n.startsWith("org.apache.ibatis.annotations.") && Set.of("Select", "Insert", "Update", "Delete", "SelectProvider", "InsertProvider", "UpdateProvider", "DeleteProvider").contains(n.substring(n.lastIndexOf('.') + 1))) {
                 return true;
