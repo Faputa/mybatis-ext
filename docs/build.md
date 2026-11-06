@@ -79,7 +79,7 @@ SDK 和构建依赖已缓存后，可追加 `--offline`，同时让 Gradle 和 P
 | Community 2025.1 / 251.23774.435 | Compatible；1 处弃用 API | 未运行 |
 | Ultimate 2026.2.3 / 262.10968.63 | Compatible；2 处弃用 API | 51 项通过 |
 
-历史矩阵使用完整 SDK 和缓存进行离线验证；其中的弃用调用包括 DTD 的 `ResourceRegistrar.addStdResource(..., Class)` 和新版平台的 `DaemonCodeAnalyzer.restart()`。当前声明范围为 `233` 至 `262.*`，每次发布仍需对实际产物重新验证。
+历史矩阵使用完整 SDK 和缓存进行离线验证；其中的弃用调用包括 DTD 的 `ResourceRegistrar.addStdResource(..., Class)` 和新版平台的 `DaemonCodeAnalyzer.restart()`。当前声明范围为 `233` 至 `263.*`，每次发布仍需对实际产物重新验证。
 
 `0.0.17` 的 233 基线报告记录了 `ExtImplicitReferences` 对 `PsiSymbolService` 的 3 处内部 API 使用，以及实验性 API 使用。内部 API 使用仍输出到控制台及报告，但不阻断构建；兼容性问题及错误调用 OverrideOnly API 仍会使验证失败。报告位于 `mybatis-ext-idea-plugin/build/reports/pluginVerifier/`。日常测试、结构校验和打包成功也不代表跨版本兼容性验证通过。
 

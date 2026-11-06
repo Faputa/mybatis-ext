@@ -53,7 +53,7 @@ intellijPlatform {
         name = "MyBatis Ext"
         ideaVersion {
             sinceBuild = "233"
-            untilBuild = "262.*"
+            untilBuild = "263.*"
         }
         vendor { name = "mybatis-ext" }
     }
