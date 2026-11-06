@@ -62,7 +62,7 @@ public final class ExtNavigation extends RelatedItemLineMarkerProvider {
     }
 
     private void showScript(MouseEvent event, PsiElement identifier) {
-        String html = new CrudDocumentation().generateDoc(identifier.getParent(), identifier);
+        String html = identifier.getParent() instanceof PsiMethod method ? CrudDocumentation.render(method) : null;
         if (html == null) {
             return;
         }

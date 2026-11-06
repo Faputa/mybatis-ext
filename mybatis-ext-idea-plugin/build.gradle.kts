@@ -53,7 +53,7 @@ intellijPlatform {
         name = "MyBatis Ext"
         ideaVersion {
             sinceBuild = "233"
-            untilBuild = "262.*"
+            untilBuild = "263.*"
         }
         vendor { name = "mybatis-ext" }
     }
@@ -111,8 +111,11 @@ tasks.withType<Test>().configureEach {
     dependsOn(":mybatis-ext:shadowJar")
     maxHeapSize = "2g"
     systemProperty("java.awt.headless", "true")
-    // 仅运行当前插件及其声明的 Java 和平台依赖。
-    systemProperty("idea.load.plugins.id", "io.github.mybatisext.idea,com.intellij.java")
+    // 仅运行当前插件、Java 及测试所需平台依赖；新版平台将 VCS、Test Runner 拆为独立插件。
+    systemProperty(
+        "idea.load.plugins.id",
+        "io.github.mybatisext.idea,com.intellij.java,com.intellij.platform.vcs,com.intellij.platform.testRunner",
+    )
     // 核心类同时用作 PSI 测试素材；适配器不加载应用类。
     doFirst {
         systemProperty(

@@ -86,7 +86,7 @@ public final class ProjectCoreAnalysisTest extends LightJavaCodeInsightFixtureTe
             assertTrue(session.analyzer.analyzeMetadata(session.model.type(entity)).isSuccess());
             PsiMethod method = mapper.getMethods()[0];
             assertFalse(ExtReferences.methodReferences(method).isEmpty());
-            String preview = new CrudDocumentation().generateDoc(method, method);
+            String preview = CrudDocumentation.render(method);
             assertNotNull(preview);
             assertTrue(preview, preview.contains("&lt;script&gt;"));
             assertFalse(preview, preview.contains("analysis paused"));

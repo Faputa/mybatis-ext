@@ -23,18 +23,24 @@ import com.intellij.codeInsight.lookup.LookupElementPresentation;
 import com.intellij.codeInsight.navigation.CtrlMouseData;
 import com.intellij.codeInsight.navigation.actions.GotoDeclarationOrUsageHandler2;
 import com.intellij.icons.AllIcons;
-import com.intellij.lang.LanguageDocumentation;
-import com.intellij.lang.documentation.CompositeDocumentationProvider;
+import com.intellij.javaee.ExternalResourceManager;
+import com.intellij.lang.documentation.ide.IdeDocumentationTargetProvider;
+import com.intellij.lang.documentation.impl.TargetsKt;
+import com.intellij.lang.documentation.psi.UtilKt;
 import com.intellij.model.Symbol;
 import com.intellij.model.psi.ImplicitReferenceProvider;
 import com.intellij.model.psi.PsiSymbolReference;
-import com.intellij.model.psi.PsiSymbolService;
+import com.intellij.navigation.SymbolNavigationService;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.roots.ModuleRootModificationUtil;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.platform.backend.documentation.DocumentationData;
+import com.intellij.platform.backend.documentation.DocumentationTargetProvider;
+import com.intellij.platform.backend.navigation.NavigationTarget;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
@@ -60,10 +66,13 @@ import com.intellij.psi.xml.XmlTag;
 import com.intellij.psi.xml.XmlText;
 import com.intellij.psi.xml.XmlToken;
 import com.intellij.psi.xml.XmlTokenType;
+import com.intellij.testFramework.ExtensionTestUtil;
 import com.intellij.testFramework.LightProjectDescriptor;
+import com.intellij.testFramework.PlatformTestUtil;
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase;
 import com.intellij.ui.UiInterceptors;
 import com.intellij.ui.awt.RelativePoint;
+import com.intellij.util.concurrency.AppExecutorUtil;
 import com.intellij.util.ui.UIUtil;
 
 import io.github.mybatisext.annotation.Table;
@@ -246,7 +255,7 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
             String preview = registeredDocumentation(method);
             assertNotNull(preview);
             assertTrue(preview, preview.contains("&lt;script&gt;"));
-            assertTrue(preview, preview.contains(new CrudDocumentation().generateDoc(method, marker.getElement())));
+            assertEquals(preview, CrudDocumentation.render(method));
         }
     }
 
@@ -297,6 +306,52 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         assertEmpty(markers(mapper, new ExtNavigation()));
         PsiClass ordinary = myFixture.addClass("package sample; public interface PlainMapper { User get(); }");
         assertEmpty(markers(ordinary, new ExtNavigation()));
+    }
+
+    public void testEnhancedGutterPreviewRefreshesAfterEdits() {
+        PsiJavaFile file = (PsiJavaFile) myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User find(); }");
+        PsiMethod method = file.getClasses()[0].getMethods()[0];
+        var marker = markers(method, new ExtNavigation()).get(0);
+        List<JBPopup> shownPopups = interceptPreviewPopups();
+        clickPreview(marker);
+        assertEquals(1, shownPopups.size());
+        JEditorPane originalPreview = UIUtil.findComponentOfType(shownPopups.get(0).getContent(), JEditorPane.class);
+        assertNotNull(originalPreview);
+        assertTrue(originalPreview.getText(), originalPreview.getText().contains("&lt;script&gt;"));
+        WriteCommandAction.runWriteCommandAction(getProject(), () -> {
+            method.setName("findByMissing");
+        });
+        clickPreview(marker);
+        assertEquals(2, shownPopups.size());
+        JEditorPane preview = UIUtil.findComponentOfType(shownPopups.get(1).getContent(), JEditorPane.class);
+        assertNotNull(preview);
+        assertTrue(preview.getText(), preview.getText().contains("Preview unavailable:"));
+    }
+
+    private List<JBPopup> interceptPreviewPopups() {
+        List<JBPopup> shownPopups = new ArrayList<>();
+        UiInterceptors.registerPersistent(getTestRootDisposable(), new UiInterceptors.PersistentUiInterceptor<JBPopup>(JBPopup.class) {
+
+            @Override
+            public boolean shouldIntercept(JBPopup popup) {
+                return true;
+            }
+
+            @Override
+            protected void doIntercept(JBPopup popup, RelativePoint location) {
+                Disposer.register(getTestRootDisposable(), popup);
+                shownPopups.add(popup);
+            }
+        });
+        return shownPopups;
+    }
+
+    private void clickPreview(RelatedItemLineMarkerInfo<?> marker) {
+        Component gutter = assertInstanceOf(myFixture.getEditor().getGutter(), Component.class);
+        MouseEvent click = new MouseEvent(gutter, MouseEvent.MOUSE_CLICKED, 0, 0, 12, 80, 1, false, MouseEvent.BUTTON1);
+        @SuppressWarnings("unchecked")
+        GutterIconNavigationHandler<PsiElement> handler = (GutterIconNavigationHandler<PsiElement>) marker.getNavigationHandler();
+        handler.navigate(click, marker.getElement());
     }
 
     public void testGutterNavigationOnDeclarationNamesAndOpeningTags() {
@@ -1295,9 +1350,7 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
     public void testCrudConditionGotoDeclarationPrefersUnnamedParameter() {
         myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User findByNa<caret>me(String name); }");
         PsiMethod method = PsiTreeUtil.getParentOfType(myFixture.getFile().findElementAt(myFixture.getCaretOffset()), PsiMethod.class);
-        PsiElement[] targets = crudTargets(method.getNameIdentifier(), myFixture.getCaretOffset());
-        assertNotNull(targets);
-        assertEquals(List.of(method.getParameterList().getParameters()[0]), Arrays.asList(targets));
+        assertCrudTargets(method.getNameIdentifier(), myFixture.getCaretOffset(), method.getParameterList().getParameters()[0]);
     }
 
     public void testCrudConditionGotoDeclarationUsesActualNamedBinding() {
@@ -1310,8 +1363,8 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
                 """);
         PsiMethod method = PsiTreeUtil.getParentOfType(myFixture.getFile().findElementAt(myFixture.getCaretOffset()), PsiMethod.class);
         int offset = method.getNameIdentifier().getTextOffset();
-        assertEquals(List.of(method.getParameterList().getParameters()[0]), Arrays.asList(crudTargets(method.getNameIdentifier(), offset + "findByNa".length())));
-        assertEquals(List.of(method.getParameterList().getParameters()[1]), Arrays.asList(crudTargets(method.getNameIdentifier(), offset + "findByNameAndI".length())));
+        assertCrudTargets(method.getNameIdentifier(), offset + "findByNa".length(), method.getParameterList().getParameters()[0]);
+        assertCrudTargets(method.getNameIdentifier(), offset + "findByNameAndI".length(), method.getParameterList().getParameters()[1]);
     }
 
     public void testCrudConditionGotoDeclarationPreservesMixedAndRepeatedBindingOrder() {
@@ -1326,7 +1379,7 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         int offset = method.getNameIdentifier().getTextOffset();
         String[] prefixes = {"findByI", "findByIdOrI", "findByIdOrIdAndNa"};
         for (int i = 0; i < prefixes.length; i++) {
-            assertEquals(List.of(method.getParameterList().getParameters()[i]), Arrays.asList(crudTargets(method.getNameIdentifier(), offset + prefixes[i].length())));
+            assertCrudTargets(method.getNameIdentifier(), offset + prefixes[i].length(), method.getParameterList().getParameters()[i]);
         }
     }
 
@@ -1340,18 +1393,16 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         for (String name : new String[]{"findById", "findByIdBetween", "findByIdEqualsKey"}) {
             PsiMethod method = mapper.findMethodsByName(name, false)[0];
             int offset = method.getNameIdentifier().getTextOffset() + "findByI".length();
-            PsiElement[] targets = crudTargets(method.getNameIdentifier(), offset);
-            assertEquals(Arrays.asList(method.getParameterList().getParameters()), Arrays.asList(targets));
+            assertCrudTargets(method.getNameIdentifier(), offset, method.getParameterList().getParameters());
             if (name.equals("findByIdEqualsKey")) {
                 offset = method.getNameIdentifier().getTextOffset() + "findByIdEqualsK".length();
-                targets = crudTargets(method.getNameIdentifier(), offset);
-                assertEquals(Arrays.asList(method.getParameterList().getParameters()), Arrays.asList(targets));
+                assertCrudTargets(method.getNameIdentifier(), offset, method.getParameterList().getParameters());
             }
         }
         PsiMethod nullCheck = mapper.findMethodsByName("findByNameIsNull", false)[0];
-        PsiElement[] targets = crudTargets(nullCheck.getNameIdentifier(), nullCheck.getNameIdentifier().getTextOffset() + "findByNa".length());
-        assertEquals(1, targets.length);
-        assertInstanceOf(targets[0], PsiField.class);
+        PsiClass user = JavaPsiFacade.getInstance(getProject()).findClass("sample.User", GlobalSearchScope.allScope(getProject()));
+        assertNotNull(user);
+        assertCrudTargets(nullCheck.getNameIdentifier(), nullCheck.getNameIdentifier().getTextOffset() + "findByNa".length(), user.findFieldByName("name", false));
     }
 
     public void testCrudConditionGotoDeclarationSkipsSpecialParameters() {
@@ -1363,12 +1414,11 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
                 }
                 """);
         PsiMethod method = PsiTreeUtil.getParentOfType(myFixture.getFile().findElementAt(myFixture.getCaretOffset()), PsiMethod.class);
-        PsiElement[] targets = crudTargets(method.getNameIdentifier(), myFixture.getCaretOffset());
-        assertEquals(List.of(method.getParameterList().getParameters()[1]), Arrays.asList(targets));
+        assertCrudTargets(method.getNameIdentifier(), myFixture.getCaretOffset(), method.getParameterList().getParameters()[1]);
     }
 
     public void testCrudConditionGotoDeclarationResolvesParameterObjectProperty() {
-        myFixture.addClass("package sample; public class Query { public String name; }");
+        PsiClass query = myFixture.addClass("package sample; public class Query { public String name; }");
         myFixture.configureByText("UserMapper.java", """
                 package sample;
                 import org.apache.ibatis.annotations.Param;
@@ -1377,27 +1427,17 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
                 }
                 """);
         PsiMethod method = PsiTreeUtil.getParentOfType(myFixture.getFile().findElementAt(myFixture.getCaretOffset()), PsiMethod.class);
-        PsiElement[] targets = crudTargets(method.getNameIdentifier(), myFixture.getCaretOffset());
-        assertEquals(1, targets.length);
-        assertInstanceOf(targets[0], PsiField.class);
-        assertEquals("Query", ((PsiField) targets[0]).getContainingClass().getName());
+        assertCrudTargets(method.getNameIdentifier(), myFixture.getCaretOffset(), query.findFieldByName("name", false));
     }
 
     public void testCrudConditionGotoDeclarationResolvesUnnamedObjectAndGetter() {
-        myFixture.addClass("package sample; public class Query { public String name; }");
-        myFixture.addClass("package sample; public class BeanQuery { public String getName() { return null; } }");
+        PsiClass query = myFixture.addClass("package sample; public class Query { public String name; }");
+        PsiClass beanQuery = myFixture.addClass("package sample; public class BeanQuery { public String getName() { return null; } }");
         for (String type : new String[]{"Query", "BeanQuery"}) {
             myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User findByNa<caret>me(" + type + " query); }");
             PsiMethod method = PsiTreeUtil.getParentOfType(myFixture.getFile().findElementAt(myFixture.getCaretOffset()), PsiMethod.class);
-            PsiElement[] targets = crudTargets(method.getNameIdentifier(), myFixture.getCaretOffset());
-            assertEquals(1, targets.length);
-            if (type.equals("Query")) {
-                assertInstanceOf(targets[0], PsiField.class);
-                assertEquals("Query", ((PsiField) targets[0]).getContainingClass().getName());
-            } else {
-                assertInstanceOf(targets[0], PsiMethod.class);
-                assertEquals("BeanQuery", ((PsiMethod) targets[0]).getContainingClass().getName());
-            }
+            PsiElement expected = type.equals("Query") ? query.findFieldByName("name", false) : beanQuery.findMethodsByName("getName", false)[0];
+            assertCrudTargets(method.getNameIdentifier(), myFixture.getCaretOffset(), expected);
         }
     }
 
@@ -1411,12 +1451,10 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
                 """);
         PsiMethod method = PsiTreeUtil.getParentOfType(myFixture.getFile().findElementAt(myFixture.getCaretOffset()), PsiMethod.class);
         int offset = method.getNameIdentifier().getTextOffset();
+        PsiClass user = JavaPsiFacade.getInstance(getProject()).findClass("sample.User", GlobalSearchScope.allScope(getProject()));
+        assertNotNull(user);
         for (int relative : new int[]{"findNa".length(), "findNameByIdOrderByNa".length()}) {
-            PsiElement[] targets = crudTargets(method.getNameIdentifier(), offset + relative);
-            assertNotNull(targets);
-            assertEquals(1, targets.length);
-            assertInstanceOf(targets[0], PsiField.class);
-            assertEquals("name", ((PsiField) targets[0]).getName());
+            assertCrudTargets(method.getNameIdentifier(), offset + relative, user.findFieldByName("name", false));
         }
     }
 
@@ -1426,22 +1464,32 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
             PsiMethod method = PsiTreeUtil.getParentOfType(myFixture.getFile().findElementAt(myFixture.getCaretOffset()), PsiMethod.class);
             PsiClass user = JavaPsiFacade.getInstance(getProject()).findClass("sample.User", GlobalSearchScope.allScope(getProject()));
             assertNotNull(user);
-            assertEquals(List.of(user), Arrays.asList(crudTargets(method.getNameIdentifier(), myFixture.getCaretOffset())));
+            assertCrudTargets(method.getNameIdentifier(), myFixture.getCaretOffset(), user);
             assertCrudHover(method, "User", "find".length());
-            assertEquals(List.of(method.getParameterList().getParameters()[0]), Arrays.asList(crudTargets(method.getNameIdentifier(), method.getNameIdentifier().getTextOffset() + "findUserByNa".length())));
+            assertCrudTargets(method.getNameIdentifier(), method.getNameIdentifier().getTextOffset() + "findUserByNa".length(), method.getParameterList().getParameters()[0]);
         }
     }
 
-    private PsiElement[] crudTargets(PsiElement element, int offset) {
+    private void assertCrudTargets(PsiElement element, int offset, PsiElement... expected) {
         PsiSymbolReference reference = new ExtImplicitReferences().getImplicitReference(element, offset - element.getTextOffset());
         assertNotNull(reference);
-        List<PsiElement> targets = new ArrayList<>();
-        for (Symbol symbol : reference.resolveReference()) {
-            PsiElement target = PsiSymbolService.getInstance().extractElementFromSymbol(symbol);
-            assertNotNull(target);
-            targets.add(target);
+        assertNavigationTargets(reference.resolveReference(), expected);
+    }
+
+    private void assertNavigationTargets(Iterable<? extends Symbol> symbols, PsiElement... expected) {
+        var service = SymbolNavigationService.getInstance();
+        List<NavigationTarget> actualTargets = new ArrayList<>();
+        for (Symbol symbol : symbols) {
+            var targets = service.getNavigationTargets(getProject(), symbol);
+            assertEquals(1, targets.size());
+            actualTargets.addAll(targets);
         }
-        return targets.toArray(PsiElement[]::new);
+        List<NavigationTarget> expectedTargets = new ArrayList<>();
+        for (PsiElement element : expected) {
+            assertNotNull(element);
+            expectedTargets.add(service.psiElementNavigationTarget(element));
+        }
+        assertEquals(expectedTargets, actualTargets);
     }
 
     public void testCrudCtrlHoverHighlightsOnlyReferencedWord() {
@@ -1461,13 +1509,126 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User findByI<caret>dBetween(@org.apache.ibatis.annotations.Param(\"low\") Long min, @org.apache.ibatis.annotations.Param(\"high\") Long max); }");
         PsiMethod method = PsiTreeUtil.getParentOfType(myFixture.getFile().findElementAt(myFixture.getCaretOffset()), PsiMethod.class);
         assertCrudHover(method, "Id", method.getName().indexOf("Id"));
-        assertEquals(Arrays.asList(method.getParameterList().getParameters()), Arrays.asList(crudTargets(method.getNameIdentifier(), method.getNameIdentifier().getTextOffset() + 6)));
+        assertCrudTargets(method.getNameIdentifier(), method.getNameIdentifier().getTextOffset() + 6, method.getParameterList().getParameters());
     }
 
     public void testCrudImplicitReferencesIgnoreOrdinaryMethods() {
         myFixture.configureByText("Plain.java", "interface Plain { String findByNa<caret>me(String name); }");
         PsiMethod method = PsiTreeUtil.getParentOfType(myFixture.getFile().findElementAt(myFixture.getCaretOffset()), PsiMethod.class);
         assertNull(new ExtImplicitReferences().getImplicitReference(method.getNameIdentifier(), 7));
+    }
+
+    public void testCrudNavigationRetainsCtrlHoverHint() {
+        myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User findByNa<caret>me(String name); }");
+        CtrlMouseData data = GotoDeclarationOrUsageHandler2.getCtrlMouseData(myFixture.getEditor(), myFixture.getFile(), myFixture.getCaretOffset());
+        assertNotNull(data);
+        assertNotNull(data.getHintText());
+        assertTrue(data.getHintText(), data.getHintText().contains("String"));
+        assertTrue(data.getHintText(), data.getHintText().contains("name"));
+    }
+
+    public void testCrudDocumentationRetainsCtrlHoverHint() {
+        PsiMethod method = extMapper("User findByName(String name);").getMethods()[0];
+        var target = UtilKt.psiDocumentationTargets(method, method.getNameIdentifier()).get(0);
+        String hint = target.computeDocumentationHint();
+        assertNotNull(hint);
+        assertTrue(hint, hint.contains("findByName"));
+        assertTrue(hint, hint.contains("String"));
+        assertTrue(hint, hint.contains("name"));
+        assertEquals(documentation(method), registeredDocumentation(method));
+    }
+
+    public void testCrudSqlDocumentationDoesNotReplaceNativeJavaTarget() {
+        PsiMethod method = extMapper("User findByName(String name);").getMethods()[0];
+        var targets = UtilKt.psiDocumentationTargets(method, method.getNameIdentifier());
+        assertEquals(1, targets.size());
+        var target = targets.get(0);
+        assertFalse(target.getClass().getName().startsWith(CrudDocumentation.class.getName()));
+        assertNotNull(target.computeDocumentationHint());
+        assertFalse(target.computeDocumentationHint().contains("mybatis-ext CRUD script"));
+    }
+
+    public void testCrudCtrlHoverEscapesGenericTypes() {
+        myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User findByNa<caret>meIn(java.util.List<String> names); }");
+        CtrlMouseData data = GotoDeclarationOrUsageHandler2.getCtrlMouseData(myFixture.getEditor(), myFixture.getFile(), myFixture.getCaretOffset());
+        assertNotNull(data);
+        assertNotNull(data.getHintText());
+        assertTrue(data.getHintText(), data.getHintText().contains("&lt;"));
+        assertTrue(data.getHintText(), data.getHintText().contains("String"));
+        assertTrue(data.getHintText(), data.getHintText().contains("&gt;"));
+        assertTrue(data.getHintText(), data.getHintText().contains("names"));
+        assertFalse(data.getHintText(), data.getHintText().contains("<String>"));
+    }
+
+    public void testCrudEditorDocumentationPreservesSqlAcrossNameAndBetweenTargets() {
+        myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User findByIdBetween(Long low, Long high); }");
+        PsiMethod method = ((PsiJavaFile) myFixture.getFile()).getClasses()[0].getMethods()[0];
+        var provider = IdeDocumentationTargetProvider.getInstance(getProject());
+        for (int i = 0; i < method.getName().length(); i++) {
+            var targets = provider.documentationTargets(myFixture.getEditor(), myFixture.getFile(), method.getNameIdentifier().getTextOffset() + i);
+            assertEquals("Offset " + i, 1, targets.size());
+            assertEquals(documentation(method), ((DocumentationData) targets.get(0).computeDocumentation()).getHtml());
+        }
+    }
+
+    public void testCrudSqlDocumentationDoesNotRequireImplicitReferences() {
+        myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User findByIdBetween(Long low, Long high); }");
+        PsiMethod method = ((PsiJavaFile) myFixture.getFile()).getClasses()[0].getMethods()[0];
+        String expected = registeredDocumentation(method);
+        ExtensionTestUtil.maskExtensions(ImplicitReferenceProvider.EP_NAME, List.of(), getTestRootDisposable());
+        var provider = IdeDocumentationTargetProvider.getInstance(getProject());
+        for (int i = 0; i < method.getName().length(); i++) {
+            var targets = provider.documentationTargets(myFixture.getEditor(), myFixture.getFile(), method.getNameIdentifier().getTextOffset() + i);
+            assertEquals("Offset " + i, 1, targets.size());
+            assertEquals(expected, ((DocumentationData) targets.get(0).computeDocumentation()).getHtml());
+        }
+    }
+
+    public void testCrudSqlDocumentationAtMethodCallPreservesNativeCtrlHint() {
+        myFixture.configureByText("UserMapper.java", "package sample; @io.github.mybatisext.annotation.MapTable(User.class) interface UserMapper { User findByName(String name); default User invoke() { return findByNa<caret>me(\"test\"); } }");
+        var targets = IdeDocumentationTargetProvider.getInstance(getProject()).documentationTargets(
+                myFixture.getEditor(), myFixture.getFile(), myFixture.getCaretOffset());
+        assertEquals(1, targets.size());
+        PsiMethod method = ((PsiJavaFile) myFixture.getFile()).getClasses()[0].findMethodsByName("findByName", false)[0];
+        assertEquals(documentation(method), ((DocumentationData) targets.get(0).computeDocumentation()).getHtml());
+        CtrlMouseData data = GotoDeclarationOrUsageHandler2.getCtrlMouseData(myFixture.getEditor(), myFixture.getFile(), myFixture.getCaretOffset());
+        assertNotNull(data);
+        assertNotNull(data.getHintText());
+        assertTrue(data.getHintText(), data.getHintText().contains("findByName"));
+        assertFalse(data.getHintText(), data.getHintText().contains("mybatis-ext CRUD script"));
+    }
+
+    public void testCrudNavigationTargetPointerTracksRenameAndDeletion() {
+        PsiMethod method = extMapper("User findByName(String name);").getMethods()[0];
+        var reference = new ExtImplicitReferences().getImplicitReference(method.getNameIdentifier(), "findBy".length());
+        var symbol = reference.resolveReference().iterator().next();
+        var pointer = symbol.createPointer();
+        assertNavigationTargets(List.of(pointer.dereference()), method.getParameterList().getParameters()[0]);
+        PsiParameter parameter = method.getParameterList().getParameters()[0];
+        WriteCommandAction.runWriteCommandAction(getProject(), () -> {
+            parameter.setName("renamed");
+        });
+        assertNavigationTargets(List.of(pointer.dereference()), parameter);
+        assertEquals("renamed", parameter.getName());
+        var documentation = UtilKt.psiDocumentationTargets(parameter, method.getNameIdentifier()).get(0);
+        assertTrue(documentation.computeDocumentationHint().contains("renamed"));
+        WriteCommandAction.runWriteCommandAction(getProject(), parameter::delete);
+        assertNull(pointer.dereference());
+    }
+
+    public void testCrudNavigationTargetsCreateRequestsInBackground() {
+        PsiMethod method = extMapper("User findByName(String name);").getMethods()[0];
+        var reference = new ExtImplicitReferences().getImplicitReference(method.getNameIdentifier(), "findBy".length());
+        var pointer = reference.resolveReference().iterator().next().createPointer();
+        PlatformTestUtil.assertPromiseSucceeds(ReadAction.nonBlocking(() -> {
+            var targets = SymbolNavigationService.getInstance().getNavigationTargets(getProject(), pointer.dereference());
+            assertEquals(1, targets.size());
+            var target = targets.iterator().next();
+            assertNotNull(target.computePresentation());
+            assertNotNull(target.navigationRequest());
+            assertNotNull(target.createPointer().dereference());
+            return true;
+        }).submit(AppExecutorUtil.getAppExecutorService()));
     }
 
     private void assertCrudHover(PsiMethod method, String word, int start) {
@@ -1485,7 +1646,7 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
     }
 
     private String documentation(PsiMethod method) {
-        return new CrudDocumentation().generateDoc(method, method.getNameIdentifier());
+        return CrudDocumentation.render(method);
     }
 
     public void testCrudDocumentationUsesCoreScriptAndPreservesMybatisTags() {
@@ -1505,7 +1666,8 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         assertTrue(semantic.getDiagnostics().toString(), semantic.isSuccess());
         String expected = SemanticScriptHelper.buildScriptContent(semantic.getValue(), DefaultDialectSelector.MYSQL_DIALECT);
         assertTrue(html, html.contains(StringUtil.escapeXmlEntities(expected)));
-        assertEquals(html, new CrudDocumentation().generateDoc(method.getNameIdentifier(), method.getNameIdentifier()));
+        var target = new CrudDocumentation().documentationTargets(method.getContainingFile(), method.getNameIdentifier().getTextOffset()).get(0);
+        assertEquals(html, ((DocumentationData) target.computeDocumentation()).getHtml());
     }
 
     public void testCrudDocumentationPreservesIfAndSetTags() {
@@ -1552,24 +1714,57 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         assertNull(documentation(mapper.findMethodsByName("find", false)[0]));
         PsiClass plain = myFixture.addClass("package sample; interface Plain { Object find(); }");
         assertNull(documentation(plain.getMethods()[0]));
-        assertNull(new CrudDocumentation().generateDoc(mapper, mapper));
+        assertEmpty(new CrudDocumentation().documentationTargets(mapper.getContainingFile(), mapper.getNameIdentifier().getTextOffset()));
     }
 
     private String registeredDocumentation(PsiMethod method) {
-        var provider = CompositeDocumentationProvider.wrapProviders(LanguageDocumentation.INSTANCE.allForLanguage(method.getLanguage()));
-        return provider.generateDoc(method, method.getNameIdentifier());
+        var targets = TargetsKt.documentationTargets(method.getContainingFile(), method.getNameIdentifier().getTextOffset());
+        assertEquals(1, targets.size());
+        var result = targets.get(0).computeDocumentation();
+        return assertInstanceOf(result, DocumentationData.class).getHtml();
     }
 
     public void testCrudDocumentationRegisteredWithPlatform() {
+        assertTrue(DocumentationTargetProvider.EP_NAME.getExtensionList().stream().anyMatch(provider -> provider instanceof CrudDocumentation));
         PsiMethod method = extMapper("User findByName(String name);").getMethods()[0];
         String html = registeredDocumentation(method);
         assertNotNull(html);
         assertTrue(html, html.contains("mybatis-ext CRUD script"));
+        assertEquals(documentation(method), html);
         PsiMethod plain = myFixture.addClass("package sample; interface Plain { String ordinary(); }").getMethods()[0];
-        String ordinary = registeredDocumentation(plain);
-        assertNotNull(ordinary);
-        assertTrue(ordinary, ordinary.contains("ordinary"));
-        assertFalse(ordinary, ordinary.contains("mybatis-ext CRUD script"));
+        assertEmpty(new CrudDocumentation().documentationTargets(plain.getContainingFile(), plain.getNameIdentifier().getTextOffset()));
+        var ordinary = UtilKt.psiDocumentationTargets(plain, plain.getNameIdentifier());
+        assertEquals(1, ordinary.size());
+        assertFalse(ordinary.get(0).getClass().getName().startsWith(CrudDocumentation.class.getName()));
+    }
+
+    public void testCrudDocumentationPointerRecomputesAndExpires() {
+        PsiMethod method = extMapper("User findByName(String name);").getMethods()[0];
+        var target = new CrudDocumentation().documentationTargets(method.getContainingFile(), method.getNameIdentifier().getTextOffset()).get(0);
+        var pointer = target.createPointer();
+        assertEquals(documentation(method), ((DocumentationData) pointer.dereference().computeDocumentation()).getHtml());
+        WriteCommandAction.runWriteCommandAction(getProject(), () -> {
+            method.setName("findByMissing");
+        });
+        String html = ((DocumentationData) pointer.dereference().computeDocumentation()).getHtml();
+        assertEquals(documentation(method), html);
+        assertFalse(target.equals(pointer.dereference()));
+        assertTrue(html, html.contains("Preview unavailable:"));
+        WriteCommandAction.runWriteCommandAction(getProject(), method::delete);
+        assertNull(pointer.dereference());
+    }
+
+    public void testCrudDocumentationTargetsPreserveDiagnosticsAndExplicitMappings() {
+        PsiClass mapper = extMapper("User findByMissing(); @Select(\"select 1\") User explicit(); User mapped();");
+        PsiMethod invalid = mapper.getMethods()[0];
+        assertEquals(documentation(invalid), registeredDocumentation(invalid));
+        assertTrue(registeredDocumentation(invalid).contains("Preview unavailable:"));
+        myFixture.addFileToProject("mapped.xml", "<mapper namespace=\"sample.UserMapper\"><select id=\"mapped\">select 1</select></mapper>");
+        var provider = new CrudDocumentation();
+        for (int i = 1; i < mapper.getMethods().length; i++) {
+            PsiMethod method = mapper.getMethods()[i];
+            assertEmpty(provider.documentationTargets(method.getContainingFile(), method.getNameIdentifier().getTextOffset()));
+        }
     }
 
     public void testPreviewDialectPropertiesAndDocumentInvalidation() {
@@ -1679,5 +1874,20 @@ public final class PluginFixtureTest extends LightJavaCodeInsightFixtureTestCase
         assertEquals(1, new MybatisProject(mapper).mappers(mapper).size());
         XmlFile fragments = (XmlFile) myFixture.configureByText("fragments.xml", "<mapper namespace=\"sql.fragments\"><sql id=\"columns\">id</sql></mapper>");
         assertTrue(MybatisReferences.references(attr(fragments.getRootTag(), "namespace")).stream().allMatch(PsiReference::isSoft));
+    }
+
+    public void testAllStandardDtdAddressesResolveToBundledResources() {
+        PsiFile base = myFixture.configureByText("test.xml", "<mapper/>");
+        for (String kind : List.of("mapper", "config")) {
+            for (String scheme : List.of("http", "https")) {
+                for (String host : List.of("mybatis.org", "www.mybatis.org")) {
+                    String url = scheme + "://" + host + "/dtd/mybatis-3-" + kind + ".dtd";
+                    PsiFile dtd = ExternalResourceManager.getInstance().getResourceLocation(url, base, null);
+                    assertNotNull(url, dtd);
+                    assertEquals("jar", dtd.getVirtualFile().getFileSystem().getProtocol());
+                    assertTrue(url, dtd.getText().contains("<!ELEMENT " + (kind.equals("mapper") ? "mapper" : "configuration")));
+                }
+            }
+        }
     }
 }

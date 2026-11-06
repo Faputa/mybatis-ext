@@ -32,9 +32,9 @@ IDEA 插件模块，提供 MyBatis XML 的诊断、导航和补全，以及基�
 
 默认任务自动下载并缓存 233 SDK。设置 `IDEA_HOME`、传入 `-PideaHome=...`，或在不入库的 `local.properties` 中设置 `ideaHome=C:/...` 后，可使用 `runLocalIde` / `testLocalIde` 在该 IDE 上调试和测试；这些设置不替换发布 SDK。Gradle Wrapper 使用 9.4.0，IntelliJ Platform Gradle Plugin 使用 2.19.0，同时处理旧版和新版平台描述格式。
 
-上述命令执行插件测试、结构校验和打包，Gradle 会先构建所需核心产物。根 `verifyAll` 另含全部 Java 模块检查、基线 Plugin Verifier 和 Maven POM 生成；基线报告中的内部 API 使用问题、IDEA 导入及跨版本验证方法见[构建说明](../docs/build.md)。
+上述命令执行插件测试、结构校验和打包，Gradle 会先构建所需核心产物。根 `verifyAll` 另含全部 Java 模块检查、基线 Plugin Verifier 和 Maven POM 生成；API 使用报告、IDEA 导入及跨版本验证方法见[构建说明](../docs/build.md)。
 
-核心、Spring 模块及插件的版本统一继承根 `gradle.properties` 的 `version`，插件不单独维护版本号。当前保留开发版本 `0.0.17`，产物：`mybatis-ext-idea-plugin/build/distributions/mybatis-ext-idea-plugin-0.0.17.zip`，不代表本次变更已发布。在 IDEA 的 Settings → Plugins → 齿轮 → Install Plugin from Disk 中选择 ZIP，按 IDEA 提示重新启动。根目录运行 `gradlew.bat :mybatis-ext-idea-plugin:runIde` 启动开发沙箱，不会覆盖日常使用的 IDE 配置。
+核心、Spring 模块及插件的版本统一继承根 `gradle.properties` 的 `version`，插件不单独维护版本号。产物位于 `mybatis-ext-idea-plugin/build/distributions/`，文件名为 `mybatis-ext-idea-plugin-<version>.zip`。在 IDEA 的 Settings → Plugins → 齿轮 → Install Plugin from Disk 中选择 ZIP，按 IDEA 提示重新启动。根目录运行 `gradlew.bat :mybatis-ext-idea-plugin:runIde` 启动开发沙箱，不会覆盖日常使用的 IDE 配置。
 
 测试使用 IDEA 真实 Java/XML PSI fixture，验证引用、索引、核心分析、字符串偏移与编辑器补全插入行为。同一份 Java fixture 分别经过反射和 PSI，比较元数据、最终映射来源、错误诊断、方法引用及 MySQL/PostgreSQL 动态脚本；另验证目标项目版本不同、缺少 Maven 元信息或直接提供框架源码时，合法分析仍然可用。
 
@@ -43,6 +43,8 @@ IDEA 插件模块，提供 MyBatis XML 的诊断、导航和补全，以及基�
 - `model/PsiModel` 只读取 PSI，不加载、执行用户项目的实体类、生成器或 TypeHandler。成员类型在所属泛型上下文中替换；框架注解默认值与重复注解转换为核心 Java 模型。
 - 元数据按钮直接读取核心 `PropertyInfo.mappingSource`，不在插件中重复解释最终映射。`JoinRelation` 重复注解或 `JoinRelations` 容器的最终目标由核心确定，按钮显示在字段名或方法名所在行；字段或 Getter 的关联类型与集合元素类型遵循核心支持范围。实体元数据构建失败时不显示该实体的映射按钮；中间关联仍可通过字面值引用跳转。数组关联当前不受核心支持。
 - `ExtSession` 在单次请求中创建模型与 MybatisExtAnalyzer；不会跨文档修改保存可变核心缓存或 PSI 结果。索引仅记录 XML 的 namespace，后续声明解析使用当前 PSI。
+- 悬浮文档使用 `DocumentationTargetProvider` / `DocumentationTarget`，按鼠标或光标位置直接定位方法声明或调用，不依赖方法名分词；方法名分词保留原有隐式引用导航，Ctrl+悬浮由 IDEA 提供原生 Java 签名提示和单词范围高亮。
+- SQL 文档与分词导航独立。导航暂时保留 `PsiSymbolService` 内部 API，后续迁移单独评估；离线 DTD 通过 `standardResource` 声明注册，读取插件携带的 MyBatis 资源。
 - PSI 按 JavaBeans 规则匹配 getter 与兼容的 void setter，泛型继承和重载参与可写性判断；元数据关联的容器类型解包复用核心规则，支持固定元素类型的集合子类。
 - XML 脚本参数以 Mapper 方法签名为准，与是否继承某种框架基类无关；继承方法在当前 Mapper 上下文中替换泛型。仅在找不到对应方法时，使用 XML 的 `parameterType` 补充类型信息。普通文本和 CDATA 中的占位符通过 XML 文本 token 提供引用，供 IDEA 的跳转与重命名使用。
 - 普通 MyBatis 属性引用优先跳转到 getter 所属类及其父类中的同名非静态字段，没有对应字段时跳转 getter；属性类型仍遵循 JavaBeans 规则及泛型替换。Ext 元数据引用保持定位到实际映射声明。

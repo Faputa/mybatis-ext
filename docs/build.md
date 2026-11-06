@@ -70,18 +70,20 @@ $env:IDEA_HOME = 'C:/path/to/idea'
 
 SDK 和构建依赖已缓存后，可追加 `--offline`，同时让 Gradle 和 Plugin Verifier 离线运行。Verifier 将使用 SDK 内的插件与本地依赖缓存，不向 Marketplace 查询依赖；离线结果应连同依赖解析情况检查，不能通过忽略缺失的必需依赖来认定兼容。
 
-历史验证记录（2026-10-22，插件开发包 `0.1.0`，不代表当前产物的验证结果）：
+当前声明范围为 `233` 至 `263.*`，每次发布仍需对实际产物重新验证。
 
-| IDEA 目标 | Plugin Verifier 1.411 | Java/XML PSI 测试 |
+当前实现已将悬浮文档迁移到 Documentation Target API，通过 `DocumentationTargetProvider` 按位置直接定位方法，SQL 文档不依赖分词引用；方法名导航保留原有隐式引用和 `PsiSymbolService`，由 IDEA 提供原生 Java 签名提示及单词范围高亮。导航内部 API 的迁移单独评估；离线 DTD 改为 `standardResource` 声明注册。部分公开接口仍标记为实验性 API。内部 API 使用仍输出到控制台及报告，但不阻断构建；兼容性问题及错误调用 OverrideOnly API 仍会使验证失败。报告位于 `mybatis-ext-idea-plugin/build/reports/pluginVerifier/`。日常测试、结构校验和打包成功也不代表跨版本兼容性验证通过。
+
+已验证的 IDEA 目标：
+
+| IDEA 目标 | Plugin Verifier | Java/XML PSI 测试 |
 | --- | --- | --- |
-| Community 2023.3.8 / 233.15619.7 | Compatible | 51 项通过；同时作为编译 SDK |
-| Community 2024.2.3 / 242.23339.11 | Compatible | 未运行 |
-| Community 2025.1 / 251.23774.435 | Compatible；1 处弃用 API | 未运行 |
-| Ultimate 2026.2.3 / 262.10968.63 | Compatible；2 处弃用 API | 51 项通过 |
+| Community 2023.3.8（233） | Compatible | 通过；编译 SDK |
+| Community 2024.2.3（242） | Compatible | 未运行 |
+| Community 2025.1（251） | Compatible | 未运行 |
+| Ultimate 2026.3（263） | Compatible | 通过 |
 
-历史矩阵使用完整 SDK 和缓存进行离线验证；其中的弃用调用包括 DTD 的 `ResourceRegistrar.addStdResource(..., Class)` 和新版平台的 `DaemonCodeAnalyzer.restart()`。当前声明范围为 `233` 至 `262.*`，每次发布仍需对实际产物重新验证。
-
-`0.0.17` 的 233 基线报告记录了 `ExtImplicitReferences` 对 `PsiSymbolService` 的 3 处内部 API 使用，以及实验性 API 使用。内部 API 使用仍输出到控制台及报告，但不阻断构建；兼容性问题及错误调用 OverrideOnly API 仍会使验证失败。报告位于 `mybatis-ext-idea-plugin/build/reports/pluginVerifier/`。日常测试、结构校验和打包成功也不代表跨版本兼容性验证通过。
+四个目标均未报告 OverrideOnly API 误用或二进制兼容性问题；报告仍包含实验性 API 和导航实现对 `PsiSymbolService` 内部 API 的使用。部分目标还报告计划移除的 `Query.iterator()` 调用，以及 263 上弃用的 `DaemonCodeAnalyzer.restart()` 调用。离线依赖树存在平台实验模块、远程开发及条件模块的未解析记录，详见各目标的 `dependencies.txt`；上述结果不覆盖远程开发场景，也不能替代日常 IDE 中的安装验收。
 
 Java 格式化使用 Spotless 8.2.1 / Eclipse 4.37，复用 `.vscode/java-formatter.xml` 的四空格和不主动折行规则；Gradle Kotlin 脚本使用 ktfmt 0.61。范围仅为各模块 `src` 内的 Java 文件及 Gradle 脚本，不处理生成目录或其他资料。首次运行会下载工具；根 `gradle.properties` 默认设置 `eclipseMirror=https://mirrors.ustc.edu.cn/eclipse`，可通过 `-PeclipseMirror=其他镜像地址` 覆盖，镜像不改变格式版本或规则。下载成功后可使用 Gradle 缓存。
 
@@ -121,7 +123,7 @@ MyBatis 及 Spring 的原 provided 依赖用 `compileOnly` 表达，并写入发
 
 使用 Nmcp 1.6.2 将现有的四个 Maven 坐标汇总上传到 Central Portal，不上传测试模块或 IDEA 插件。沿用原 Maven Central 插件未启用 `autoPublish` 时的行为：上传并等待平台校验，通过后在 Portal 手动确认公开发布。
 
-在用户级 `C:/Users/Admin/.gradle/gradle.properties` 中配置 Central Portal 生成的 User Token 和 GPG；这里的 Central 凭据对应原 Maven `settings.xml` 中 `central` server 的 token 用户名和口令，不是网页登录密码：
+在用户级 `~/.gradle/gradle.properties` 中配置 Central Portal 生成的 User Token 和 GPG；这里的 Central 凭据对应原 Maven `settings.xml` 中 `central` server 的 token 用户名和口令，不是网页登录密码：
 
 ```properties
 centralUsername=你的Central用户令牌用户名
@@ -135,7 +137,7 @@ signing.gnupg.passphrase=你的GPG密钥口令
 
 Central 凭据也可通过环境变量 `CENTRAL_USERNAME`、`CENTRAL_PASSWORD` 提供。口令以明文保存在用户配置中，不要放入仓库。
 
-正式发布前，根据[变更记录](changelog.md)确定未发布过的新版本，仅修改根 `gradle.properties` 中的 `version`。当前开发配置为 `0.0.17`，不得覆盖已发布的同版本产物。核心、Spring 模块和插件自动同步版本，插件版本也不得低于其已发布版本。
+正式发布前，根据[变更记录](changelog.md)确定未发布过的新版本，仅修改根 `gradle.properties` 中的 `version`，不得覆盖已发布的同版本产物。核心、Spring 模块和插件自动同步版本，插件版本也不得低于其已发布版本。
 
 完成版本和凭据配置后，执行一次：
 

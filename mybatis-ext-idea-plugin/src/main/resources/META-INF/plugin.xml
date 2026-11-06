@@ -16,7 +16,14 @@
   <extensions defaultExtensionNs="com.intellij">
     <fileBasedIndex implementation="io.github.mybatisext.idea.xml.MapperIndex"/>
     <iconProvider implementation="io.github.mybatisext.idea.xml.MapperIconProvider"/>
-    <standardResourceProvider implementation="io.github.mybatisext.idea.xml.MybatisResources"/>
+    <standardResource url="http://mybatis.org/dtd/mybatis-3-mapper.dtd" path="org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd"/>
+    <standardResource url="https://mybatis.org/dtd/mybatis-3-mapper.dtd" path="org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd"/>
+    <standardResource url="http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" path="org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd"/>
+    <standardResource url="https://www.mybatis.org/dtd/mybatis-3-mapper.dtd" path="org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd"/>
+    <standardResource url="http://mybatis.org/dtd/mybatis-3-config.dtd" path="org/apache/ibatis/builder/xml/mybatis-3-config.dtd"/>
+    <standardResource url="https://mybatis.org/dtd/mybatis-3-config.dtd" path="org/apache/ibatis/builder/xml/mybatis-3-config.dtd"/>
+    <standardResource url="http://www.mybatis.org/dtd/mybatis-3-config.dtd" path="org/apache/ibatis/builder/xml/mybatis-3-config.dtd"/>
+    <standardResource url="https://www.mybatis.org/dtd/mybatis-3-config.dtd" path="org/apache/ibatis/builder/xml/mybatis-3-config.dtd"/>
     <psi.referenceContributor language="XML" implementation="io.github.mybatisext.idea.xml.MybatisReferences"/>
     <psi.referenceContributor language="JAVA" implementation="io.github.mybatisext.idea.ext.ExtReferences"/>
     <methodReferencesSearch implementation="io.github.mybatisext.idea.xml.PropertyMethodReferencesSearch"/>
@@ -26,7 +33,7 @@
     <codeInsight.lineMarkerProvider language="XML" implementationClass="io.github.mybatisext.idea.xml.MapperNavigation"/>
     <codeInsight.lineMarkerProvider language="JAVA" implementationClass="io.github.mybatisext.idea.ext.ExtNavigation"/>
     <psi.implicitReferenceProvider implementation="io.github.mybatisext.idea.ext.ExtImplicitReferences"/>
-    <lang.documentationProvider language="JAVA" implementationClass="io.github.mybatisext.idea.ext.CrudDocumentation" order="first"/>
+    <platform.backend.documentation.targetProvider implementation="io.github.mybatisext.idea.ext.CrudDocumentation" order="first"/>
     <localInspection language="XML" shortName="MybatisExtXml" displayName="MyBatis mapping references" groupName="MyBatis Ext" enabledByDefault="true" level="ERROR" implementationClass="io.github.mybatisext.idea.xml.MybatisInspection"/>
     <localInspection language="JAVA" shortName="MybatisExtMapper" displayName="MyBatis mapper statements" groupName="MyBatis Ext" enabledByDefault="true" level="ERROR" implementationClass="io.github.mybatisext.idea.xml.MapperInspection"/>
     <localInspection language="JAVA" shortName="MybatisExtAnalysis" displayName="MyBatis Ext metadata and CRUD" groupName="MyBatis Ext" enabledByDefault="true" level="ERROR" implementationClass="io.github.mybatisext.idea.ext.ExtInspection"/>
